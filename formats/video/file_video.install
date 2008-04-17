@@ -1,0 +1,99 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Video file module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE INSTALLATION/UNINSTALLATION
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_video_enable() {
+  drupal_set_message(t('File video module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file/format/video'))));
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_video_install() {}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_video_uninstall() {
+  variable_del('file_video_getid3');
+  variable_del('file_video_getid3_data');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE MIGRATIONS
+
+/**
+ * Implementation of hook_update_N().
+ *
+ * Performs a conversion of any existing video.module data. Nodes of the
+ * type 'video' become 'file' nodes, and their constituent file objects are
+ * fingerprinted, renamed, and moved to the default files repository.
+ */
+/*
+function file_video_update_1() {
+  // Make sure file.module has been installed or enabled. Without it, none
+  // of the following will work, and the administrator will just have to
+  // attempt the update again later...
+  if (!module_exist('file')) {
+    watchdog('install', t('Module installation failed. file_video.module requires that file.module be installed and enabled.'), WATCHDOG_ERROR);
+    return array(update_sql("UPDATE {system} SET status = 0 WHERE type = 'module' AND name = 'file_video'"));
+  }
+
+  // Remove PHP's execution time limit to prevent timeout problems:
+  set_time_limit(0);
+  clearstatcache();
+
+  $updates = array();
+  $total = $errors = 0;
+
+  // Process all video.module nodes in the database
+  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'video' ORDER BY nid");
+  while ($node = db_fetch_object($nodes)) {
+    $total++;
+    $node = node_load($node->nid);
+
+    // Process all file objects belonging to the 'video' node. There will at
+    // minimum be one file, but there may be several if artefacts, i.e. file
+    // previews in various sizes, have been generated.
+    $files = db_query("SELECT f.* FROM {files} f INNER JOIN {file_revisions} fr ON f.fid = fr.fid WHERE fr.vid = %d ORDER BY f.fid DESC", $node->vid);
+    if ($file = db_fetch_object($files)) {
+      $old_path = file_create_path($file->filepath);
+
+      if (!file_exists($old_path)) {
+        $errors++;
+        watchdog('update', t('File conversion (video.module file ID #%fid) failed. file_video.module update #1 failed to convert the file %filepath because the file does not exist.', array('%fid' => $file->fid, '%filepath' => theme('placeholder', $old_path))), WATCHDOG_WARNING);
+        continue; // skip to next node
+      }
+
+      // Parse any available metadata:
+      _file_update_metadata($file, $old_path);
+
+      // Save the video node's views/downloads statistics:
+      $file->views = (int) db_result(db_query("SELECT SUM(play_counter) FROM {video} WHERE nid = %d", $node->nid));
+      $file->downloads = (int) db_result(db_query("SELECT SUM(download_counter) FROM {video} WHERE nid = %d", $node->nid));
+      $updates[] = update_sql("UPDATE {files} SET views = " . $file->views . ", downloads = " . $file->downloads . " WHERE fid = " . $file->fid);
+
+      $updates[] = update_sql("DELETE FROM {file_revisions} WHERE (SELECT nid FROM {node_revisions} WHERE vid = {file_revisions}.vid) = " . $node->nid);
+      $updates[] = update_sql("DELETE FROM {files} WHERE nid = " . $node->nid . " AND fid != " . $file->fid);
+    }
+
+    $updates[] = update_sql("UPDATE {node} SET type = 'file' WHERE nid = " . $node->nid);
+    $updates[] = update_sql("DELETE FROM {video} WHERE nid = " . $node->nid);
+  }
+
+  watchdog('update', t('Converted %total video.module nodes to file.module nodes with %errors errors.', array('%total' => $total, '%errors' => $errors)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+
+  return $updates;
+}
+ */
+//////////////////////////////////////////////////////////////////////////////

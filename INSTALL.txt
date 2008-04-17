@@ -1,0 +1,28 @@
+// $Id$
+
+REQUIREMENTS
+------------
+Requires Drupal 6.x and the following modules:
+
+  Bitcache
+  <http://drupal.org/project/bitcache>
+
+  RDF API
+  <http://drupal.org/project/rdf>
+
+
+OTHER SOFTWARE
+-------------
+File framework uses following additional software:
+
+ - getid3 to parse audio and video files
+ <http://getid3.sourceforge.net/>
+
+ - flowplayer for flash videos
+ <http://flowplayer.org/>
+
+ - xspf_player slim version to play mp3
+ <http://musicplayer.sourceforge.net/>
+
+This software should be installed under vendor folder.
+

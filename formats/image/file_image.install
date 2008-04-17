@@ -1,0 +1,125 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * File image module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE INSTALLATION/UNINSTALLATION
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_image_enable() {
+  drupal_set_message(t('File image module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file/format/image'))));
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_image_install() {}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_image_uninstall() {
+  variable_del('file_image_preview_resolution');
+  variable_del('file_image_thumbnail_resolution');
+  variable_del('file_image_exif');
+  variable_del('file_image_exif_data');
+  variable_del('file_image_geo');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE MIGRATIONS
+
+/**
+ * Implementation of hook_update_N().
+ *
+ * Performs a conversion of any existing image.module data. Nodes of the
+ * type 'image' become 'file' nodes, and their constituent file objects are
+ * fingerprinted, renamed, and moved to the default files repository.
+ */
+/*
+function file_image_update_1() {
+  // Make sure file.module has been installed or enabled. Without it, none
+  // of the following will work, and the administrator will just have to
+  // attempt the update again later...
+  if (!module_exist('file')) {
+    watchdog('install', t('Module installation failed. file_image.module requires that file.module be installed and enabled.'), WATCHDOG_ERROR);
+    return array(update_sql("UPDATE {system} SET status = 0 WHERE type = 'module' AND name = 'file_image'"));
+  }
+
+  // Remove PHP's execution time limit to prevent timeout problems:
+  set_time_limit(0);
+  clearstatcache();
+
+  $updates = array();
+  $total = $errors = 0;
+
+  // Delete any entries in the `file_revisions' table created by
+  // image.module, as they are not needed for anything.
+  // (Note that this query presumes MySQL 4.1 or newer.)
+  $updates[] = update_sql("DELETE FROM {file_revisions} WHERE (SELECT type FROM {node} WHERE nid = (SELECT nid FROM {node_revisions} WHERE vid = {file_revisions}.vid)) = 'image'");
+
+  // Read the administrator-configured image sizes from image.module's
+  // settings, as they will be needed later on when renaming files.
+  $sizes = _file_image_image_get_sizes();
+
+  // Process all image.module nodes in the database
+  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'image' ORDER BY nid");
+  while ($node = db_fetch_object($nodes)) {
+    $total++;
+    $node = node_load($node->nid);
+
+    // Process all file objects belonging to the 'image' node. There will at
+    // minimum be one file, but there may be several if artefacts, i.e. file
+    // previews in various sizes, have been generated.
+    $files = db_query("SELECT * FROM {files} WHERE nid = %d ORDER BY fid", $node->nid);
+    while ($file = db_fetch_object($files)) {
+      $old_path = file_create_path($file->filepath);
+      $old_name = $file->filename;
+
+      if (!file_exists($old_path)) {
+        $errors++;
+        watchdog('update', t('File conversion (image.module file ID #%fid) failed. file_image.module update #1 failed to convert the file %filepath because the file does not exist.', array('%fid' => $file->fid, '%filepath' => theme('placeholder', $old_path))), WATCHDOG_WARNING);
+        continue 2; // skip to next node
+      }
+
+      // Parse any available metadata:
+      _file_update_metadata($file, $old_path);
+
+      // Rename the DB entry to correspond with file_image.module conventions, if possible
+      $file->filename = is_array($sizes[$old_name]) ? $sizes[$old_name]['width'] . 'x' . $sizes[$old_name]['height'] : $old_name;
+      $updates[] = update_sql("UPDATE {files} SET filename = '" . $file->filename . "' WHERE fid = " . $file->fid);
+    }
+
+    $updates[] = update_sql("UPDATE {node} SET type = 'file' WHERE nid = " . $node->nid);
+  }
+
+  watchdog('update', t('Converted %total image.module nodes to file.module nodes with %errors errors.', array('%total' => $total, '%errors' => $errors)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+
+  return $updates;
+}
+ */
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE HELPERS
+/*
+// Originally from image.module
+function _file_image_image_get_sizes() {
+  $sizes = array_filter(
+    variable_get('image_sizes', array(
+      array('width' => 100, 'height' => 100, 'label' => 'thumbnail'),
+      array('width' => 640, 'height' => 640, 'label' => 'preview'))),
+    create_function('$size', 'return !empty($size["label"]);'));
+  $result = array();
+  foreach ($sizes as $size) {
+    $result[$size['label']] = $size;
+  }
+  return $result;
+}
+ */
+//////////////////////////////////////////////////////////////////////////////
+

@@ -1,0 +1,57 @@
+div#file-gallery-head {}
+
+div#file-gallery-filter {
+  float: right;
+}
+
+div#file-gallery-filter label {
+  display: inline;
+  margin-right: 5px;
+}
+
+div#file-gallery-body {
+  clear: both;
+}
+
+span.file-gallery-empty {
+  font-size: small;
+}
+
+ul.file-gallery {
+  list-style-type: none;
+  margin: 0px;
+  padding: 0px;
+}
+
+ul.file-gallery li.file-gallery {
+  display: inline;
+  float: left;
+  width: 120px;
+  height: 120px;
+  text-align: center;
+  text-decoration: none;
+  background-color: #eee;
+  border: 1px #ccc solid;
+  margin: 0.5em 0.5em 0em 0em;
+  padding: 1em;
+}
+
+ul.file-gallery li a {
+}
+
+ul.file-gallery li a img {
+  border: none;
+  padding: 5px;
+}
+
+ul.file-gallery li span {
+  display: block;
+  font-size: x-small;
+  text-align: center;
+}
+
+ul.file-gallery li span.no-thumbnail {
+  border: 1px #ccc solid;
+  padding: 10px;
+  font-size: small;
+}

@@ -1,0 +1,7 @@
+; $Id$
+name = File attachments
+description = Allows attaching files to nodes and comments.
+package = File management
+dependencies[] = file
+core = 6.x
+php = 5.2

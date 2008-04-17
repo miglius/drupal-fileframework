@@ -1,0 +1,7 @@
+; $Id$
+name = File converters
+description = Allows files to be converted from one MIME content type into another as needed.
+package = File management
+dependencies[] = file
+core = 6.x
+php = 5.2

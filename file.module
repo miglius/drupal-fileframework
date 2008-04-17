@@ -1,0 +1,630 @@
+<?php
+// $Id$
+/**
+ * @file
+ * Provides files as a standalone content type and includes an extended file
+ * API and a comprehensive file operations framework.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+
+define('FILE_SHOW_PREVIEWS',      variable_get('file_show_previews', 1));
+define('FILE_HANDLER_AUTOLOAD',   variable_get('file_handler_autoload', 1));
+define('FILE_SHOW_GENERATED',     variable_get('file_show_generated', 1));
+define('FILE_CRON',               variable_get('file_cron', 1));
+define('FILE_CRON_LIMIT_SIZE',    (int)variable_get('file_cron_limit_size', 512));
+define('FILE_MIME_AUTODETECTION', variable_get('file_mime_autodetection', 0));
+define('FILE_MIME_REGISTRY_PATH', variable_get('file_mime_registry_path', ''));
+
+define('FILE_HASH_SIZE',          variable_get('file_hash_size', 40));
+
+//////////////////////////////////////////////////////////////////////////////
+// Core API hooks
+
+/**
+ * Implementation of hook_theme().
+ */
+function file_theme() {
+  return array(
+    'file_admin_handler_settings' => array(
+      'arguments' => array('form'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_show' => array(
+      'arguments' => array('data'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_previews' => array(
+      'arguments' => array('data'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_generated' => array(
+      'arguments' => array('data'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_metadata' => array(
+      'arguments' => array('data'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_block_properties' => array(
+      'arguments' => array('metadata'),
+      'file' => 'file.theme.inc'
+    ),
+    'file_block_formats' => array(
+      'arguments' => array('data'),
+      'file' => 'file.theme.inc'
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function file_init() {
+  require_once drupal_get_path('module', 'file') .'/file.inc';
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function file_perm() {
+  return array('create files', 'edit own files', 'view uploaded files');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function file_menu() {
+  return array(
+    'admin/settings/file' => array(
+      'title' => 'Files',
+      'description' => 'Configure file upload and display settings.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_admin_settings'),
+      'access arguments' => array('administer site configuration'),
+      'file' => 'file.admin.inc',
+    ),
+    'admin/settings/file/configure' => array(
+      'title' => 'Settings',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    ),
+    'admin/settings/file/handler' => array(
+      'title' => 'Handlers',
+      'type' => MENU_LOCAL_TASK,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_admin_handler_settings'),
+      'access arguments' => array('administer site configuration'),
+      'weight' => 1,
+      'file' => 'file.admin.inc',
+    ),
+    'admin/settings/file/mime' => array(
+      'title' => 'MIME registry',
+      'type' => MENU_LOCAL_TASK,
+      'description' => 'Manage MIME type mappings.',
+      'page callback' => 'file_admin_mime',
+      'access arguments' => array('administer site configuration'),
+      'weight' => 2,
+      'file' => 'file.admin.inc',
+    ),
+    'admin/settings/file/format' => array(
+      'title' => 'Formats',
+      'page callback' => 'file_admin_menu_block_page',
+      'access arguments' => array('administer site configuration'),
+      'file' => 'file.admin.inc',
+    ),
+    'node/%file/metadata' => array(
+      'title' => 'Properties',
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1,
+      'page callback' => 'file_page_metadata',
+      'page arguments' => array(1),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file.pages.inc',
+    ),
+    'node/%node/embed' => array(
+      'title' => 'Embed file preview',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_embed',
+      'page arguments' => array(1, 3),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file.pages.inc',
+    ),
+    'file/%node/download' => array(
+      'title' => 'File download',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_serve',
+      'page arguments' => array(1, 3),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file.pages.inc',
+    ),
+    'file/%node/view' => array(
+      'title' => 'File view',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_serve',
+      'page arguments' => array(1, 3, 'inline'),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file.pages.inc',
+    ),
+    'node/%node/file_preview' => array(
+      'title' => 'File preview',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_wrapper_html',
+      'page arguments' => array(1, 3),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file.pages.inc',
+    ),
+    'file_preview' => array(
+      'title' => 'AHAH preview',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_wrapper_ahah',
+      'page arguments' => array(1, 2, 3),
+      'access callback' => TRUE,
+      'file' => 'file.pages.inc',
+    ),
+    'file_metadata' => array(
+      'title' => 'AJAX file metadata',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_metadata',
+      'page arguments' => array(1, 2),
+      'access callback' => TRUE,
+      'file' => 'file.pages.inc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function file_load($nid) {
+  if (is_numeric($nid)) {
+    $node = node_load($nid);
+    if (is_object($node) && $node->type == 'file') {
+      return $node;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function file_block($op = 'list', $delta = 0, $edit = array()) {
+  switch ($op) {
+    case 'list':
+      $block = array(
+        array('info' => t('File properties')),
+        array('info' => t('File formats')),
+      );
+      return $block;
+    case 'view':   
+      switch ($delta) {
+        case 0:
+          $block['subject'] = t('File properties');
+          $block['content'] = _file_block_properties();
+          break;
+        case 1:
+          $block['subject'] = t('File formats');
+          $block['content'] = _file_block_formats();
+          break;
+      }
+      return $block;
+  }
+}
+
+/**
+ * Implementation of hook_link().
+ */
+function file_link($type, $node = NULL, $teaser = FALSE) {
+  $links = array();
+  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && user_access('view uploaded files')) {
+    $links['file_view'] = array(
+      'title' => t('View'),
+      'href' => 'file/'. $node->nid .'/view/'. $node->vid,
+      'attributes' => array('title' => t('View this file inline in browser.')),
+    );
+    $links['file_download'] = array(
+      'title' => t('Download'),
+      'href' => 'file/'. $node->nid .'/download/'. $node->vid,
+      'attributes' => array('title' => t('Download this file to your computer.')),
+    );
+    $links['file_size'] = array(
+      'title' => format_size($node->file->size),
+    );
+    $links['file_type'] = array(
+      'title' => file_mime_icon_for($node->file->type) .' '. file_mime_description_for($node->file->type),
+      'html' => TRUE,
+    );
+    $links['file_views'] = array(
+      'title' => format_plural(db_result(db_query('SELECT SUM(f.views) FROM {file_nodes} f WHERE f.nid = %d', $node->nid)), '1 view', '@count views'),
+      'html'  => TRUE,
+    );
+    $links['file_downloads'] = array(
+      'title' => format_plural(db_result(db_query('SELECT SUM(f.downloads) FROM {file_nodes} f WHERE f.nid = %d', $node->nid)), '1 download', '@count downloads'),
+      'html'  => TRUE,
+    );
+  }
+  return $links;
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function file_cron() {
+  // Only run if automatic maintenance has been enabled by the administrator
+  if (FILE_CRON) {
+
+    // If PHP is not in 'safe mode', increase the maximum execution time:
+    if (!ini_get('safe_mode')) {
+      set_time_limit(0); // Unlimited
+    }
+
+    // Repair fingerprints, file paths, and metadata for local files
+    $total = $files = $converted = $errors = 0;
+    $byte_limit = FILE_CRON_LIMIT_SIZE * 1024 * 1024;
+    $byte_counter = 0;
+    $result = db_query("SELECT f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d", $byte_limit);
+    while (($file = db_fetch_object($result)) && $byte_counter <= $byte_limit) {
+      $total++;
+      if (!file_generate_previews($file, 1)) {
+        $errors++;
+      }
+      if ($file->convert) {
+        $files++;
+        $converted += $file->convert;
+        $byte_counter += $file->size;
+      }
+    }
+    
+    // Log a concise summary message to let the administrator know what
+    // occurred. Note that if any problems were encountered, file_repair()
+    // will have already logged them on its part.
+    if ($total > 0) {
+      watchdog('cron', 'Inspected %total file(s), %converted conversion(s) were performed on %files file(s) (%size) with %errors errors.', array('%total' => $total, '%converted' => $converted, '%files' => $files, '%errors' => $errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function file_form_alter(&$form, $form_state, $form_id) {
+  switch ($form_id) {
+    case "system_file_system_settings":
+      // File module uses bitchache, so this setting is not used.
+      unset($form['file_downloads']);
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_search().
+ */
+function file_search($op = 'search', $keys = NULL) {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Node API hooks
+
+/**
+ * Implementation of hook_node_info().
+ */
+function file_node_info() {
+  return array(
+    'file' => array(
+      'name'        => t('File'),
+      'module'      => 'file_node',
+      'description' => t('Files allow uploads of documents and other content.'),
+      'help'        => t(''),
+      'title_label' => t('Title'),
+      'body_label'  => t('Description'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_access().
+ */
+function file_node_access($op, $node, $account) {
+  switch ($op) {
+    case 'create':
+      return user_access('create files', $account);
+    case 'update':
+    case 'delete':
+      return user_access('edit own files', $account) && ($account->uid == $node->uid);
+  }
+}
+
+/**
+ * Implementation of hook_form().
+ */
+function file_node_form(&$node, $form_state) {
+  drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
+
+  // TODO: This node_form() craziness here is needed because when
+  // drupal_retrieve_form('file_node_form') is performed, it will
+  // incorrectly ignore callback information defined in hook_forms() and
+  // call this function directly. We need to either rename our Node API
+  // prefix in hook_node_info(), or else submit a core patch.
+  if (is_array($node)) {
+    return node_form($node, $form_state);
+  }
+
+  $form = array();
+  $type = node_get_types('type', $node);
+
+  $form['file'] = array('#type' => 'file', '#title' => t('File'), '#size' => 50, '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))), '#weight' => -10);
+  
+  // The uploaded file is saved to the system and session is set on the file preview rendering.
+  $file = is_object($_SESSION['file_preview_file']) ? $_SESSION['file_preview_file'] : NULL;
+  if ($file || !empty($node->file->uri)) {
+    $form['file']['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => $file ? $file->name : $node->title));
+  }
+
+  if ($type->has_title) {
+    $form['title'] = array('#type' => 'textfield', '#title' => check_plain($type->title_label), '#required' => TRUE, '#default_value' => $node->title, '#weight' => -5);
+    $form['title']['#required'] = FALSE; // will default to file name
+  }
+
+  if ($type->has_body) {
+    $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
+    $form['body_field']['body']['#rows'] = 5; // make text area smaller
+  }
+
+  //$form['metadata'] = array('#type' => 'fieldset', '#title' => t('File metadata'), '#collapsible' => TRUE, '#collapsed' => TRUE);
+  // TODO: metadata display & editing
+
+  $form['#attributes'] = array('enctype' => 'multipart/form-data');
+  return $form;
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function file_node_load($node) {
+  return (object)array('file' => db_fetch_object(db_query('SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND f.vid = %d', $node->nid, $node->vid)));
+}
+
+/**
+ * Implementation of hook_validate().
+ */
+function file_node_validate($node) {
+  
+  // Save the file upload on the file preview page. The uploaded file is saved in RDF and bitcache,
+  // but not in the database at this stage since a user can navigate away from this page. We also set
+  // a session variable to be used in the file form and following file previews.
+  if ($upload = file_save_upload('file', file_get_validators())) {
+    $node_new = (object)array('nosave' => TRUE);
+    if (!file_node_save($node_new, $upload)) {
+      drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
+    }
+    $file = $node_new->file;
+    $_SESSION['file_preview_file'] = $file;
+  }
+  
+  // Make sure a file has been uploaded at some point
+  if (!is_object($_SESSION['file_preview_file']) && !is_object(file_node_load($node)->file)) {
+    form_set_error('file', t('A file upload must be provided.'));
+  }
+}
+
+/**
+ * Implementation of hook_insert().
+ */
+function file_node_insert($node) {
+  $file = is_object($node->file) ? $node->file : NULL;
+  if (!is_object($file)) {
+    $file = file_save_upload('file');
+    if (!is_object($file)) {
+      $file = $_SESSION['file_preview_file'];
+    }
+  }
+  if (is_object($file)) {
+    file_node_save($node, $file);
+    module_invoke_all('file', 'insert', $node);
+    unset($_SESSION['file_preview_file']);
+  }
+}
+
+/**
+ * Implementation of hook_update().
+ */
+function file_node_update($node) {
+  $file = file_save_upload('file');
+  if (!is_object($file)) {
+    $file = $_SESSION['file_preview_file'];
+  }
+  if (is_object($file)) {
+    file_node_save($node, $file);
+    module_invoke_all('file', 'update', $node);
+    unset($_SESSION['file_preview_file']);
+  }
+}
+
+/**
+ * Implementation of hook_delete().
+ */
+function file_node_delete($node) {
+  module_invoke_all('file', 'delete', $node);
+  $result = db_query('SELECT uri FROM {file_nodes} WHERE nid = %d', $node->nid);
+  while ($uri = db_fetch_object($result)) {
+    file_node_delete_node($uri);
+  }
+  db_query('DELETE FROM {file_nodes} WHERE nid = %d', $node->nid);
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function file_nodeapi(&$node, $op, $teaser, $page) {
+  switch ($op) {
+    case 'update index':
+
+      // We index a plain text version of the files.
+      $file = $node->file;
+      if (is_object($file)) {
+        if ($file->type == 'text/plain' ) {
+          $uri_txt = $file->uri;
+        }
+        else {
+          if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+            foreach ($generated as $uri => $data) {
+              $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+              if ($item[$uri][rdf_qname_to_uri('dc:format')][0]->value == 'text/plain') {
+                // A plain text preview.
+                $uri_txt = $uri;
+                break;
+              }
+            }
+          }
+        }
+      }
+      return $uri_txt ? array(bitcache_get_contents(file_get_hash($uri_txt))) : array();
+      break;
+    
+    case 'delete revision':
+      db_query('DELETE FROM {file_nodes} WHERE nid = %d AND vid = %d', $node->nid, $node->vid);
+      file_node_delete_node($node->file);
+      break;
+    
+    case 'rss item': 
+      if ($node->type == 'file' && !empty($node->file)) {
+        // RSS only allows one enclosure per item
+        return array(array('key' => 'enclosure', 'attributes' => array('url' => url('file/'. $node->file->nid .'/download', array('absolute' => TRUE)), 'length' => $node->file->size, 'type' => $node->file->type)));
+      }
+      return array();
+  }
+}
+
+/**
+ * Implementation of hook_prepare().
+ */
+function file_node_prepare(&$node) {
+
+  // The session variable is cleared from the unsaved file uploads..
+  unset($_SESSION['file_preview_file']);
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function file_node_view($node, $teaser = FALSE, $page = FALSE) {
+  
+  // $page variable is set to TRUE on the normal page rendering, when the node is saved to the database.
+  // For the previews it is FALSE.
+  if (!$page && !$teaser) {
+    
+    // When looking at the preview of the saved file the file_node_load() is not triggered and file
+    // object is not loaded and asociated with the node. Have to do it manually.
+    if ($node->nid && !is_object($node->file)) {
+      $node->file = file_node_load($node)->file;
+    }
+  }
+  
+  if (is_object($_SESSION['file_preview_file'])) {
+
+    // The file was uploaded on the previous preview page and it is saved in the session variable.
+    $file = $_SESSION['file_preview_file'];
+  }
+
+  // The following code checks if this function is called during the creation of the search index.
+  // We don't want the preview contrlol heading and generated pages be indexed as they do not belong 
+  // to the node or file content, but are only suplementary to the page.
+  foreach (array_slice(debug_backtrace(), 1) as $stackframe) {
+    if (in_array($stackframe['function'], array ('_node_index_node', 'node_search'))) {
+      $search = TRUE;
+      break;
+    }
+  }
+
+  $file = is_object($file) ? $file : $node->file;
+  $node = node_prepare($node, $teaser);
+  
+  // We show generated files only on full page view, where the teaser is not set.
+  if (!$teaser && is_object($file) && !$search) {
+    $file->name = $file->name ? $file->name : $node->title;
+    $data = array(
+      'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file) : '',
+      'generated' => FILE_SHOW_GENERATED ? file_render_generated($file) : '',
+    );
+    $output = theme('file_show', $data);
+    // For browsers with javascript disabled.
+    if (FILE_SHOW_PREVIEWS && arg(2) == 'file_preview') {
+      $output .= file_wrapper_html($node, arg(3));
+    }
+    $node->content['file_preview'] = array('#value' => $output, '#weight' => 10);
+  }
+  return $node;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// FILE API EXTENSIONS
+
+/**
+ * Implementation of the hook_file_validate().
+ */
+function file_file_validate($file) {
+  $errors = array();
+  if ($file->filesize == 0) {
+    $errors[] = t('The file is  empty.');
+  }
+  return $errors;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// BLOCKS
+
+/**
+ * Gets the file's metadata from the RDF.
+ *
+ * @return
+ *   Structured array of the file's metadata.
+ */
+function _file_block_properties() {
+  if (arg(0) == 'node' && preg_match('/(\d+)/', arg(1), $matches)) {
+    $file_node = node_load($matches[1]);
+    if (is_object($file_node) && $file_node->type == 'file' && !empty($file_node->file)) {
+      $metadata = array();
+      $namespaces = rdf_get_namespaces();
+      $info = file_get_metadata_info();
+      $data = rdf_normalize(rdf_query($file_node->file->uri));
+      foreach ($data as $subject => $predicates) {
+        foreach ($predicates as $predicate => $objects) {
+          foreach ($objects as $object) {
+            $metadata[] = array('name' => $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], 'value' => $object->value);
+          }
+        }
+      }
+    }
+  }
+  return theme('file_block_properties', $metadata);
+}
+
+/**
+ * Gets the file's derivatives.
+ *
+ * @return
+ *   A file node object.
+ */
+function _file_block_formats() {
+  if (arg(0) == 'node' && preg_match('/(\d+)/', arg(1), $matches)) {
+    $file_node = node_load($matches[1]);
+    if (is_object($file_node) && $file_node->type == 'file' && !empty($file_node->file)) {
+      $formats = array();
+      $file_uris = file_generated_for($file_node->file);
+      foreach ($file_uris as $uri => $data) {
+        if ($file->uri != $uri) {
+          $data['uri'] = bitcache_resolve_uri($uri, array('absolute' => TRUE));
+          $data['description'] = file_mime_description_for($data['type']);
+          $formats[] = $data;
+        }
+      }
+      return theme('file_block_formats', array('formats' => $formats, 'vid' => $file_node->vid));
+    }
+  }
+}
+

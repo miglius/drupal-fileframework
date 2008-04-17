@@ -1,0 +1,7 @@
+; $Id$
+name = File antivirus
+description = Allows files to be scaned on the upload.
+package = File management
+dependencies[] = file
+core = 6.x
+php = 5.2

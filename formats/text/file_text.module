@@ -1,0 +1,217 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Supports text file formats.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+
+define('FILE_TEXT_PREVIEW_LINES',  variable_get('file_text_preview_lines', '0'));
+define('FILE_TEXT_PREVIEW_STRING', variable_get('file_text_preview_string', '<----- End of Preview ----->'));
+
+//////////////////////////////////////////////////////////////////////////////
+// Core API hooks
+
+/**
+ * Implementation of hook_theme().
+ */
+function file_text_theme() {
+  return array(
+    'file_text_text_render' => array(
+      'arguments' => array('uri', 'options'),
+      'file' => 'file_text.theme.inc'
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function file_text_menu() {
+  return array(
+    'admin/settings/file/format/text' => array(
+      'title' => 'Texts',
+      'description' => 'Manage the text files.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_text_admin_settings'),
+      'access arguments' => array('administer site configuration'),
+      'file' => 'file_text.admin.inc',
+    ),
+  );
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// File API hooks
+
+/**
+ * Implementation of hook_mime_handlers().
+ */
+function file_text_mime_handlers() {
+  return array(
+    'file_text_text' => array(
+      'name' => t('Text'),
+      'dimensions' => '580x350',
+      'weight' => 1,
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_mime_types().
+ */
+function file_text_mime_types() {
+  return array(
+    'text/plain' => array(
+      'name' => t('Plain text document'),
+      'handlers' => array('file_text_text'),
+      'extensions' => array('txt'), // to use as a first extension instead of asc as defined in mime.type
+    ),
+    'text/html' => array(
+      'name' => t('HTML document'),
+    ),
+    'text/css' => array(
+      'name' => t('CSS stylesheet'),
+      'handlers' => array('file_text_text'),
+    ),
+    'text/sgml' => array(
+      'name' => t('SGML document'),
+      'handlers' => array('file_text_text'),
+    ),
+    'text/xml' => array(
+      'name' => t('XML document'),
+      'handlers' => array('file_text_text'),
+      'icon' => 'xml.gif',
+    ),
+    'application/xml' => array(
+      'name' => t('XML document'),
+      'handlers' => array('file_text_text'),
+      'icon' => 'xml.gif',
+    ),
+    'application/xslt+xml' => array(
+      'name' => t('XSLT document'),
+    ),
+    'application/xhtml+xml' => array(
+      'name' => t('XHTML document'),
+    ),
+    'text/csv' => array(
+      'name' => t('CSV text document'),
+      'handlers' => array('file_text_text'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_mime_converters().
+ */
+function file_text_mime_converters() {
+  return array(
+    'text/html' => array(
+      'text/plain' => array(
+        'pipeline' => '[out_content] = {strip_tags}([in_content])||[out_content] = {html_entity_decode}([in_content])',
+        'handlers' => array('file_text_text'),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_metadata_info().
+ */
+function file_text_metadata_info() {
+  $info = array(
+    'wordnet:characters' => t('Characters'),
+    'wordnet:words'      => t('Words'),
+    'wordnet:lines'      => t('Lines'),
+  );
+  return $info;
+}
+
+/**
+ * Implementation of hook_metadata_parse().
+ */
+function file_text_metadata_parse($filename, $mimetype) {
+  if (!array_key_exists($mimetype, file_text_mime_types()))
+    return NULL;
+
+  $text = file_get_contents($filename);
+  return array(
+    'wordnet:characters' => array((int)(strlen($text) - substr_count($text, ' ') - $lines)),
+    'wordnet:words'      => array((int)str_word_count($text)),
+    'wordnet:lines'      => array((int)substr_count($text, "\n")),
+  );
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MIME handlers
+
+/**
+ * Generates a text preview.
+ */
+function file_text_text_generate($file) {
+  if (!isset($file->parent)) $file->parent = $file->uri;
+ 
+  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
+
+  if ($converted || $file->converted) {
+    $file->metadata = array_merge(array(
+      'dc:creator' => array($file->handler ? $file->handler : 'file_text_text'),
+    ), $metadata);
+ 
+    // Save preview to the bitcache and RDF.
+    if (!file_data_save($file)) {
+      return FALSE;
+    }
+    
+    $file->converted = TRUE;
+
+    watchdog('file_text', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
+  }
+  return TRUE;
+}
+
+/**
+ * Implements a plain text handler.
+ */
+function file_text_text_render($uri, $options = array()) {
+  $options = array_merge($options, _file_text_render_options($uri, $options));
+  return theme('file_text_text_render', $options);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// RDF API HOOKS
+
+/**
+ * Implementation of hook_rdf_namespaces().
+ */
+function file_text_rdf_namespaces() {
+  return array(
+    'wordnet' => 'http://xmlns.com/wordnet/1.6/',
+  );
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// AUXILIARY FUNCTIONS
+
+/**
+ * Renders options for the text display.
+ */
+function _file_text_render_options($uri, $options = array()) {
+  $text = bitcache_get_contents(file_get_hash($uri));
+  if (FILE_TEXT_PREVIEW_LINES > 0) {
+    $text = explode("\n", $text);
+    $lines = count($text);
+    if ($lines > FILE_TEXT_PREVIEW_LINES) {
+      for ($i = FILE_TEXT_PREVIEW_LINES; $i < $lines; $i++) {
+        unset($text[$i]);
+      }
+      $append = "\n". FILE_TEXT_PREVIEW_STRING;
+    }
+    $text = implode("\n", $text);
+
+  }
+
+  return array_merge($options, compact('text', 'append'));
+}
+

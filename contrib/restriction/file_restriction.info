@@ -1,0 +1,7 @@
+; $Id$
+name = File restrictions
+description = Controls which restrictions should be applied on the uploaded files.
+package = File management
+dependencies[] = file
+core = 6.x
+php = 5.2

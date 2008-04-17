@@ -1,0 +1,108 @@
+<?php
+// $Id$
+/**
+ * @file
+ * File module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// Core API hooks
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_enable() {
+  drupal_set_message(t('File module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file'))));
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_install() {
+  drupal_install_schema('file');
+  rdf_db_create_repository('file', array('dc:title' => t('File metadata'), 'dc:description' => ''));
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_uninstall() {
+  drupal_uninstall_schema('file');
+
+  variable_del('file_show_previews');
+  variable_del('file_handler_autoload');
+  variable_del('file_show_generated');
+  variable_del('file_cron');
+  variable_del('file_cron_limit_size');
+  variable_del('file_mime_autodetection');
+  variable_del('file_mime_registry_path');
+  variable_del('file_handlers');
+
+  rdf_db_delete_repository('file');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Schema API hooks
+
+/**
+ * Implementation of hook_schema().
+ */
+function file_schema() {
+  return array(
+    'file_nodes' => array(
+      'description' => t('Stores file node data.'),
+      'fields' => array(
+        'nid' => array(
+          'description' => t("The node's ID from {node}.nid."),
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'vid' => array(
+          'description' => t("The node's version ID from {node}.vid."),
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'uri' => array(
+          'description' => t("The file's bitstream URI."),
+          'type' => 'varchar',
+          'length' => 255,
+          'default' => '',
+        ),
+        'size' => array(
+          'description' => t("The file's byte size."),
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'type' => array(
+          'description' => t("The file's MIME type."),
+          'type' => 'varchar',
+          'length' => 64,
+          'default' => '',
+        ),
+        'views' => array(
+          'description' => t("The file's preview counter."),
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+        'downloads' => array(
+          'description' => t("The file's download counter."),
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+      ),
+      'primary key' => array('nid', 'vid'),
+      'indexes'     => array('file_nodes_uri' => array('uri')),
+    ),
+  );
+}
+

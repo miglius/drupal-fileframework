@@ -1,0 +1,7 @@
+; $Id$
+name = Images
+description = Supports image file formats.
+package = File formats
+dependencies[] = file
+core = 6.x
+php = 5.2

@@ -1,0 +1,7 @@
+; $Id$
+name = Videos
+description = Supports video file formats.
+package = File formats
+dependencies[] = file
+core = 6.x
+php = 5.2
