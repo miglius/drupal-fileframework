@@ -49,10 +49,10 @@ function theme_file_gallery_node($data, $options) {
 
   $output = '<li class="file-gallery" id="file_'. $data['file']->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
   $output .= $data['url_preview'] ? '<a'. drupal_attributes(array('href' => $data['url_preview'], 'title' => $data['title'], 'class' => $data['class'], 'rel' => 'file-gallery')) .'>'. $data['thumbnail'] .'</a>' : $data['thumbnail'];
-  $output .= '<span>'. l($data['title'], $data['url_open']) .'</span>';
-  $output .= '<span>';
-  $output .= file_mime_icon_for($data['file']->type) .' '. file_mime_description_for($data['file']->type);
-  $output .= '</span>';
+  $output .= '<span>'. l($data['title_short'], $data['url_open']) .'</span>';
+  if (FILE_GALLERY_SHOW_TYPE) {
+    $output .= '<span>'. file_mime_icon_for($data['file']->type) .' '. file_mime_description_for($data['file']->type) .'</span>';
+  }
   $output .= '</li>';
 
   drupal_add_js('$(document).ready(function() { $(\'#file_'. $data['file']->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($data['file']->uri) .'/'. $data['file']->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');

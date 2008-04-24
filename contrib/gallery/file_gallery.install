@@ -28,6 +28,7 @@ function file_gallery_uninstall() {
   variable_del('file_gallery_per_page');
   variable_del('file_gallery_embed_size');
   variable_del('file_gallery_popup_size');
+  variable_del('file_gallery_show_type');
 }
 
 //////////////////////////////////////////////////////////////////////////////

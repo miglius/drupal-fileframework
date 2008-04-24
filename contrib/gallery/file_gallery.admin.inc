@@ -43,6 +43,12 @@ function file_gallery_admin_settings() {
     '#maxlength'     => 255,
     '#description'   => t('The default size is 800x400.'),
   );
+  $form['display']['file_gallery_show_type'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Show file type'),
+    '#default_value' => FILE_GALLERY_SHOW_TYPE,
+    '#description'   => t('If checked a file type will be displayed bellow the thumbnail.'),
+  );
 
   $form['submit'] = array(
     '#type'  => 'submit',
@@ -85,12 +91,14 @@ function file_gallery_admin_settings_submit($form, &$form_state) {
       variable_set('file_gallery_per_page', $form_state['values']['file_gallery_per_page']);
       variable_set('file_gallery_embed_size', $form_state['values']['file_gallery_embed_size']);
       variable_set('file_gallery_popup_size', $form_state['values']['file_gallery_popup_size']);
+      variable_set('file_gallery_show_type', $form_state['values']['file_gallery_show_type']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case "Reset to defaults":
       variable_del('file_gallery_per_page');
       variable_del('file_gallery_embed_size');
       variable_del('file_gallery_popup_size');
+      variable_del('file_gallery_show_type');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

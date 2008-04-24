@@ -12,6 +12,7 @@
 define('FILE_GALLERY_PER_PAGE',   variable_get('file_gallery_per_page', 12));
 define('FILE_GALLERY_EMBED_SIZE', variable_get('file_gallery_embed_size', '160x180'));
 define('FILE_GALLERY_POPUP_SIZE', variable_get('file_gallery_popup_size', '800x600'));
+define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
 
 //////////////////////////////////////////////////////////////////////////////
 // CODE API HOOKS
@@ -337,9 +338,9 @@ function _file_gallery_node($node, $options = array(), $popup_options = array(),
   $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, TRUE) : 'node/'. $node->nid;
  
   $title = check_plain($node->title);
-  $title = strlen($title) > 20 ? substr($title, 0, 17) .'...' : $title;
+  $title_short = strlen($title) > 20 ? substr($title, 0, 17) .'...' : $title;
 
-  return theme('file_gallery_node', array('file' => $file, 'thumbnail' => $thumbnail, 'title' => $title, 'class' => $class, 'url_preview' => $url_preview, 'url_open' => $url_open, 'width_preview' => $width_preview, 'height_preview' => $height_preview), $options);
+  return theme('file_gallery_node', array('file' => $file, 'thumbnail' => $thumbnail, 'title' => $title, 'title_short' => $title_short, 'class' => $class, 'url_preview' => $url_preview, 'url_open' => $url_open, 'width_preview' => $width_preview, 'height_preview' => $height_preview), $options);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -404,7 +405,8 @@ function _file_gallery_add_footers($module = NULL) {
   if (!$initialized) { // once only
     $initialized = TRUE;
     
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
+    //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
   }
 }
 
