@@ -27,6 +27,14 @@ function file_image_admin_settings() {
     '#maxlength'     => 255,
     '#description'   => t('Specify the maximum pixel width and height to use when displaying previews of images e.g. in node teasers and bodies. The default is %default pixels.', array('%default' => '640x640')),
   );
+  $form['preview']['file_image_medium_resolution'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Maximum resolution for embedded image medium previews'),
+    '#default_value' => FILE_IMAGE_MEDIUM_RESOLUTION,
+    '#size'          => 10,
+    '#maxlength'     => 255,
+    '#description'   => t('Specify the maximum pixel width and height to use when displaying images at medium resolution e.g. in file galleries. The default is %default pixels.', array('%default' => '300x300')),
+  );
   $form['preview']['file_image_thumbnail_resolution'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Maximum resolution for embedded image thumbnails'),
@@ -34,6 +42,13 @@ function file_image_admin_settings() {
     '#size'          => 10,
     '#maxlength'     => 255,
     '#description'   => t('Specify the maximum pixel width and height to use when displaying thumbnails of images e.g. in file galleries. The default is %default pixels.', array('%default' => '120x120')),
+  );
+  $form['preview']['file_image_custom_previews'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('Maximum resolution for embedded image custom previews'),
+    '#default_value' => variable_get('file_image_custom_previews', ''),
+    '#rows'          => 3,
+    '#description'   => t('Specify the maximum pixel width and height to use followed by the computer readable short version of the preview name (composed from lowecase letters and underscore) followed by the name of the preview, like %default. One preview definition per line.', array('%default' => '200x200 custom_size Custom size image')),
   );
 
   // Exif settings
@@ -92,9 +107,28 @@ function file_image_admin_settings_validate($form, &$form_state) {
       if (empty($preview_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $preview_resolution)) {
         form_set_error('file_image_preview_resolution', t('Invalid value %value specified for embedded image preview resolution.', array('%value' => $preview_resolution)));
       }
+      $medium_resolution = $form_state['values']['file_image_medium_resolution'];
+      if (empty($medium_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $medium_resolution)) {
+        form_set_error('file_image_medium_resolution', t('Invalid value %value specified for embedded image medium resolution.', array('%value' => $medium_resolution)));
+      }
       $thumbnail_resolution = $form_state['values']['file_image_thumbnail_resolution'];
       if (empty($thumbnail_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $thumbnail_resolution)) {
         form_set_error('file_image_thumbnail_resolution', t('Invalid value %value specified for embedded image thumbnail resolution.', array('%value' => $thumbnail_resolution)));
+      }
+      foreach (explode("\n", $form_state['values']['file_image_custom_previews']) as $line) {
+        $line = trim(preg_replace('/\s+/', ' ', $line));
+        if (!empty($line) && !preg_match('/^#/', $line)) {
+          list($resolution, $handler, $name) = explode(' ', $line, 3);
+          if (empty($resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $resolution)) {
+            form_set_error('file_image_custom_previews', t('Invalid value %value specified for embedded image custom preview resolution.', array('%value' => $resolution)));
+          }
+          if (empty($handler) || !preg_match('/^[a-z_]+$/', $handler)) {
+            form_set_error('file_image_custom_previews', t('Invalid value %value specified for embedded image custom preview short name.', array('%value' => $handler)));
+          }
+          if (empty($name)) {
+            form_set_error('file_image_custom_previews', t('Embedded image custom preview name cannot be empty.'));
+          }
+        }
       }
       break;
   }
@@ -108,7 +142,9 @@ function file_image_admin_settings_submit($form, &$form_state) {
   switch ($op) {
     case "Save configuration":
       variable_set('file_image_preview_resolution', $form_state['values']['file_image_preview_resolution']);
+      variable_set('file_image_medium_resolution', $form_state['values']['file_image_medium_resolution']);
       variable_set('file_image_thumbnail_resolution', $form_state['values']['file_image_thumbnail_resolution']);
+      variable_set('file_image_custom_previews', $form_state['values']['file_image_custom_previews']);
       variable_set('file_image_exif', $form_state['values']['file_image_exif']);
       $exif = _file_image_exif();
       $exif_data = array();
@@ -121,7 +157,9 @@ function file_image_admin_settings_submit($form, &$form_state) {
       break;
     case "Reset to defaults":
       variable_del('file_image_preview_resolution');
+      variable_del('file_image_medium_resolution');
       variable_del('file_image_thumbnail_resolution');
+      variable_del('file_image_custom_previews');
       variable_del('file_image_exif');
       variable_del('file_image_exif_data');
       variable_del('file_image_geo');

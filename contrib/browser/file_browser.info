@@ -1,0 +1,8 @@
+; $Id$
+name = Browser
+description = Provides a file browser for file nodes organized in a hierarchical taxonomy tree.
+package = File management
+dependencies[] = file
+dependencies[] = taxonomy
+core = 6.x
+php = 5.2

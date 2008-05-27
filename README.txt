@@ -34,6 +34,15 @@ FILE UTILITY MODULES
   * file_gallery:
     Provides a taxonomy-based gallery view of various file types.
 
+  * file_browser:
+    Provides a file browser for file nodes organized in a hierarchical taxonomy tree.
+
+  * file_embed:
+    Provides an input filter for embedding files into other content.
+
+  * file_views:
+    Integrates file operations with the Views module.
+
 
 FILE FORMAT MODULES
 -------------------

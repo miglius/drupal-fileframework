@@ -41,7 +41,7 @@ function file_gallery_admin_settings() {
     '#default_value' => FILE_GALLERY_POPUP_SIZE,
     '#size'          => 10,
     '#maxlength'     => 255,
-    '#description'   => t('The default size is 800x400.'),
+    '#description'   => t('The default size is 800x600.'),
   );
   $form['display']['file_gallery_show_type'] = array(
     '#type'          => 'checkbox',

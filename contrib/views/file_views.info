@@ -1,0 +1,8 @@
+; $Id$
+name = Views
+description = Integrates file operations with the Views module.
+package = File management
+dependencies[] = file
+dependencies[] = views
+core = 6.x
+php = 5.2

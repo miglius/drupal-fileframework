@@ -98,7 +98,7 @@ function file_slideshow_mime_converters() {
       'image/jpeg' => array(
         'pipeline' => '{gs} -q -sDEVICE=jpeg -dBATCH -dNOPAUSE -dFirstPage=1 -dLastPage=1 -r300 -sOutputFile=[out_file] [in_file]',
         //'pipeline' => 'cd [tmpdir]; {mv} [in_file] [in_file].pdf; {convert} [in_file].pdf\[0\] [out_file].jpeg; {mv} [in_file].pdf [in_file]; {mv} [out_file].jpeg [out_file]',
-        'handlers' => array('file_image_image'),
+        'handlers' => array('file_image_preview'),
       ),
       'application/x-shockwave-flash' => array(
         'pipeline' => 'cd [tmpdir]; {pdf2swf} -lb [in_file] [out_file]',
@@ -224,7 +224,7 @@ function file_slideshow_pdf_generate($file) {
     // Create a plain text, image and swf previews.
     $previews = array(
       'text/plain' => 'file_text_text',
-      'image/jpeg' => 'file_image_image',
+      'image/jpeg' => 'file_image_preview',
       'application/x-shockwave-flash' => 'file_video_flash_swf',
     );
     foreach ($previews as $mime_to => $handler) {

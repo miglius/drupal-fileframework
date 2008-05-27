@@ -9,12 +9,33 @@
 //////////////////////////////////////////////////////////////////////////////
 
 define('FILE_IMAGE_PREVIEW_RESOLUTION',   variable_get('file_image_preview_resolution', '640x640'));
+define('FILE_IMAGE_MEDIUM_RESOLUTION',    variable_get('file_image_medium_resolution', '300x300'));
 define('FILE_IMAGE_THUMBNAIL_RESOLUTION', variable_get('file_image_thumbnail_resolution', '120x120'));
 define('FILE_IMAGE_EXIF',                 variable_get('file_image_exif', 1));
 define('FILE_IMAGE_GEO',                  variable_get('file_image_geo', 1));
 
 //////////////////////////////////////////////////////////////////////////////
 // CORE API HOOKS
+
+/**
+ * Implementation of hook_init().
+ */
+function file_image_init() {
+  foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
+    $line = trim(preg_replace('/\s+/', ' ', $line));
+    if (!empty($line) && !preg_match('/^#/', $line)) {
+      list($resolution, $handler, $name) = explode(' ', $line, 3);
+      if (!empty($handler)) {
+        eval('
+	  function file_image_'. $handler .'_render($uri, $options = array()) {
+	    $options = array_merge($options, _file_image_render_options($uri, $options));
+	    return theme(\'file_image_image_render\', $options);
+	  }
+	');
+      }
+    }
+  }
+}
 
 /**
  * Implementation of hook_theme().
@@ -27,10 +48,6 @@ function file_image_theme() {
     ),
     'file_image_image_render' => array(
       'arguments' => array('options'),
-      'file' => 'file_image.theme.inc'
-    ),
-    'image_thumbnail_render' => array(
-      'arguments' => array('width', 'height', 'options'),
       'file' => 'file_image.theme.inc'
     ),
   );
@@ -81,13 +98,37 @@ function file_image_link($type, $node = NULL, $teaser = FALSE) {
  * Implementation of hook_mime_handlers().
  */
 function file_image_mime_handlers() {
-  return array(
-    'file_image_image' => array(
-      'name' => t('Image'),
+  $handlers = array();
+  foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
+    $line = trim(preg_replace('/\s+/', ' ', $line));
+    if (!empty($line) && !preg_match('/^#/', $line)) {
+      list($resolution, $handler, $name) = explode(' ', $line, 3);
+      $handlers['file_image_'. $handler] = array(
+        'name' => t($name),
+        'dimensions' => '5x5',
+        'weight' => 2,
+        'enabled' => 0,
+      );
+    }
+  }
+
+  return array_merge($handlers, array(
+    'file_image_preview' => array(
+      'name' => t('Image preview'),
       'dimensions' => '5x5',
       'weight' => 1,
     ),
-  );
+    'file_image_medium' => array(
+      'name' => t('Medium image'),
+      'dimensions' => '5x5',
+      'weight' => 1,
+    ),
+    'file_image_thumbnail' => array(
+      'name' => t('Image thumbnail'),
+      'dimensions' => '5x5',
+      'weight' => 1,
+    ),
+  ));
 }
 
 /**
@@ -97,39 +138,39 @@ function file_image_mime_types() {
   return array(
     'image/bmp' => array(
       'name' => t('Bitmap image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/gif' => array(
       'name' => t('GIF image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/jpeg' => array(
       'name' => t('JPEG image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/pjpeg' => array(
       'name' => t('JPEG image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/jp2' => array(
       'name' => t('JPEG2000 image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/png' => array(
       'name' => t('PNG image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/svg+xml' => array(
       'name' => t('SVG image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/tiff' => array(
       'name' => t('TIFF image'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
     'image/x-icon' => array(
       'name' => t('Icon file'),
-      'handlers' => array('file_image_image'),
+      'handlers' => array('file_image_preview'),
     ),
   );
 }
@@ -223,99 +264,120 @@ function file_image_metadata_parse($filename, $mimetype) {
 /**
  * Generates an image preview.
  */
-function file_image_image_generate($file) {
+function file_image_preview_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
 
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
   $width = $file->converted ? $metadata['exif:width'][0] : $metadata[$file->uri][rdf_qname_to_uri('exif:width')][0]->value;
   $height = $file->converted ? $metadata['exif:height'][0] : $metadata[$file->uri][rdf_qname_to_uri('exif:height')][0]->value;
 
-  list($max_width, $max_height) = explode('x', FILE_IMAGE_PREVIEW_RESOLUTION);
-
-  // Create a preview only if the image is bigger than preview.
-  if (module_exists('file_convert') && !$file->noconvert && $width && $height && ($width > $max_width || $height > $max_height)) {
-    // Scale image.
-    $ratio = min($max_width / $width, $max_height / $height);
-    list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
-
-    // Convert the file.
-    if (!$converted = file_convert($file, "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
-      watchdog('file_image', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
-    }
-    
-    // Extract metadata.
-    $metadata = file_metadata_extract($converted, $file->filemime);
-  
-    $file->filepath = $converted;
-    $file->filepath_old = $converted;
-    //unset($file->converted);
-    $file->converted = TRUE;
+  if (!$width || !$height || $width == 0 || $height == 0) {
+    watchdog('file_image', 'A file %file, %uri is zero size.', array('%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+    return TRUE;
   }
-
-  if ($converted || $file->converted) {
+  
+  if ($file->converted) {
     $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_image_image'),
+      'dc:creator' => array($file->handler),
     ), $metadata);
 
     // Save preview to the bitcache and RDF.
     if (!file_data_save($file)) {
       return FALSE;
     }
-   
+ 
     $file->converted = TRUE;
-    unset($converted);
     
-    watchdog('file_image', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
+    watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $file->handler, '%uri' => $file->uri));
   }
-
-  list($max_width, $max_height) = explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION);
-
-  // Create a thumbnail only if the image is bigger than preview.
-  // Thumbnail is created even if 'noconvert' is set.
-  if (module_exists('file_convert') && $width && $height && ($width > $max_width || $height > $max_height)) {
-    // Scale image.
-    $ratio = min($max_width / $width, $max_height / $height);
-    list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
-
-    // Convert the file.
-    if (!$converted = file_convert($file, "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
-      watchdog('file_image', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
-    }
-   
-    // Extract metadata.
-    $metadata = file_metadata_extract($converted, $file->filemime);
   
-    $file->filepath = $converted;
-    unset($file->converted);
-  }
-
-  if ($converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array('file_image_thumbnail'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
+  $handlers = array();
+  foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
+    $line = trim(preg_replace('/\s+/', ' ', $line));
+    if (!empty($line) && !preg_match('/^#/', $line)) {
+      list($resolution, $handler, $name) = explode(' ', $line, 3);
+      $handlers['file_image_'. $handler]['resolution'] = $resolution;
     }
+  }
+  $handlers = array_merge($handlers, array(
+    'file_image_preview' => array('resolution' => FILE_IMAGE_PREVIEW_RESOLUTION),
+    'file_image_medium' => array('resolution' => FILE_IMAGE_MEDIUM_RESOLUTION),
+    'file_image_thumbnail' => array('resolution' => FILE_IMAGE_THUMBNAIL_RESOLUTION),
+  ));
+
+  $previews = array();
+  foreach ($handlers as $handler => $data) {
+    list($max_width, $max_height) = explode('x', $data['resolution']);
+    $ratio = min($max_width / $width, $max_height / $height);
+    if ($ratio > 0.0 && $ratio < 1.0) { 
+      $previews[(string)$ratio] = array('handler' => $handler, 'resolution' => $data['resolution']);
+    }
+  }
+  krsort($previews);
+
+  $files = array();
+  foreach ($previews as $ratio => $data) {
+    list($max_width, $max_height) = explode('x', $data['resolution']);
+    if (module_exists('file_convert') && (!$file->noconvert || in_array($data['handler'], array('file_image_medium', 'file_image_thumbnail')))) {
+      // Scale image.
+      $ratio = min($max_width / $width, $max_height / $height);
+      list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
+
+      // Convert the file.
+      if (!$converted = file_convert($file, "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
+        watchdog('file_image', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+      }
+    
+      // Extract metadata.
+      $metadata = file_metadata_extract($converted, $file->filemime);
+  
+      $file->filepath = $converted;
+      $file->converted = TRUE;
+      $files[] = $converted;
+    }
+
+    if ($converted) {
+      $file->metadata = array_merge(array(
+        'dc:creator' => array($data['handler']),
+      ), $metadata);
+
+      // Save preview to the bitcache and RDF.
+      if (!file_data_save($file)) {
+        return FALSE;
+      }
    
-    $file->converted = TRUE;
+      $file->converted = TRUE;
+      unset($converted);
     
-    watchdog('file_image', 'The %mime thumbnail was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
+      watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%uri' => $file->uri));
+    }
   }
-    
-  // Remove tmp file from preview creation.
-  if ($file->filepath_old) {
-    unlink($file->filepath_old);
-    unset($file->filepath_old);
-  }
+
+  array_map(create_function('$f', 'return unlink($f);'), $files);  
+
   return TRUE;
 }
 
 /**
- * Implements image handler.
+ * Implements image preview handler.
  */
-function file_image_image_render($uri, $options = array()) {
+function file_image_preview_render($uri, $options = array()) {
+  $options = array_merge($options, _file_image_render_options($uri, $options));
+  return theme('file_image_image_render', $options);
+}
+
+/**
+ * Implements medium image handler.
+ */
+function file_image_medium_render($uri, $options = array()) {
+  $options = array_merge($options, _file_image_render_options($uri, $options));
+  return theme('file_image_image_render', $options);
+}
+
+/**
+ * Implements thumbnail handler.
+ */
+function file_image_thumbnail_render($uri, $options = array()) {
   $options = array_merge($options, _file_image_render_options($uri, $options));
   return theme('file_image_image_render', $options);
 }
@@ -392,9 +454,7 @@ function _file_image_render_options($uri, $options = array()) {
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => "max-width: {$max_width}px; max-height: {$max_height}px;", 'border' => '0'), $options);
-  $options = array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));
-
-  return $options;
+  return array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));
 }
 
 //////////////////////////////////////////////////////////////////////////////

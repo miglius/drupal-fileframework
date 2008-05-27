@@ -1,5 +1,5 @@
 ; $Id$
-name = File antivirus
+name = Antivirus
 description = Allows files to be scaned on the upload.
 package = File management
 dependencies[] = file

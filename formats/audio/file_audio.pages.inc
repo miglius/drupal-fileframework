@@ -11,15 +11,20 @@
 /**
  * Outputs a xspf playlist xml.
  *
- * @param $node
- *   A node object.
+ * @param $nid
+ *   A node ID.
  * @param $vid
  *   A revision ID.
  * @param $hash
  *   A bitstram hash.
  */
-function file_audio_xspf($node, $vid, $hash) {
-  $node = node_load($node->nid, $vid);
+function file_audio_xspf($nid, $vid, $hash) {
+  if (is_numeric($nid) && is_numeric($vid)) {
+    $node = node_load($nid, $vid);
+    if (!node_access('view', $node))
+      exit;
+  }
+  
   $file = $node->file;
   $uri = 'bitcache://'. $hash;
 

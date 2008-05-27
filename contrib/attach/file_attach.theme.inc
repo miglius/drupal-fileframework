@@ -25,7 +25,10 @@ function theme_file_attachments($files) {
     );
   }
 
-  return !empty($rows) ? theme('table', $header, $rows, array('id' => 'attachments')) : '';
+  $output = '<div class="file-attachments">';
+  $output .= !empty($rows) ? theme('table', $header, $rows, array('id' => 'attachments')) : '';
+  $output .= '</div>';
+  return $output;
 }
 
 /**
@@ -64,7 +67,7 @@ function theme_file_attach_form_new($form) {
  * Renders a block containing previews and generated files for one file.
  */
 function theme_file_attach_show($data) {
-  return $data ? '<div class="file-attach-show" style="padding: 2px;"><div class="file-attach-show" style="border: 1px solid grey; padding: 5px;">'. $data .'</div></div>' : '';
+  return $data ? '<div class="file-attach-container"><div class="file-attach-show">'. $data .'</div></div>' : '';
 }
 
 /**

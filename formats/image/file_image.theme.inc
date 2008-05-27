@@ -34,15 +34,14 @@ function theme_file_image_admin_settings($form) {
 function theme_file_image_image_render($options = array()) {
 
   extract($options, EXTR_SKIP);
-  if (is_null($container) || !empty($container)) {
-    $output = '<span class="'. $class .'" style="display: block; margin: 0px; padding: 0px;';
+  if (is_null($container) || !empty($container)) {  
+    $output = '<span class="file-image" style="display: block; margin: 0px; padding: 0px;';
     $output .= $width ? ' width: '. min($width, $max_width) .'px;' : '';
     $output .= $height ? ' height: '. min($height, $max_height) .'px;' : '';
     $output .= $width || $height ? ' overflow: hidden;' : '';
     $output .= '">';
   }
   $output .= '<img ';
-
   $allowed_keys = _file_image_allowed_attributes();
   foreach ($options as $key => $value) {
     if (in_array($key, $allowed_keys) && !empty($value)) {
@@ -51,18 +50,11 @@ function theme_file_image_image_render($options = array()) {
       $output .= $key .'="'. check_plain($value) .'" ';
     }
   }
-
   $output .= '/>';
   if (is_null($container) || !empty($container)) {
     $output .= '</span>';
   }
-  return $output;
-}
 
-/**
- * Theme for image's thumbnail.
- */
-function theme_image_thumbnail_render($width, $height, $options = array()) {
-  return theme('render_image', $file, array_merge($options, array('max_width' => $width, 'max_height' => $height)));
+  return $output;
 }
 

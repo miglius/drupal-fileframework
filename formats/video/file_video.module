@@ -308,7 +308,7 @@ function file_video_flash_swf_generate($file) {
   
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
-  if ($converted || $file->converted) {
+  if ($file->converted) {
     $file->metadata = array_merge(array(
       'dc:creator' => array($file->handler ? $file->handler : 'file_video_flash_swf'),
     ), $metadata);
@@ -333,7 +333,7 @@ function file_video_flash_flv_generate($file) {
    
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
-  if ($converted || $file->converted) {
+  if ($file->converted) {
     $file->metadata = array_merge(array(
       'dc:creator' => array($file->handler ? $file->handler : 'file_video_flash_flv'),
     ), $metadata);
@@ -348,9 +348,6 @@ function file_video_flash_flv_generate($file) {
     // Create a flash thumbnail image.
     file_generate_secondary_previews('file_video', $file, 'image/jpeg', 'file_video_flash_image');
 
-    // Restore file data.
-    $file->filepath = $filepath;
-    $file->filemime = $filemime;
     $file->converted = TRUE;
   }
   return TRUE;
@@ -364,11 +361,11 @@ function file_video_flash_image_generate($file) {
   
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
-  if ($converted || $file->converted) {
-    $file->noconvert = TRUE;
+  if ($file->converted) {
+    //$file->noconvert = TRUE;
     $file->handler = 'file_video_flash_image';
     
-    if (function_exists('file_image_image_generate') && !file_image_image_generate($file)) {
+    if (function_exists('file_image_preview_generate') && !file_image_preview_generate($file)) {
       watchdog('file_video', 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => 'image/jpeg', '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       return FALSE;
     }

@@ -3,7 +3,6 @@
 /**
  * Attach handlers to evaluate if the file extension is supported by the web server.
  */
-
 Drupal.behaviors.file_extension = function(context) {
   var translate = Drupal.settings.file_extension;
   $("input[@type=file]", context).each(function() {

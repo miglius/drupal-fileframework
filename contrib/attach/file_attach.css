@@ -1,0 +1,14 @@
+div.file-attachments {
+  clear: both;
+}
+
+div.file-attach-container {
+  clear: both;
+  padding: 2px;
+}
+
+div.file-attach-show {
+  padding: 5px;
+  border: 1px solid grey;
+}
+

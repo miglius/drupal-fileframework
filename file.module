@@ -68,7 +68,7 @@ function file_init() {
  * Implementation of hook_perm().
  */
 function file_perm() {
-  return array('create files', 'edit own files', 'view uploaded files');
+  return array('create file content', 'edit own file content', 'edit any file content', 'delete own file content', 'delete any file content');
 }
 
 /**
@@ -156,7 +156,7 @@ function file_menu() {
       'page arguments' => array(1, 3),
       'access callback' => 'node_access',
       'access arguments' => array('view', 1),
-      'file' => 'file.pages.inc',
+      'file' => 'file.inc',
     ),
     'file_preview' => array(
       'title' => 'AHAH preview',
@@ -164,7 +164,6 @@ function file_menu() {
       'page callback' => 'file_wrapper_ahah',
       'page arguments' => array(1, 2, 3),
       'access callback' => TRUE,
-      'file' => 'file.pages.inc',
     ),
     'file_metadata' => array(
       'title' => 'AJAX file metadata',
@@ -221,7 +220,7 @@ function file_block($op = 'list', $delta = 0, $edit = array()) {
  */
 function file_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
-  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && user_access('view uploaded files')) {
+  if ($type == 'node' && $node->type == 'file' && !empty($node->file)) {
     $links['file_view'] = array(
       'title' => t('View'),
       'href' => 'file/'. $node->nid .'/view/'. $node->vid,
@@ -332,10 +331,11 @@ function file_node_info() {
 function file_node_access($op, $node, $account) {
   switch ($op) {
     case 'create':
-      return user_access('create files', $account);
+      return user_access('create file content', $account);
     case 'update':
+      return user_access('edit any file content', $account) || user_access('edit own file content', $account) && ($account->uid == $node->uid);
     case 'delete':
-      return user_access('edit own files', $account) && ($account->uid == $node->uid);
+      return user_access('delete any file content', $account) || user_access('delete own file content', $account) && ($account->uid == $node->uid);
   }
 }
 

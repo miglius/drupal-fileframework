@@ -26,7 +26,9 @@ function file_image_install() {}
  */
 function file_image_uninstall() {
   variable_del('file_image_preview_resolution');
+  variable_del('file_image_medium_resolution');
   variable_del('file_image_thumbnail_resolution');
+  variable_del('file_image_custom_previews');
   variable_del('file_image_exif');
   variable_del('file_image_exif_data');
   variable_del('file_image_geo');

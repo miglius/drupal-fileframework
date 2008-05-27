@@ -100,7 +100,11 @@ function theme_file_generated($data) {
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
   $formats = array();
   foreach ($data['formats'] as $id => $format) {
-    $formats[] = '<div id="file_formats_'. $data['id'] .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($format['handler'] == 'file_image_thumbnail' ? ' [<span class="file-size">'. t('thumbnail') .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $data['vid'], 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $data['vid']))) .'</small></div>';
+    if (preg_match('/^file_image_/', $format['handler'])) {
+      $handlers = file_get_mime_handlers();
+      $description = $handlers[$format['handler']]['name'];
+    }
+    $formats[] = '<div id="file_formats_'. $data['id'] .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $data['vid'], 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $data['vid']))) .'</small></div>';
     drupal_add_js('$(document).ready(function() { $(\'#file_formats_'. $data['id'] .'_'. $id .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $data['nid'] .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   }
   if (!empty($formats)) {

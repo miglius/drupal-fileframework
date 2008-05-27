@@ -104,45 +104,6 @@ function file_serve($node, $vid, $disposition = NULL) {
   drupal_goto($href, $query);
 }
 
-/**
- * Returns the HTML data of the rendered HTML preview of the file.
- *
- * @param $node
- *   A node object.
- *
- * @return
- *   A HTML data of the rendered HTML of the file preview.
- */
-function file_wrapper_html($node, $handler) {
-  // Access control is done at the menu layer.
-  $handlers = file_handlers_for($node->file);
-  return file_wrapper($handler, $handlers[$handler]['uri'], $node, 'html');
-}
-
-/**
- * Returns the Javascript data of the rendered HTML preview of the file.
- *
- * @param $handler
- *   A preview handler associated with the file.
- * @param $hash
- *   A blob hash.
- *
- * @return
- *   A JAvascript data of the rendered HTML of the file preview.
- */
-function file_wrapper_ahah($handler, $hash, $vid) {
-  // Access control is not done at menu layer.
-  if ($node = file_bitcache_access($hash, $vid)) {
-    $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
-    if (empty($handlers[$handler])) {
-      $handlers[$handler]['uri'] = 'bitcache://'. $hash;
-    }
-    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', 'js');
-  }
-  //header("HTTP/1.1 403 Forbidden");
-  drupal_access_denied();
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // File metadata
 

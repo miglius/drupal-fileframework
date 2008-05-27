@@ -1,0 +1,9 @@
+; $Id$
+name = Embed
+description = Provides an input filter for embedding file into other content.
+package = File management
+dependencies[] = file
+dependencies[] = file_attach
+dependencies[] = file_gallery
+core = 6.x
+php = 5.2

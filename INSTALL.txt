@@ -11,18 +11,17 @@ Requires Drupal 6.x and the following modules:
   <http://drupal.org/project/rdf>
 
 
-OTHER SOFTWARE
--------------
-File framework uses following additional software:
+ADDITIONAL SOFTWARE
+-------------------
+Folowing software is optional, but highly recommended:
 
- - getid3 to parse audio and video files
- <http://getid3.sourceforge.net/>
+  getID3
+  <http://getid3.sourceforge.net>
 
- - flowplayer for flash videos
- <http://flowplayer.org/>
+  Flowplayer
+  <http://flowplayer.org>
 
- - xspf_player slim version to play mp3
- <http://musicplayer.sourceforge.net/>
+  XSPF Player
+  <http://musicplayer.sourceforge.net>
 
-This software should be installed under vendor folder.
-
+This software should be extracted under the 'vendor' folder.

@@ -172,7 +172,7 @@ function file_node_delete_node($file) {
         foreach ($derived as $key => $data) {
 	  // Check if derived is not referenced in the table.
           if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $key)) == 0) {
-            if (!rdf_delete($key, NULL, NULL)) {
+            if (!rdf_delete($key, NULL, NULL, array('repository' => 'file'))) {
               watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
             }
             // Delete from a bitcache.
@@ -182,7 +182,7 @@ function file_node_delete_node($file) {
           }    
         }
       }
-      if (!rdf_delete($file->uri, NULL, NULL)) {
+      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => 'file'))) {
         watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
       }
       // Delete from a bitcache.
@@ -261,36 +261,6 @@ function file_mime_types() {
       'icon' => 'binary.gif',
     ),
   );
-}
-
-/**
- * Searches for the module implementing a handler for a particular MIME type.
- *
- * @param $type
- *   A MIME type.
- *
- * @return
- *   A structured array of the details of the MIME type implementation. 
- */
-function file_mime_handler_for($type) { //USED WHERE???
-  $handlers = file_mime_handlers();
-  return isset($handlers[$type]) ? $handlers[$type] : NULL;
-}
-
-/**
- * Returns a module name implementing a particular MIME type.
- *
- * @param $type
- *   A MIME type.
- * @param $default
- *   Default module name for the MIME type to be return if no modules are implementing the MIME type.
- *
- * @return
- *   A module name which implements the MIME type or NULL if not found. 
- */
-function file_mime_module_for($type, $default = NULL) { //USED WHERE???
-  $handlers = file_mime_handlers();
-  return isset($handlers[$type]) ? $handlers[$type]['module'] : $default;
 }
 
 /**
@@ -507,7 +477,7 @@ function file_get_mime_handlers() {
           'name' => $handlers[$handler]['name'],
           'dimensions' => $handlers[$handler]['dimensions'] ? $handlers[$handler]['dimensions'] : '0x0',
           'weight' => $weight,
-          'enabled' => isset($default_handlers[$handler]['enabled']) ? $default_handlers[$handler]['enabled'] : 1,
+          'enabled' => isset($default_handlers[$handler]['enabled']) ? $default_handlers[$handler]['enabled'] : (isset($handlers[$handler]['enabled']) ? $handlers[$handler]['enabled'] : 1),
           'module' => $handlers[$handler]['module'],
         );
       }
@@ -620,7 +590,7 @@ function file_generate_previews($file, $cron = NULL) {
           // The blob does not exist in the bitcache or the size is zero.
 	  // We delete the generated entry reference in the RDF
 	  // and the file will be converted again.
-          if (!rdf_delete($uri, NULL, NULL)) {
+          if (!rdf_delete($uri, NULL, NULL, array('repository' => 'file'))) {
             watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
           }
         }
@@ -740,61 +710,6 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
 // File rendering & theming
 
 /**
- * Generates a display (preview, viewer, or player) of the given file
- * object.
- *
- * @param $file
- *   A file object as returned from file_node_load().
- * @param $options
- *   Additional options to pass to the handler.
- *
- * @return
- *   An XHTML representation of the themed file.
- */
- /* NOT USED
-function file_render($file, $options = array()) {
-  $mime_types = file_get_mime_types();
-  $options = array_merge($options, array('nid' => $file->nid), $_GET);
-  $result = NULL;
-  unset($options['q']);
-
-  // Find generated previews for the file.
-  $previews = array();
-  if (!empty($file->uri)) {
-    if ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
-      foreach ($generated as $uri => $data) {
-        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]->value) {
-          // Preview is already generated
-          $previews[$mime]['handlers'][] = $item[$uri][rdf_qname_to_uri('dc:creator')][0]->value;
-          $previews[$mime]['uri'] = $uri;
-        }
-      }
-    }
-  }
-
-  // Display a file when preview is absent.
-  if (is_array($mime_types[$file->type]['handlers'])) {
-    foreach (array_diff($mime_types[$file->type]['handlers'], is_array($previews[$mime]['handlers']) ? $previews[$mime]['handlers'] : array()) as $handler) {
-      if (function_exists($full_handler = $handler .'_render')) {
-        $result .= $full_handler($file->uri, $options);
-      }
-    }
-  }
-
-  // Display generated previews.
-  foreach ($previews as $mime => $data) {
-    foreach ($data['handlers'] as $handler) {
-      if (function_exists($full_handler = $handler .'_render')) {
-        $result .= $full_handler($data['uri'], $options);
-      }
-    }
-  }
-
-  return $result;
-}
- */
-/**
  * Generates an array of all  preview handlers for the file pointing 
  * to the previews' bitcache URIs.
  *
@@ -802,7 +717,7 @@ function file_render($file, $options = array()) {
  *   A file object as returned from file_node_load().
  *
  * @return
- *   An array of the preview handlers pinting to the bitcache URIs.
+ *   An array of the preview handlers pointing to the bitcache URIs.
  */
 function file_handlers_for($file) {
   $mime_types = file_get_mime_types();
@@ -978,6 +893,45 @@ function file_wrapper($handler, $uri, $node = NULL, $type = NULL) {
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages') . $output));
 }
 
+/**
+ * Returns the HTML data of the rendered HTML preview of the file.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   A HTML data of the rendered HTML of the file preview.
+ */
+function file_wrapper_html($node, $handler) {
+  // Access control is done at the menu layer.
+  $handlers = file_handlers_for($node->file);
+  return file_wrapper($handler, $handlers[$handler]['uri'], $node, 'html');
+}
+
+/**
+ * Returns the Javascript data of the rendered HTML preview of the file.
+ *
+ * @param $handler
+ *   A preview handler associated with the file.
+ * @param $hash
+ *   A blob hash.
+ *
+ * @return
+ *   A JAvascript data of the rendered HTML of the file preview.
+ */
+function file_wrapper_ahah($handler, $hash, $vid) {
+  // Access control is not done at menu layer.
+  if ($node = file_bitcache_access($hash, $vid)) {
+    $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
+    if (empty($handlers[$handler])) {
+      $handlers[$handler]['uri'] = 'bitcache://'. $hash;
+    }
+    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', 'js');
+  }
+  //header("HTTP/1.1 403 Forbidden");
+  drupal_access_denied();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // BITCACHE
 
@@ -1132,6 +1086,7 @@ function file_get_files_size($uid, $converted = 1) {
 
 /**
  * Compares data with the template array and gets the matching entry.
+ * Is needed by format modules.
  *
  * @param $data
  *   Data array.
@@ -1148,5 +1103,43 @@ function file_get_recursive($data, $template) {
     $data = $data[$key];
   }
   return isset($data) && !is_array($data) ? $data : NULL;
+}
+
+/**
+ * Finds an image of a given resolution of the file if it is available.
+ *
+ * @param $file
+ *   A file object.
+ * @param $handler
+ *   An image handler.
+ * @param $dimensions
+ *   An array with max width and height of the image.
+ *
+ * @return
+ *   A HTML output of the image or NULL if it is not available.
+ */
+function file_get_image($file, $handler, $dimensions) {
+  $image = NULL;
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+    foreach ($generated as $uri => $data) {
+      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0]->value == $handler) {
+        // We gave a generated image.
+        $image = file_get_hash($uri);
+        $width = $item[$uri][rdf_qname_to_uri('exif:width')][0]->value;
+        $height = $item[$uri][rdf_qname_to_uri('exif:height')][0]->value;
+        break;
+      }
+    }
+  }
+  if (!$image && preg_match('/^image\//', $file->type)) {
+    $item = rdf_normalize(rdf_query($file->uri, NULL, NULL));
+    $width = $item[$file->uri][rdf_qname_to_uri('exif:width')][0]->value;
+    $height = $item[$file->uri][rdf_qname_to_uri('exif:height')][0]->value;
+    if ($width < $dimensions[0] && $height < $dimensions[1]) {
+      $image = file_get_hash($file->uri);
+    }
+  }
+  return $image ? '<img width="'. $width .'" height="'. $height .'" src="'. url('bitcache/'. $image, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
 }
 

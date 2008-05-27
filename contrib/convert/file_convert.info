@@ -1,5 +1,5 @@
 ; $Id$
-name = File converters
+name = Converters
 description = Allows files to be converted from one MIME content type into another as needed.
 package = File management
 dependencies[] = file

@@ -1,5 +1,5 @@
 ; $Id$
-name = File attachments
+name = Attachments
 description = Allows attaching files to nodes and comments.
 package = File management
 dependencies[] = file

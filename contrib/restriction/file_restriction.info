@@ -1,5 +1,5 @@
 ; $Id$
-name = File restrictions
+name = Restrictions
 description = Controls which restrictions should be applied on the uploaded files.
 package = File management
 dependencies[] = file

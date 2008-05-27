@@ -45,7 +45,7 @@ function file_antivirus_file_validate($file) {
       return array($result);
     }
     else {
-      drupal_set_message(t("The file %file was scanned by the antivirus software. No threats were found.", array('%file' => $file->filename)), 'notice');
+      drupal_set_message(t("File %file was scanned by the antivirus software. No threats were found.", array('%file' => $file->filename)), 'notice');
     }
   }
   return array();
@@ -107,7 +107,7 @@ function file_antivirus_scan_clamav($file) {
       return NULL;
     }
     if (preg_match('/FOUND$/', $content)) {
-      $result = preg_replace('/^.* (\S+) FOUND$/', '$1', $content);
+      $result = preg_replace('/^.* (\S+) FOUND\n$/', '$1', $content);
       watchdog('file_antivirus', 'The file %file uploaded by %user contained a virus %virus and was deleted.', array('%file' => $file->filename, '%user' => $user->name, '%virus' => $result), WATCHDOG_NOTICE);
       return t('A virus %virus has been found in the uploaded file.', array('%virus' => $result));
     }

@@ -42,13 +42,12 @@ function file_audio_menu() {
       'access arguments' => array('administer site configuration'),
       'file' => 'file_audio.admin.inc',
     ),
-    'file_audio/xspf/%node' => array(
+    'file_audio/xspf' => array(
       'title' => 'Play list',
       'type' => MENU_CALLBACK,
       'page callback' => 'file_audio_xspf',
       'page arguments' => array(2, 3, 4),
-      'access callback' => 'node_access',
-      'access arguments' => array('view', 2),
+      'access callback' => TRUE,
       'file' => 'file_audio.pages.inc',
     ),
   );

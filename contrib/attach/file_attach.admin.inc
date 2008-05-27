@@ -36,6 +36,12 @@ function file_attach_admin_settings() {
   
   // Visibility settings
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['visibility']['file_attach_show_attachments'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => 'Attachments',
+    '#description'   => 'Show the attached files.',
+    '#default_value' => FILE_ATTACH_SHOW_ATTACHMENTS,
+  );
   $form['visibility']['file_attach_show_previews'] = array(
     '#type'          => 'checkbox',
     '#title'         => 'Previews',
@@ -103,6 +109,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
     case "Save configuration":
       variable_set('file_attach_method', $form_state['values']['file_attach_method']);
       variable_set('file_attach_max_files', $form_state['values']['file_attach_max_files']);
+      variable_set('file_attach_show_attachments', $form_state['values']['file_attach_show_attachments']);
       variable_set('file_attach_show_previews', $form_state['values']['file_attach_show_previews']);
       variable_set('file_attach_show_generated', $form_state['values']['file_attach_show_generated']);
       variable_set('file_attach_vocabularies_all', $form_state['values']['file_attach_vocabularies_all']);
@@ -112,6 +119,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
     case "Reset to defaults":
       variable_del('file_attach_method');
       variable_del('file_attach_max_files');
+      variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
       variable_del('file_attach_show_generated');
       variable_del('file_attach_vocabularies');

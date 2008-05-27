@@ -23,7 +23,7 @@ define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
 function file_gallery_theme() {
   return array(
     'file_gallery_page' => array(
-      'arguments' => array('content'),
+      'arguments' => array('content', 'options'),
       'file' => 'file_gallery.theme.inc'
     ),
     'file_gallery_term' => array(
@@ -45,7 +45,7 @@ function file_gallery_theme() {
  * Implementation of hook_perm().
  */
 function file_gallery_perm() {
-  return array('browse files');
+  return array('view files');
 }
 
 /**
@@ -61,17 +61,11 @@ function file_gallery_menu() {
       'file' => 'file_gallery.admin.inc',
     ),
     'file_gallery' => array(
-      'title' => t('browse files'),
+      'title' => t('File gallery'),
       'page callback' => 'file_gallery_page',
-      'access arguments' => array('browse files'), 
-      'type' => MENU_CALLBACK,
+      'access arguments' => array('view files'), 
+      'type' => MENU_NORMAL_ITEM,
     ),
-    'image/tid' => array(
-      'title' => t('image galleries'),
-      'page callback' => 'file_gallery_redirect',
-      'access arguments' => array('access content'), 
-      'type' => MENU_CALLBACK,
-    )
   );
 }
 
@@ -90,16 +84,7 @@ function file_gallery_page($vid = 'my', $tid = NULL, $filter = NULL) {
   $layout = empty($_GET['layout']) || $_GET['layout'] == 'on';
   $module = !empty($_GET['module']) ? $_GET['module'] : NULL;
   $tids = empty($tid) ? array() : array((integer)$tid);
-  print theme(($layout ? 'page' : 'file_gallery_page'), file_gallery_content($vid, $tids, $filter, array('module' => $module, 'layout' => $layout)));
-}
-
-/**
- * Menu callback for handling image_gallery.module URLs.
- */
-function file_gallery_redirect($tid) {
-  if ($term = taxonomy_get_term($tid)) {
-    drupal_goto('file_gallery/'. $term->vid .'/'. $tid);
-  }
+  print theme(($layout ? 'page' : 'file_gallery_page'), file_gallery_content($vid, $tids, $filter, array('module' => $module, 'layout' => $layout)), array('breadcrumb' => TRUE));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -111,6 +96,7 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   $module = empty($options['module']) ? NULL : $options['module'];
   _file_gallery_add_headers($module);
 
+  $pager = $module ? module_invoke($module, 'file_gallery', 'pager') : FILE_GALLERY_PER_PAGE;
   $vocabularies = taxonomy_get_vocabularies();
   $vocabulary = ($vid != 'my') ? $vocabularies[$vid] : NULL;
   $term = taxonomy_get_term(reset($tids));
@@ -158,7 +144,7 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
     if (!$filter || $filter == 'folder') {
       //if ($terms = taxonomy_get_children(!empty($tids) ? reset($tids) : 0, $vid)) {
       //  foreach ($terms as $term) {
-      $result = pager_query(db_rewrite_sql('SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name', 't', 'tid'), FILE_GALLERY_PER_PAGE, 0, NULL, $vid, !empty($tids) ? reset($tids) : 0);
+      $result = pager_query(db_rewrite_sql('SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name', 't', 'tid'), $pager, 0, NULL, $vid, !empty($tids) ? reset($tids) : 0);
       while ($term = db_fetch_object($result)) {
         $folders++;
         $output .= _file_gallery_term($term, $embed_options, $module);
@@ -166,28 +152,34 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
       }
     }
     $output .= '</ul>';
-    $output .= theme('pager', NULL, FILE_GALLERY_PER_PAGE, 0);
+    $output .= theme('pager', NULL, $pager, 0);
     $output .= '<ul class="file-gallery">';
- 
+
+    db_query("CREATE TEMPORARY TABLE file_gallery (nid INT(10))");
     $nodes = taxonomy_select_nodes($tids, 'and', 0, FALSE, 'n.sticky DESC, n.title ASC');
     while ($node = db_fetch_object($nodes)) {
       if (($node = node_load($node->nid)) && $node->type == 'file' && is_object($node->file)) {
         if (!$filter || preg_match('/^'. $filter .'\//', $node->file->type)) {
           $files++;
-          $output .= _file_gallery_node($node, $embed_options, $popup_options, $module);
+          db_query("INSERT INTO {file_gallery} (nid) VALUES (%d)", $node->nid);
         }
       }
+    }
+    $result = pager_query('SELECT nid FROM {file_gallery}', $pager, 1, NULL);
+    while ($nid = db_result($result)) {
+      $node = node_load($nid);
+      $output .= _file_gallery_node($node, $embed_options, $module);
     }
   }
 
   $output .= '</ul>';
+  $output .= theme('pager', NULL, $pager, 1);
 
   if ($folders == 0 && $files == 0) {
     $output .= theme('file_gallery_empty', $filter);
   }
   $output .= '</div>'; // file-gallery-body
 
-  $output .= _file_gallery_preload_script(); // needed to initialize Thickbox
   _file_gallery_add_footers($module);
   return $output;
 }
@@ -219,16 +211,16 @@ function _file_gallery_breadcrumb($data) {
   if ($data['vid'] != 'my') {
     $vocabularies = taxonomy_get_vocabularies();
     $vocabulary = $vocabularies[$data['vid']];
-    $breadcrumb[] = l($vocabulary->name, 'file_gallery/'. $data['vid'], array(), $query);
+    $breadcrumb[] = l($vocabulary->name, 'file_gallery/'. $data['vid'], array('query' => $query));
   }
 
   if ($data['tid']) {
     foreach (taxonomy_get_parents($data['tid']) as $parent) {
-      $breadcrumb[] = l($parent->name, 'file_gallery/'. $data['vid'] .'/'. $parent->tid, array(), $query);
+      $breadcrumb[] = l($parent->name, 'file_gallery/'. $data['vid'] .'/'. $parent->tid, array('query' => $query));
     }
 
     $term = taxonomy_get_term($data['tid']);
-    $breadcrumb[] = l($term->name, 'file_gallery/'. $data['vid'] .'/'. $data['tid'], array(), $query);
+    $breadcrumb[] = l($term->name, 'file_gallery/'. $data['vid'] .'/'. $data['tid'], array('query' => $query));
   }
 
   drupal_set_breadcrumb($breadcrumb);
@@ -245,7 +237,7 @@ function _file_gallery_filter($data) {
   $filter_choices = array('' => t('Everything'), 'folder' => t('Only folders'));
   $filter_choices += ($data['vid'] == 'my') ? array() : array('image' => t('Only images'), 'audio' => t('Only audio'), 'video' => t('Only video'));
 
-  $select = array('#name' => 'filter', '#id' => 'file-gallery-selector', '#type' => 'select', '#title' => t('Show'), '#value' => $filter, '#options' => $filter_choices, '#parents' => array());
+  $select = array('#name' => 'filter', '#id' => 'file-gallery-selector', '#type' => 'select', '#title' => t('Show'), '#value' => $data['filter'], '#options' => $filter_choices, '#parents' => array());
 
   if ($data['vid'] == 'my') {
     // Disable the selector on the top-level, as there is nothing else shown but folders
@@ -264,37 +256,50 @@ function _file_gallery_term($term, $options = array(), $module = NULL) {
   $query = $module ? module_invoke($module, 'file_gallery', 'query') : NULL;
   $url = $module ? module_invoke($module, 'file_gallery', 'term_link', $term->tid) : NULL;
   $url = $url ? $url : 'file_gallery/'. $term->vid . (!empty($term->tid) ? '/'. $term->tid : '');
-  
-  return theme('file_gallery_term', array('term' => $term, 'query' => $query, 'url' => $url), $options);
+
+  return theme('file_gallery_term', compact('term', 'query', 'url'), $options);
 }
 
 /*
  * Builds a file node block.
  */
-function _file_gallery_node($node, $options = array(), $popup_options = array(), $module = NULL) {
+function _file_gallery_node($node, $options = array(), $module = NULL) {
   $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'thickbox';
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : NULL;
 
   $file = $node->file;
   
   // Find a thumbnail for the file.
-  $thumbnail = NULL;
-  $width = $height = 0;
-  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
-    foreach ($generated as $uri => $data) {
-      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0]->value == 'file_image_thumbnail') {
-        // We gave a thumbnail.
-        $thumbnail = file_get_hash($uri);
-        $width_thumbnail = $item[$uri][rdf_qname_to_uri('exif:width')][0]->value;
-        $height_thumbnail = $item[$uri][rdf_qname_to_uri('exif:height')][0]->value;
-        break;
-      }
-    }
-  }
-  $thumbnail = $thumbnail ? '<img src="'. url('bitcache/'. $thumbnail, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
+  $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+  $thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
 
   // Find a first enabled handler for the file.
+  $preview = _file_gallery_preview($file);
+  $width_preview = $preview['width'];
+  $height_preview = $preview['height'];
+
+  $url_preview = $url_preview ? $url_preview : array('link' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']));
+  $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : array('link' => 'node/'. $node->nid);
+ 
+  $title = check_plain($node->title);
+  $title_short = strlen($title) > 20 ? substr($title, 0, 17) .'...' : $title;
+
+  return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview'), $options);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MISCELLANEOUS HELPERS
+
+/*
+ * Finds a file first preview handler with parameters.
+ *
+ * @param $file
+ *   A file object.
+ *
+ * @return
+ *   An array with a preview parameters.
+ */ 
+function _file_gallery_preview($file) {
   $previews = array();
   $file_handlers = file_handlers_for($file);
   foreach (file_get_mime_handlers() as $handler => $data) {
@@ -303,10 +308,10 @@ function _file_gallery_node($node, $options = array(), $popup_options = array(),
     }
   }
   $handler = !empty($previews) ? reset($previews) : NULL;
-  $width_preview = $height_preview = 0;
+  $width = $height = 0;
   if ($handler) {
     $handlers = file_get_mime_handlers();
-    list($width_preview, $height_preview) = explode('x', $handlers[$handler]['dimensions']);
+    list($width, $height) = explode('x', $handlers[$handler]['dimensions']);
     $generated_found = FALSE;
     $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri));
     foreach ($generated as $uri => $data) {
@@ -323,34 +328,18 @@ function _file_gallery_node($node, $options = array(), $popup_options = array(),
     }
     foreach (array('exif', 'wordnet') as $name) {
       if ($item[$uri][rdf_qname_to_uri($name .':width')][0]->value) {
-        $width_preview += $item[$uri][rdf_qname_to_uri($name .':width')][0]->value;
+        $width += $item[$uri][rdf_qname_to_uri($name .':width')][0]->value;
       }
       if ($item[$uri][rdf_qname_to_uri($name .':height')][0]->value) {
-        $height_preview += $item[$uri][rdf_qname_to_uri($name .':height')][0]->value;
+        $height += $item[$uri][rdf_qname_to_uri($name .':height')][0]->value;
       }
     }
   }
-  list($width_preview_max, $height_preview_max) = explode('x', FILE_GALLERY_POPUP_SIZE);
-  $width_preview = min($width_preview, $width_preview_max);
-  $height_preview = min($height_preview, $height_preview_max);
+  list($width_max, $height_max) = explode('x', FILE_GALLERY_POPUP_SIZE);
+  $width = min($width, $width_max);
+  $height = min($height, $height_max);
 
-  $url_preview = $url_preview ? $url_preview : url('node/'. $file->nid .'/embed/'. $handler, array('query' => array('width' => $width_preview, 'height' => $height_preview)));
-  $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, TRUE) : 'node/'. $node->nid;
- 
-  $title = check_plain($node->title);
-  $title_short = strlen($title) > 20 ? substr($title, 0, 17) .'...' : $title;
-
-  return theme('file_gallery_node', array('file' => $file, 'thumbnail' => $thumbnail, 'title' => $title, 'title_short' => $title_short, 'class' => $class, 'url_preview' => $url_preview, 'url_open' => $url_open, 'width_preview' => $width_preview, 'height_preview' => $height_preview), $options);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// MISCELLANEOUS HELPERS
-
-/*
- * Sets a path to the thickbox image.
- */ 
-function _file_gallery_preload_script() {
-  return '<script type="text/javascript">tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/loadingAnimation.gif') .';</script>';
+  return array('handler' => $handler, 'width' => $width, 'height' => $height);
 }
 
 /*
@@ -358,7 +347,7 @@ function _file_gallery_preload_script() {
  */ 
 function _file_gallery_embed_options() {
   list($width, $height) = explode('x', FILE_GALLERY_EMBED_SIZE);
-  return array('max_width' => $width, 'max_height' => $height, 'container' => FALSE, 'extension' => TRUE);
+  return array('max_width' => $width, 'max_height' => $height, 'container' => FALSE);
 }
 
 /*
@@ -381,19 +370,7 @@ function _file_gallery_add_headers($module = NULL) {
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
 
-    // If we're being embedded into and controlled by another module,
-    // attempt to load its stylesheet and JavaScript code to allow it to
-    // override our default behavior. (This might be made into its own hook
-    // in a future version.)
-    if ($module) {
-      $path = drupal_get_path('module', $module);
-      foreach (array("$path/$module.css", "$path/$module.js") as $file) {
-        if (file_exists($file)) {
-          $function = preg_match('/css$/', $file) ? 'theme_add_style' : 'drupal_add_js';
-          $function($file);
-        }
-      }
-    }
+    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
   }
 }
 

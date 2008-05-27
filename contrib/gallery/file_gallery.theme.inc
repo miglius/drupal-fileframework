@@ -11,14 +11,21 @@
 /*
  * Theme for the entire page.
  */
-function theme_file_gallery_page($content) {
+function theme_file_gallery_page($content, $options = array()) {
+  extract($options, EXTR_SKIP);
+  
   $output = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
   $output .= '<html xmlns="http://www.w3.org/1999/xhtml">';
   $output .= '<head>';
   $output .= ' <title>'. (drupal_get_title() ? strip_tags(drupal_get_title()) : variable_get('site_name', 'drupal')) .'</title>';
   $output .= drupal_get_html_head();
+  $output .= drupal_get_css();
+  $output .= drupal_get_js();
   $output .= '</head>';
   $output .= '<body style="background-color: #fff; color: #000; margin: 10px;">';
+  if ($breadcrumb) {
+    $output .= '<div id="wrapper"><div id="container"><div class="breadcrumb">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
+  }
   $output .= "\n<!-- begin content -->\n";
   $output .= $content;
   $output .= "\n<!-- end content -->\n";
@@ -30,13 +37,13 @@ function theme_file_gallery_page($content) {
  * Theme for the taxonomy term.
  */
 function theme_file_gallery_term($data, $options) {
+  extract($data, EXTR_SKIP);
   extract($options, EXTR_SKIP);
 
+  $image = theme('image', drupal_get_path('module', 'file_gallery') .'/images/folder.gif', NULL, NULL, array('width' => 96, 'height' => 96), FALSE);
   $output = '<li class="file-gallery" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= '<a'. drupal_attributes(array('href' => url($data['url'], array('query' => $data['query'])), 'title' => $data['term']->name, 'class' => 'folder')) .'>';
-  $output .= theme('image', drupal_get_path('module', 'file_gallery') .'/images/folder.gif', NULL, NULL, array('width' => 96, 'height' => 96), FALSE);  
-  $output .= '</a>';
-  $output .= '<span>'. l($data['term']->name, $data['url'], array('title' => check_plain($data['term']->description)), $data['query']) .'</span>';
+  $output .= l($image, $url, array('html' => TRUE, 'query' => $query, 'attributes' => array('class' => 'folder', 'title' => check_plain($term->name))));
+  $output .= '<span>'. l($term->name, $url, array('query' => $query, 'attributes' => array('title' => check_plain($term->description)))) .'</span>';
   $output .= '</li>';
   return $output;
 }
@@ -45,17 +52,18 @@ function theme_file_gallery_term($data, $options) {
  * Theme for the file node.
  */
 function theme_file_gallery_node($data, $options) {
+  extract($data, EXTR_SKIP);
   extract($options, EXTR_SKIP);
 
-  $output = '<li class="file-gallery" id="file_'. $data['file']->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= $data['url_preview'] ? '<a'. drupal_attributes(array('href' => $data['url_preview'], 'title' => $data['title'], 'class' => $data['class'], 'rel' => 'file-gallery')) .'>'. $data['thumbnail'] .'</a>' : $data['thumbnail'];
-  $output .= '<span>'. l($data['title_short'], $data['url_open']) .'</span>';
+  $output = '<li class="file-gallery" id="file_'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
+  $output .= !empty($url_preview) ? l($thumbnail, $url_preview['link'], array('html' => TRUE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'rel' => 'file-gallery'))) : $thumbnail;
+  $output .= '<span>'. l($title_short, $url_open['link'], array('attributes' => array('onclick' => $url_open['onclick'], 'title' => $title))) .'</span>';
   if (FILE_GALLERY_SHOW_TYPE) {
-    $output .= '<span>'. file_mime_icon_for($data['file']->type) .' '. file_mime_description_for($data['file']->type) .'</span>';
+    $output .= '<span>'. file_mime_icon_for($file->type) .'&nbsp;'. file_mime_description_for($file->type) .'</span>';
   }
   $output .= '</li>';
 
-  drupal_add_js('$(document).ready(function() { $(\'#file_'. $data['file']->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($data['file']->uri) .'/'. $data['file']->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
+  drupal_add_js('$(document).ready(function() { $(\'#file_'. $file->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   return $output;
 }
 
