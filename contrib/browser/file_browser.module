@@ -77,7 +77,7 @@ function file_browser_menu() {
       'file' => 'file_browser.admin.inc',
     ),
     'file_browser' => array(
-      'title' => 'Browse files',
+      'title' => 'File browser',
       'page callback' => 'file_browser_page',
       'page arguments' => array(1, 2),
       'access arguments' => array('browse files'),
