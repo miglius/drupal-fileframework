@@ -395,7 +395,7 @@ function file_mime_detect($filename) {
   else if (file_exists($filename)) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
-    //$filename = realpath($filename);
+    $filename = realpath($filename);
     $output = exec('file -bi '. escapeshellarg($filename), $ignore, $status);
     if ($status == 0 && preg_match('!([\w-]+/[\w\d_+-]+)!', $output, $matches))
       return $matches[1];

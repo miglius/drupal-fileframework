@@ -55,7 +55,7 @@ function theme_file_admin_handler_settings($form) {
  * Theme for showing previews and generated files.
  */
 function theme_file_show($data) {
-  return !empty($data['preview']) || !empty($data['generated']) ? '<div class="file-show">'. $data['preview'] . ($data['generated'] ? '.....' : '') . $data['generated'] .'</div>'."\n" : '';
+  return !empty($data) ? '<div class="file-show">'. implode('.....', $data) .'</div>'."\n" : '';
 }
 
 /**
