@@ -389,9 +389,6 @@ function file_mime_detect($filename) {
     finfo_close($finfo);
     return $type;
   }
-  else if (function_exists('mime_content_type')) {
-    return mime_content_type($filename);
-  }
   else if (file_exists($filename)) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
