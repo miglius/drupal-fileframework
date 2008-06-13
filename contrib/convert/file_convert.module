@@ -72,6 +72,7 @@ function file_get_mime_converters() {
           foreach ($tos as $to => $converter) {
             if (!is_array($converter['handlers'])) $types[$from][$to]['handlers'] = array();
               $types[$from][$to]['module'] = $module;        
+              $types[$from][$to]['enabled'] = 1;        
           }
         }
         $converters = array_merge_recursive($converters, $types);
@@ -81,9 +82,13 @@ function file_get_mime_converters() {
     foreach ($converters as $from => $tos) {
       foreach ($tos as $to => $converter) {
         if (isset($saved_converters[$from][$to])) {
-          $converters[$from][$to]['pipeline'] = $saved_converters[$from][$to];
+          $converters[$from][$to]['pipeline'] = $saved_converters[$from][$to]['pipeline'];
+          $converters[$from][$to]['enabled'] = $saved_converters[$from][$to]['enabled'];
         }
         $converters[$from][$to]['installed'] = _file_convert_check_pipeline($converters[$from][$to]['pipeline']);
+        if (empty($converters[$from][$to]['installed'])) {
+          $converters[$from][$to]['enabled'] = '';
+        }
       }
     }
   }
@@ -140,7 +145,7 @@ function file_convert($file, $pipeline, $options = array()) {
     }
   }
   if (!$keep_in_file) { unlink($in_file); }
-  watchdog('file_convert', 'File %uri, nid=%nid, vid=%vid was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%nid' => $file-nid, '%vid' => $file->vid, '%pipeline' => $pipeline));
+  watchdog('file_convert', 'File uri=%uri, name=%name was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline));
 
   return $out_file;
 }
@@ -203,7 +208,7 @@ function _file_convert_check_command($command) {
       }
       else {
         // shell command.
-        if (!exec('which '. escapeshellarg($function))) {
+        if (!exec('which '. escapeshellarg($function) .' 2>/dev/null')) {
           return FALSE;
         }
       }

@@ -442,7 +442,7 @@ function file_video_rdf_namespaces() {
 // AUXILIARY FUNCTIONS
 
 /**
- * Renders options for the iarchive display.
+ * Renders options for the video display.
  */
 function _file_video_render_options($uri, $options = array()) {
   $metadata = rdf_normalize(rdf_query($uri));

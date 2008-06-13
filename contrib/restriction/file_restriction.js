@@ -4,7 +4,7 @@
  * Attach handlers to evaluate if the file extension is supported by the web server.
  */
 Drupal.behaviors.file_extension = function(context) {
-  var translate = Drupal.settings.file_extension;
+  var translate = Drupal.settings.file_restriction;
   $("input[@type=file]", context).each(function() {
 
     $(this).parent().after('<div class="file-extension error" style="display: block;">'+ translate.description +'<br />'+ translate.extension_allowed +'</div>');

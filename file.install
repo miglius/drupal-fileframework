@@ -35,6 +35,7 @@ function file_uninstall() {
   variable_del('file_cron');
   variable_del('file_cron_limit_size');
   variable_del('file_mime_autodetection');
+  variable_del('file_mime_autodetection_conditions');
   variable_del('file_mime_registry_path');
   variable_del('file_handlers');
 

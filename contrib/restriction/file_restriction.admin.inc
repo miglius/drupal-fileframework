@@ -25,7 +25,6 @@ function file_restriction_admin_settings() {
     '#type'          => 'textfield',
     '#title'         => t('Allowed file extensions'),
     '#default_value' => FILE_RESTRICTION_EXTENSION_ALLOWED,
-    '#size'          => 100,
     '#maxlength'     => 255,
     '#description'   => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.'),
   );
@@ -69,7 +68,6 @@ function file_restriction_admin_settings() {
       '#type'          => 'textfield',
       '#title'         => t('Allowed file extensions'),
       '#default_value' => $roles_extension_allowed[$rid] ? $roles_extension_allowed[$rid] : FILE_RESTRICTION_EXTENSION_ALLOWED,
-      '#size'          => 100,
       '#maxlength'     => 255,
       '#description'   => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.'),
     );

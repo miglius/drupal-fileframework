@@ -55,35 +55,37 @@ function theme_file_admin_handler_settings($form) {
  * Theme for showing previews and generated files.
  */
 function theme_file_show($data) {
-  return !empty($data) ? '<div class="file-show">'. implode('.....', $data) .'</div>'."\n" : '';
+  return !empty($data) ? '<div class="file-show">'. implode('.....', array_filter($data, create_function('$a', 'return !empty($a);'))) .'</div>'."\n" : '';
 }
 
 /**
  * Theme for previews.
  */
 function theme_file_previews($data) {
-  $previews = array();
-  foreach ($data['previews'] as $preview) {
+  extract($data, EXTR_SKIP);
+
+  $prevs = array();
+  foreach ($previews as $preview) {
     if (!isset($handler_first)) { $handler_first = $preview['handler']; }
-    $previews[] = '<span class="file_preview_toggle" id="'. $preview['handler'] .'_'. $data['id'] .'">'. l($preview['name'], !empty($data['nid']) ? 'node/'. $data['nid'] .'/file_preview/'. $preview['handler'] : '') .'</span>';
+    $prevs[] = '<span class="file_preview_toggle" id="'. $preview['handler'] .'_'. $id .'">'. l($preview['name'], !empty($nid) ? 'node/'. $nid .'/file_preview/'. $preview['handler'] : '') .'</span>';
   }
-  if (!empty($previews)) {
-    $output = '<div class="file-generated" id="file_preview_'. $data['id'] .'">';
-    $output .= t('File') .' '. ($data['name'] ? '"'. check_plain($data['name']) .'" ': '') . t('preview') .': '. implode(' | ', $previews);
-    $output .= !isset($data['nid']) ? '<div id="file_preview_notice_'. $data['id'] .'">'. t(' (works only with a Javascript enabled)') .'</div>' : '';
+  if (!empty($prevs)) {
+    $output = '<div class="file-generated" id="file_preview_'. $id .'">';
+    $output .= t('File') .' '. ($name ? '"'. $name .'" ': '') . t('preview') .': '. implode(' | ', $prevs);
+    $output .= !isset($nid) ? '<div id="file_preview_notice_'. $id .'">'. t(' (works only with a Javascript enabled)') .'</div>' : '';
     $output .= '</div>';
  
-    $output .= '<div id="file_preview_container_'. $data['id'] .'"></div>';
-    if (!isset($data['nid'])) {
-      drupal_add_js('$(document).ready(function() { $(\'#file_preview_notice_'. $data['id'] .'\').hide(); });', 'inline');
+    $output .= '<div id="file_preview_container_'. $id .'"></div>';
+    if (!isset($nid)) {
+      drupal_add_js('$(document).ready(function() { $(\'#file_preview_notice_'. $id .'\').hide(); });', 'inline');
     }
-    drupal_add_js('$(document).ready(function() { $(\'#file_preview_'. $data['id'] .'\').append(\' | <a href="'. base_path() .'" id="file_preview_hide_'. $data['id'] .'" >'. t('hide') .'</a>\'); });', 'inline');
-    drupal_add_js('$(document).ready(function() { $(\'#file_preview_hide_'. $data['id'] .'\').click(function() { $(\'#file_preview_container_'. $data['id'] .'\').html(\'\'); return false; }); });', 'inline');
+    drupal_add_js('$(document).ready(function() { $(\'#file_preview_'. $id .'\').append(\' | <a href="'. base_path() .'" id="file_preview_hide_'. $id .'" >'. t('hide') .'</a>\'); });', 'inline');
+    drupal_add_js('$(document).ready(function() { $(\'#file_preview_hide_'. $id .'\').click(function() { $(\'#file_preview_container_'. $id .'\').html(\'\'); return false; }); });', 'inline');
     if (variable_get('file_handler_autoload', FILE_HANDLER_AUTOLOAD)) {
-      drupal_add_js('$(document).ready(function() { $(\'#'. $handler_first .'_'. $data['id'] .'\').trigger(\'mousedown\'); });', 'inline');
+      drupal_add_js('$(document).ready(function() { $(\'#'. $handler_first .'_'. $id .'\').trigger(\'mousedown\'); });', 'inline');
       /*
-      if (count($previews) == 1) {
-        drupal_add_js('$(document).ready(function() { $(\'#file_preview_'. $data['id'] .'\').hide(); });', 'inline');
+      if (count($prevs) == 1) {
+        drupal_add_js('$(document).ready(function() { $(\'#file_preview_'. $id .'\').hide(); });', 'inline');
       }
       */
     }
@@ -95,21 +97,23 @@ function theme_file_previews($data) {
  * Theme for generated formats.
  */
 function theme_file_generated($data) {
+  extract($data, EXTR_SKIP);
+  
   drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
   $formats = array();
-  foreach ($data['formats'] as $id => $format) {
+  foreach ($formats as $id => $format) {
     if (preg_match('/^file_image_/', $format['handler'])) {
       $handlers = file_get_mime_handlers();
       $description = $handlers[$format['handler']]['name'];
     }
-    $formats[] = '<div id="file_formats_'. $data['id'] .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $data['vid'], 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $data['vid']))) .'</small></div>';
-    drupal_add_js('$(document).ready(function() { $(\'#file_formats_'. $data['id'] .'_'. $id .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $data['nid'] .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
+    $formats[] = '<div id="file_formats_'. $id .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</small></div>';
+    drupal_add_js('$(document).ready(function() { $(\'#file_formats_'. $id .'_'. $id .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   }
   if (!empty($formats)) {
-    $output = '<div class="file-formats" id="file_formats_'. $data['id'] .'">';
-    $output .= ($data['name'] ? t('File') .' "'. $data['name'] .'" '. t('other available formats') : t('Other available formats')) .':<br />';
+    $output = '<div class="file-formats" id="file_formats_'. $id .'">';
+    $output .= ($name ? t('File') .' '. ($name ? '"'. $name .'" ': '') . t('other available formats') : t('Other available formats')) .':<br />';
     $output .= implode('', $formats);
     $output .= '</div>';
   }

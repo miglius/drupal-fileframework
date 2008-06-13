@@ -140,6 +140,14 @@ function file_metadata($uri, $nid) {
     }
   }
 
+  if (is_array($_SESSION['file_cck_files'])) {
+    foreach ($_SESSION['file_cck_files'] as $file) {
+      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
+        $access = TRUE;
+      }
+    }
+  }
+
   if (is_numeric($nid)) {
     $node = node_load($nid);
     if (node_access('view', $node) && $node->type == 'file' && db_result(db_query("SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND (f.uri = '%s' OR f.uri = '%s')", $node->nid, $uri, $parent_uri))) {

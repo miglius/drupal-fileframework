@@ -40,11 +40,11 @@ function file_restriction_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case "file_node_form":
       $restrictions = _file_restriction_get_restrictions();
-      if ($user->uid != 1 && !empty($extensions)) {
+      if ($user->uid != 1 && !empty($restrictions['extension_allowed'])) {
         drupal_add_css(drupal_get_path('module', 'file_restriction') .'/file_restriction.css', 'module');
         drupal_add_js(drupal_get_path('module', 'file_restriction') .'/file_restriction.js', 'module');
         drupal_add_js(array(
-          'file_extension' => array(
+          'file_restriction' => array(
             'extension_allowed' => $restrictions['extension_allowed'],
             'description' => t('The selected file could not be uploaded. Only files with the following extensions are allowed:'))),
           'setting'

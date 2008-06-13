@@ -39,7 +39,7 @@ function file_node_save(&$node, $file) {
 
     // If specified by the administrator, we'll always try and autodetect the
     // MIME type on the server-side for any uploaded files
-    if (FILE_MIME_AUTODETECTION && ($mime = file_mime_detect($file->filepath)) != 'application/octet-stream') {
+    if (FILE_MIME_AUTODETECTION > 0 && ($mime = file_mime_detect($file))) {
       $file->filemime = $mime;
     }
 
@@ -61,7 +61,7 @@ function file_node_save(&$node, $file) {
 
     // Generate and save the preview of the file.
     if (!file_generate_previews($file)) {
-      watchdog('file', 'The preview generation faild for the node with nid=%nid.', array('%nid' => $node->nid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $node->nid));
+      watchdog('file', 'The preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, $node->nid ? l(t('edit'), 'node/'. $node->nid) : '');
     }
   }
 
@@ -90,7 +90,7 @@ function file_data_save(&$file) {
     if (!isset($file->converted)) {
       unlink($file->filepath);
     }
-    watchdog('file', 'The file converted from uri=%uri was not saved because it was empty.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+    watchdog('file', 'The file converted from uri=%uri, name=%name to %mime was not saved because it was empty.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -102,7 +102,7 @@ function file_data_save(&$file) {
   // Move the file to permanent storage, deleting the temporary file.
   $hash = bitcache_put_file(NULL, $file->filepath, $file->converted ? FALSE : TRUE);
   if (!$hash) {
-    watchdog('file', 'The bitcache_put_file() function failed for the file converted from uri=%uri.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+    watchdog('file', 'The bitcache_put_file() function failed for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
     return FALSE;
   }
   $file->uri = bitcache_uri($hash);
@@ -111,7 +111,7 @@ function file_data_save(&$file) {
   if (!$saved = rdf_normalize(rdf_query($file->uri, NULL, NULL))) {
     $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => 'file'))) {
-      watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+      watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
       return FALSE;
     }
   }
@@ -382,24 +382,43 @@ function file_mime_guess($filename) {
  * @return
  *   A MIME type of the file. 
  */
-function file_mime_detect($filename) {
+function file_mime_detect($file) {
+  if (FILE_MIME_AUTODETECTION == 2) {
+    $mimes = $exts = array();
+    foreach (explode("\n", FILE_MIME_AUTODETECTION_CONDITIONS) as $line) {
+      $line = trim($line);
+      if (!empty($line)) {
+        if (preg_match('/\//', $line)) {
+          $mimes[] = $line;
+        }
+        else {
+          $exts[] = $line;
+        }
+      }
+    }
+    $ext = preg_replace('/^.*\.([^\.]+)$/', '$1', strtolower($file->filename));
+    if (!in_array($ext, $exts) && !in_array($file->filemime, $mimes)) {
+      return FALSE;
+    }
+  }
+
   if (extension_loaded('fileinfo') && ($finfo = finfo_open(FILEINFO_MIME))) {
     // Use 'fileinfo' php extension
-    $type = finfo_file($finfo, $filename);
+    $type = finfo_file($finfo, $file->filepath);
     finfo_close($finfo);
     return $type;
   }
-  else if (file_exists($filename)) {
+  else if (file_exists($file->filepath)) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
-    $filename = realpath($filename);
-    $output = exec('file -bi '. escapeshellarg($filename), $ignore, $status);
+    $filename = realpath($file->filepath);
+    $output = exec('file -bi '. escapeshellarg($file->filepath), $ignore, $status);
     if ($status == 0 && preg_match('!([\w-]+/[\w\d_+-]+)!', $output, $matches))
       return $matches[1];
   }
 
   // Default MIME type if the file extension is not registerd.
-  return 'application/octet-stream';
+  return $file->filemime;
 }
 
 /**
@@ -633,7 +652,7 @@ function file_generate_previews($file, $cron = NULL) {
           // Check if we already have a preview generated and the handler is enabled.
           $converter['handlers'] = array_intersect($handlers_enabled, array_diff($converter['handlers'], is_array($previews[$to]) ? $previews[$to] : array()));
         }
-        if ($converter['installed']) {
+        if ($converter['enabled']) {
 	  // Need to generate a preview if there is no converted
 	  // file of the targer MIME or if we have not used MIME 
 	  // handler of the target MIME.
@@ -682,7 +701,7 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
     $mime_converters = file_get_mime_converters();
     $converter = $mime_converters[$file->filemime][$mime_to];
     if (is_array($converter)) {
-      if ($converter['installed'] && in_array($handler, $converter['handlers'])) {
+      if ($converter['enabled'] && in_array($handler, $converter['handlers'])) {
         // Convert the file.
         if (!$converted = file_convert($file, $converter['pipeline'])) {
           watchdog($module, 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
@@ -804,7 +823,7 @@ function file_render_generated($file, $id = 0) {
       $formats[] = $data;
     }
   }
-  return theme('file_generated', array('formats' => $formats, 'nid' => $file->nid, 'vid' => $file->vid, 'name' => $file->name, 'id' => $id));
+  return theme('file_generated', array('formats' => $formats, 'nid' => $file->nid, 'vid' => $file->vid, 'name' => check_plain($file->name), 'id' => $id));
 }
 
 /**
@@ -829,7 +848,7 @@ function file_render_previews($file, $id = 0) {
     }
   }
   
-  return theme('file_previews', array('previews' => $previews, 'nid' => $file->nid, 'name' => $file->name, 'id' => $id));
+  return theme('file_previews', array('previews' => $previews, 'nid' => $file->nid, 'name' => check_plain($file->name), 'id' => $id));
 }
 
 /**
@@ -1017,6 +1036,15 @@ function file_bitcache_access($id, $vid) {
   // Allow view file attachments.
   if (is_array($_SESSION['file_attach_files'])) {
     foreach ($_SESSION['file_attach_files'] as $file) {
+      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
+        return (object)array('title' => $file->name);
+      }
+    }
+  }
+  
+  // Allow view cck files.
+  if (is_array($_SESSION['file_cck_files'])) {
+    foreach ($_SESSION['file_cck_files'] as $file) {
       if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
         return (object)array('title' => $file->name);
       }

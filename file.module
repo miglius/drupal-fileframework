@@ -8,15 +8,16 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_SHOW_PREVIEWS',      variable_get('file_show_previews', 1));
-define('FILE_HANDLER_AUTOLOAD',   variable_get('file_handler_autoload', 1));
-define('FILE_SHOW_GENERATED',     variable_get('file_show_generated', 1));
-define('FILE_CRON',               variable_get('file_cron', 1));
-define('FILE_CRON_LIMIT_SIZE',    (int)variable_get('file_cron_limit_size', 512));
-define('FILE_MIME_AUTODETECTION', variable_get('file_mime_autodetection', 0));
-define('FILE_MIME_REGISTRY_PATH', variable_get('file_mime_registry_path', ''));
+define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 1));
+define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
+define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
+define('FILE_CRON',                          variable_get('file_cron', 1));
+define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_size', 512));
+define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetection', 0));
+define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetection_conditions', 'application/octet-stream'));
+define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_path', ''));
 
-define('FILE_HASH_SIZE',          variable_get('file_hash_size', 40));
+define('FILE_HASH_SIZE',                     variable_get('file_hash_size', 40));
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -362,12 +363,12 @@ function file_node_form(&$node, $form_state) {
   // The uploaded file is saved to the system and session is set on the file preview rendering.
   $file = is_object($_SESSION['file_preview_file']) ? $_SESSION['file_preview_file'] : NULL;
   if ($file || !empty($node->file->uri)) {
-    $form['file']['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => $file ? $file->name : $node->title));
+    $form['file']['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => check_plain($file ? $file->name : $node->title)));
   }
 
   if ($type->has_title) {
     $form['title'] = array('#type' => 'textfield', '#title' => check_plain($type->title_label), '#required' => TRUE, '#default_value' => $node->title, '#weight' => -5);
-    $form['title']['#required'] = FALSE; // will default to file name
+    $form['title']['#required'] = TRUE; // will default to file name
   }
 
   if ($type->has_body) {

@@ -86,7 +86,7 @@ function file_slideshow_mime_converters() {
   return array(
     'application/postscript' => array(
       'text/plain' => array(
-        'pipeline' => '{pstotext} [in_file] [out_file]',
+        'pipeline' => '{pstotext} -output [out_file] [in_file]',
         'handlers' => array('file_text_text'),
       ),
     ),

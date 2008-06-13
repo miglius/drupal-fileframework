@@ -58,9 +58,16 @@ function file_admin_settings() {
   $form['mime']['file_mime_autodetection'] = array(
     '#type'          => 'radios',
     '#title'         => t('Server-side MIME type autodetection after upload'),
-    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
+    '#options'       => array(t('Disabled'), t('Enabled'), t('Conditional')),
     '#default_value' => FILE_MIME_AUTODETECTION,
     '#description'   => t('Whether to always attempt MIME type autodetection on the server side for any uploaded files, regardless of whether the client supplied MIME type information or not. Your choice here depends on how well-setup your server is for proper MIME detection and how much you trust your users\' web browsers to report correct MIME types. Unless you are very sure of what you are doing, you are advised to leave this disabled, which corresponds with Drupal\'s default behavior.'),
+  );
+  $form['mime']['file_mime_autodetection_conditions'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('MIME autodetection conditions'),
+    '#default_value' => FILE_MIME_AUTODETECTION_CONDITIONS,
+    '#rows'          => 3,
+    '#description'   => t('If "Server-side MIME type autodetection after upload" is set to "Conditional", please specify for which uploaded files MIME types or file extensions the autodetection should be performed on the server side. One MIME type or file extension without leading dot per line.'),
   );
   $form['mime']['file_mime_registry_path'] = array(
     '#type'          => 'textfield',
@@ -110,6 +117,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_cron', $form_state['values']['file_cron']);
       variable_set('file_cron_limit_size', $form_state['values']['file_cron_limit_size']);
       variable_set('file_mime_autodetection', $form_state['values']['file_mime_autodetection']);
+      variable_set('file_mime_autodetection_conditions', $form_state['values']['file_mime_autodetection_conditions']);
       variable_set('file_mime_registry_path', $form_state['values']['file_mime_registry_path']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
@@ -120,6 +128,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_cron');
       variable_del('file_cron_limit_size');
       variable_del('file_mime_autodetection');
+      variable_del('file_mime_autodetection_conditions');
       variable_del('file_mime_registry_path');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;

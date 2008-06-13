@@ -4,6 +4,5 @@ description = Allows uploading files as a standalone content type and provides a
 package = File management
 dependencies[] = bitcache
 dependencies[] = rdf
-dependencies[] = rdf_db
 core = 6.x
 php = 5.2

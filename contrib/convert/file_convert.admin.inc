@@ -86,13 +86,20 @@ function file_convert_admin_converter_settings() {
   foreach ($mime_converters as $from => $targets) {
     ksort($targets);
     foreach ($targets as $to => $converter) {
-      $form['convert']['convert_'. $from][$to]['file_convert_'. preg_replace('/\./', '\\', $from) .'_'. preg_replace('/\./', '\\', $to)] = array(
+      $name = 'file_convert_'. preg_replace('/\./', '\\', $from) .'_'. preg_replace('/\./', '\\', $to);
+      $form['convert']['convert_'. $from][$to][$name .'_pipeline'] = array(
         '#type' => 'textfield',
+        '#name' => $name .'_pipeline',
         '#default_value' => $converter['pipeline'],
         '#size' => 40,
         '#maxlength' => 1024,
       );
       $form['convert']['convert_'. $from][$to]['#check'] = $converter['installed'] ? t('Yes') : t('No');
+      $form['convert']['convert_'. $from][$to][$name .'_enabled'] = array(
+        '#type' => 'checkbox',
+        '#name' => $name .'_enabled',
+        '#default_value' => $converter['enabled'],
+      );
       $form['convert']['convert_'. $from][$to]['#module'] = $converter['module'];
     }
   }
@@ -129,9 +136,10 @@ function file_convert_admin_converter_settings_submit($form, &$form_state) {
     case "Save configuration":
       $pipelines = array();
       foreach ($form_state['values'] as $key => $val) {
-        if (preg_match('/^file_convert_/', $key)) {
-          list($from, $to) = explode('_', preg_replace('/^file_convert_/', '', $key));
-          $pipelines[preg_replace('/\\\\/', '.', $from)][preg_replace('/\\\\/', '.', $to)] = $val;
+        if (preg_match('/^file_convert_.*_pipeline$/', $key)) {
+          list($from, $to) = explode('_', preg_replace(array('/^file_convert_/', '/_pipeline$/'), array('', ''), $key));
+          $enabled = !empty($form_state['values']['file_convert_'. $from .'_'. $to .'_enabled']) ? 1 : 0;
+          $pipelines[preg_replace('/\\\\/', '.', $from)][preg_replace('/\\\\/', '.', $to)] = array('pipeline' => $val, 'enabled' => $enabled);
         }
       }
       variable_set('file_convert_pipelines', $pipelines);
