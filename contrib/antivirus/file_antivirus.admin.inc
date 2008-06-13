@@ -46,7 +46,6 @@ function file_antivirus_admin_settings() {
     '#type'          => 'textfield',
     '#title'         => t('\'clamav-daemon\' host'),
     '#default_value' => FILE_ANTIVIRUS_CLAMAV_HOST,
-    '#size'          => 50,
     '#maxlength'     => 255,
     '#description'   => t('A hostname \'clamav-daemon\' is running on. For most cases it will run on the same machine as a webserver.'),
   );
@@ -69,7 +68,6 @@ function file_antivirus_admin_settings() {
     '#type'          => 'textfield',
     '#title'         => t('A path to the scanning utility \'clamscan\''),
     '#default_value' => FILE_ANTIVIRUS_CLAMAV_PATH,
-    '#size'          => 100,
     '#maxlength'     => 255,
     '#description'   => t('Full path to the \'clamscan\' utility.') .' '. $message,
   );
