@@ -1,0 +1,43 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * File cck module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE INSTALLATION/UNINSTALLATION
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_cck_enable() {
+  content_notify('enable', 'file_cck');
+  //drupal_set_message(t('File cck module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file/cck'))));
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function file_cck_disable() {
+  content_notify('disable', 'file_cck');
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_cck_install() {
+  content_notify('install', 'file_cck');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_cck_uninstall() {
+  content_notify('uninstall', 'file_cck');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE MIGRATIONS
+

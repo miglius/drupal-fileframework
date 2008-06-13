@@ -1,0 +1,495 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Integrates file operations with the CCK module.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// CORE API HOOKS
+
+/**
+ * Implementation of hook_theme().
+ */
+function file_cck_theme() {
+  return array(
+    'file_cck_file' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'file_cck_formatter_default' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview_formats' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview_links' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview_formats_links' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_name' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_icon_name' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_name_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_icon_name_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_name_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_icon_name_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_thumbnail' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_thumbnail_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_thumbnail_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+  );
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function file_cck_nodeapi(&$node, $op, $a3, $a4) {
+  switch ($op) {
+    case 'prepare':
+      // The session variable is cleared from the unsaved file uploads..
+      unset($_SESSION['file_cck_files']);
+      break;
+    case 'insert':
+    case 'update':
+      if ($node->type != 'file') {
+        // Executing sqls to update cck fields.
+        _file_cck_sql();
+        unset($_SESSION['file_cck_files']);
+      }
+      break;
+    case 'view':
+      $type = content_types($node->type);
+      foreach ($type['fields'] as $field => $data) {
+        if ($data['type'] == 'file_cck' && is_array($node->$field)) {
+          $db_info = content_database_info($data);
+          $multiple = count($node->$field) > 1 ? TRUE : FALSE;
+          foreach ($node->$field as $delta => $data) {
+            $file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta];
+            if (is_object($file)) {
+              $node->content[$field]['items'][$delta]['#item']['value'] = 's_'. $field .'_'. $delta;
+            }
+            else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), $node->vid))) {
+              $node->content[$field]['items'][$delta]['#item']['value'] = $nid;
+            }
+          }
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function file_cck_form_alter(&$form, $form_state, $form_id) {
+  if (isset($form['type']) && isset($form['#node'])) {
+    // Node form.
+
+    // If the file is already uploaded, the corresponding message
+    // is set next to the file upload field.
+    if ($form['type']['#value'] .'_node_form' == $form_id) {
+      $node = $form['#node'];
+      $type = content_types($node->type);
+      foreach ($type['fields'] as $field => $data) {
+        if ($data['type'] == 'file_cck') {
+          $db_info = content_database_info($data);
+          foreach ($form[$field] as $delta => $field_data) {
+            if (!is_array($field_data)) continue;
+            $title = NULL;
+            $file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta];
+            if (is_object($file)) {
+              $title = $file->name;
+            }
+            else if ($node->vid && $nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. (!empty($data['multiple']) ? ' AND delta = '. $delta : ''), $node->vid))) {
+              $node_file = node_load($nid);
+              $title = $node_file->title;
+            }
+            if (isset($title)) {
+              $form[$field][$delta]['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => $title));
+            }
+
+            // Reseting #required flag, since it does not allow uploading files.
+            // Will check if the file is uploaded in the validate hook.
+            $form[$field][$delta]['#required'] = '';
+          }
+        }
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// CCK API HOOKS
+
+/**
+ * Implementation of hook_field_info().
+ */
+function file_cck_field_info() {
+  return array(
+    'file_cck' => array(
+      'label' => t('File'),
+      'description' => t('Store file in the database.'),
+      'callbacks' => array(
+        'tables' => CONTENT_CALLBACK_DEFAULT,
+        'arguments' => CONTENT_CALLBACK_DEFAULT,
+        ),
+      ),
+    );
+}
+
+/**
+ * Implementation of hook_field_settings(). 
+ */
+function file_cck_field_settings($op, $field) {
+  switch ($op) {
+    case 'database columns':
+      if ($field['type'] == 'file_cck') {
+        return array(
+          'value' => array('type' => 'int', 'not null' => FALSE, 'sortable' => TRUE),
+        );
+      }
+      break;
+    case 'views data':
+      $data = content_views_field_views_data($field);        
+      return $data;
+  }
+}
+
+/**
+ * Implementation of hook_field().
+ */
+function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
+  switch ($op) {
+    case 'validate':
+      $db_info = content_database_info($field);
+      $order = is_array($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
+      $multiple = count($order) > 1 ? TRUE : FALSE;
+      $delta = 0;
+      foreach ($order as $o) {
+        if ($upload = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array($field['widget']['extensions_allowed']))))) {
+          $node_file = (object)array('nosave' => TRUE);
+          if (!file_node_save($node_file, $upload)) {
+            drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
+          }
+          else {
+            $fid = 's_'. $field['field_name'] .'_'. $delta;
+            $node_file->file->sid = $fid;
+            $_SESSION['file_cck_files'][$fid] = $node_file->file;
+          }
+        }
+        else if ($delta == 0 && $field['required'] == 1 && !is_object($_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $delta])) {
+          if (!db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+            form_set_error($field['field_name'] .']['. $delta .'][value', t('field is required.'), 'error');
+          }
+        }
+        $delta++;
+      }
+      break;
+    case 'insert':
+    case 'update':
+      $db_info = content_database_info($field);
+      $order = is_array($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
+      $multiple = count($order) > 1 ? TRUE : FALSE;
+      $delta = 0;
+      foreach ($order as $o) {
+        $nid = NULL;
+        if (($file = file_save_upload($field['field_name'] .'_'. $o, file_get_validators())) || ($file = $_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o])) {
+          $node_new = file_node_create(array('file' => $file));
+          $nid = $node_new->nid;
+        }
+        else {
+          $nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid));
+        }
+        if (isset($nid)) {
+          // I cannot modify field entry here since cck module resets the changes made to the fields.
+	  // Therefore I create a updates queue which is executed from the hook_nodeapi().
+          _file_cck_sql('UPDATE {'. $db_info['table'] .'} SET '. $db_info['columns']['value']['column'] .' = %d WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), array($nid, $node->vid));
+        }
+        $delta++;
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_content_is_empty().
+ */
+function file_cck_content_is_empty($item, $field) {
+  if (empty($item['value'])) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function file_cck_field_formatter_info() {
+  return array(
+    'default' => array('label' => t('first handler'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview' => array('label' => t('preview'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview_formats' => array('label' => t('preview and other formats'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview_links' => array('label' => t('preview and links'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview_formats_links' => array('label' => t('preview, other formats and links'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'name' => array('label' => t('name'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'icon_name' => array('label' => t('icon, name'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'name_open' => array('label' => t('name with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'icon_name_open' => array('label' => t('icon, name with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'name_download' => array('label' => t('name with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'icon_name_download' => array('label' => t('icon, name with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'thumbnail' => array('label' => t('thumbnail'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'thumbnail_open' => array('label' => t('thumbnail with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'thumbnail_download' => array('label' => t('thumbnail with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+  );
+}
+
+/**
+ * Proxy theme function for file_cck field formatters
+ */
+function theme_file_cck_formatter_generic($element) {
+  $fid = $element['#item']['value'];
+
+  if (preg_match('/^s_/', $fid)) {
+    $file = $_SESSION['file_cck_files'][$fid];
+    $node = (object)array('file' => $file);
+    $id = preg_replace('/^s_/', '', $fid);
+  }
+  else if (is_numeric($fid)) {
+    $node = node_load($fid);
+    $file = $node->file;
+    if (!is_object($file) || !node_access('view', $node)) 
+      return '';
+
+    $file->name = $node->title;
+    $id = $fid;
+  }
+  else {
+    return '';
+  }
+
+  switch ($element['#formatter']) {
+    case 'preview':
+      $data = array(
+        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+      );
+      return theme('file_show', $data);
+      break;
+    case 'preview_formats':
+      $data = array(
+        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+        'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files_'. $id) : '',
+      );
+      return theme('file_show', $data);
+      break;
+    case 'preview_links':
+      $data = array(
+        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+        'links' => file_cck_render_links($file, 'files_'. $id),
+      );
+      return theme('file_show', $data);
+      break;
+    case 'preview_formats_links':
+      $data = array(
+        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+        'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files_'. $id) : '',
+        'links' => file_cck_render_links($file, 'files_'. $id),
+      );
+      return theme('file_show', $data);
+      break;
+    case 'name':
+      return check_plain($file->name);
+      break;
+    case 'icon_name':
+      return file_mime_icon_for($file->type) .' '. check_plain($file->name);
+      break;
+    case 'name_open':
+      return !empty($file->nid) ? l($file->name, 'node/'. $file->nid) : check_plain($file->name);
+      break;
+    case 'icon_name_open':
+      return file_mime_icon_for($file->type) .' '. (!empty($file->nid) ? l($file->name, 'node/'. $file->nid) : check_plain($file->name));
+      break;
+    case 'name_download':
+      return !empty($file->nid) ? l($file->name, 'file/'. $file->nid .'/download/'. $file->vid) : check_plain($file->name);
+      break;
+    case 'icon_name_download':
+      return file_mime_icon_for($file->type) .' '. (!empty($file->nid) ? l($file->name, 'file/'. $file->nid .'/download/'. $file->vid) : check_plain($file->name));
+      break;
+    case 'thumbnail':
+      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      return $thumbnail ? $thumbnail : t('no thumbnail');
+      break;
+    case 'thumbnail_open':
+      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
+      return !empty($file->nid) ? l($thumbnail, 'node/'. $file->nid, array('html' => TRUE)) : $thumbnail;
+      break;
+    case 'thumbnail_download':
+      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
+      return !empty($file->nid) ? l($thumbnail, 'file/'. $file->nid .'/download/'. $file->vid, array('html' => TRUE)) : $thumbnail;
+      break;
+    case 'default':
+    default:
+      $file_handlers = file_handlers_for($file);
+      foreach (file_get_mime_handlers() as $handler => $data) {
+        if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render')) {
+          break;
+        }
+      }
+      return $handler ? file_wrapper_html($node, $handler) : '';
+      break;
+  }
+}
+
+/**
+ * Returns the file links section.
+ *
+ * @param $file
+ *   A file object as returned from file_node_load().
+ * @param $id
+ *   ID of the preview in case there are several previews on the same page.
+ *
+ * @return
+ *   The HTML section of the file formats.
+ */
+function file_cck_render_links($file, $id = 0) {
+  if (empty($file->nid)) 
+    return '';
+
+  $output = '<div class="file-links" id="file_formats_'. $id .'">';
+  $links = array(
+    l('open', 'node/'. $file->nid),
+    l('view', 'file/'. $file->nid .'/view/'. $file->vid),
+    l('download', 'file/'. $file->nid .'/download/'. $file->vid),
+  );
+  $output .= t('File') .' '. ($file->name ? '"'. check_plain($file->name) .'" ': '') . t('options') .': '. implode(' | ', $links);
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function file_cck_widget_info() {
+  return array(
+    'file_cck_file' => array(
+      'label' => t('File'),
+      'field types' => array('file_cck'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array(
+        'default value' => CONTENT_CALLBACK_DEFAULT,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ */
+function file_cck_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  $element = array(
+    '#type' => $field['widget']['type'],
+    '#default_value' => isset($items[$delta]) ? $items[$delta] : '',
+  );
+  return $element;
+}
+
+/**
+ * Implementation of hook_widget_settings().
+ */
+function file_cck_widget_settings($op, $widget) {
+  switch ($op) {
+    case 'form':
+      $form = array();
+      $form['extensions_allowed'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Allowed file extensions'),
+        '#default_value' => isset($widget['extensions_allowed']) ? $widget['extensions_allowed'] : '',
+        '#description' => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.') . (module_exists('file_restriction') ? ' '. l(t('Restrictions'), 'admin/settings/file/restriction') . t(' module\'s extension restrictions are also applied.') : ''),
+      );
+      return $form;
+    case 'validate':
+      break;
+    case 'save':
+      return array('extensions_allowed');
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// FAPI HOOKS
+
+/**
+ * Implementation of FAPI hook_elements().
+ */
+function file_cck_elements() {
+  return array(
+    'file_cck_file' => array(
+      '#input' => TRUE,
+      '#columns' => array('value'), '#delta' => 0,
+      '#process' => array('file_cck_file_process'),
+    ),
+  );
+}
+
+/**
+ * FAPI theme for an individual text elements.
+ */
+function theme_file_cck_file($element) {
+  return $element['#children'];
+}
+
+/**
+ * Process an individual element.
+ */
+function file_cck_file_process($element, $edit, $form_state, $form) {
+  $field = $form['#field_info'][$element['#field_name']];
+  $field_key = $element['#columns'][0];
+  $delta = $element['#delta'];
+  $element[$field_key] = array(
+    '#name' => 'files['. preg_replace('/\[(\d+)/', '_$1', $element['#name']),
+    '#type' => 'file',
+    '#title' => $element['#title'],
+    '#description' => $element['#description'],
+    '#required' => $element['#required'],
+    '#default_value' => NULL,
+  );
+  return $element;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// AUXILIARY FUNCTIONS
+
+/**
+ * Since hook_field() does not allow changing of the field value and 
+ * direct writes to the database are overwritten in the content.module,
+ * here we accumulate the field change sqls which are executted later.
+ *
+ * @param $sql
+ *   SQL statement to be executed after hook_field() is over.
+ * @param $args
+ *   An array of arguments to be passed to the sql.
+ */
+function _file_cck_sql($sql = NULL, $args = array()) {
+  static $sqls = array();
+  if (!empty($sql)) {
+    $sqls[] = array('sql' => $sql, 'args' => $args);
+  }
+  else {
+    foreach ($sqls as $sql) {
+      db_query($sql['sql'], $sql['args']);
+    }
+    $sqls = array();
+  }
+}
+
+/**
+ * Since hook_field() does not allow changing of the field value and 
+ * direct writes to the database are overwritten in the content.module,
+ * here we accumulate the field change sqls which are executted later.
+ *
+ * @param $file
+ *   A file object.
+ * @param $extensions
+ *   A space separated list of allowed extensions.
+ *
+ * @return
+ *   An array with an error messages.
+ */
+function file_cck_upload_validate($file, $extensions = '') {
+  return !empty($extensions) ? file_validate_extensions($file, $extensions) : array();
+}
+
