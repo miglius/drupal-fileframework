@@ -474,7 +474,7 @@ function _file_video_render_options($uri, $options = array()) {
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   // Thumbnail
-  $source = $metadata[$uri][rdf_qname_to_uri('dc:source')][0]->value;
+  $source = $metadata[$uri][rdf_qname_to_uri('dc:source')][0];
   $derivatives = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), isset($source) ? $source : $uri));
   foreach ($derivatives as $derivative => $data) {
     $result = rdf_normalize(rdf_query($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image'));
@@ -485,7 +485,7 @@ function _file_video_render_options($uri, $options = array()) {
   }
 
   $options = array_merge(array('class' => 'file-video'), $options);
-  $options = array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'vid', 'title', 'image'));
+  $options = array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title', 'image'));
   return $options;
 }
 

@@ -35,6 +35,15 @@ function file_text_admin_settings() {
     '#maxlength'     => 255,
     '#description'   => t('The string that will be displayed at the end of the text preview to indicate that the preview is not a complete text file.'),
   );
+  
+  // Code preview settings
+  $form['code'] = array('#type' => 'fieldset', '#title' => t('Code preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['code']['file_text_code'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Enable <a href="http://www.palfrader.org/code2html" title="Code2HTML">Code2HTML</a> syntax highlighted HTML preview'),
+    '#default_value' => FILE_TEXT_CODE,
+    '#description'   => t('Check this box if you want a syntax highlighted HTML previews to be created for the "text/plain" MIME files. The "code2html" utility should be in the system\'s path.'),
+  );
 
   $form['submit'] = array(
     '#type'  => 'submit',
@@ -59,6 +68,11 @@ function file_text_admin_settings_validate($form, &$form_state) {
       if (!ctype_digit($preview_lines)) {
         form_set_error('file_text_preview_lines', t('Invalid value %value specified for the number of lines.', array('%value' => $preview_lines)));
       }
+      $code = $form_state['values']['file_text_code'];
+      $code2html = exec('which code2html 2>/dev/null');
+      if (!empty($code) && !$code2html) {
+        form_set_error('file_text_code', t('Code2HTML cannot be enabled because code2html utility is not found in the system path.'));
+      }
       break;
   }
 }
@@ -72,11 +86,13 @@ function file_text_admin_settings_submit($form, &$form_state) {
     case "Save configuration":
       variable_set('file_text_preview_lines', $form_state['values']['file_text_preview_lines']);
       variable_set('file_text_preview_string', $form_state['values']['file_text_preview_string']);
+      variable_set('file_text_code', $form_state['values']['file_text_code']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case "Reset to defaults":
       variable_del('file_text_preview_lines');
       variable_del('file_text_preview_string');
+      variable_del('file_text_code');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

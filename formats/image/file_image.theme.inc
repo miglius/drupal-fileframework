@@ -32,8 +32,8 @@ function theme_file_image_admin_settings($form) {
  * Theme for image rendering.
  */
 function theme_file_image_image_render($options = array()) {
-
   extract($options, EXTR_SKIP);
+  
   if (is_null($container) || !empty($container)) {  
     $output = '<span class="file-image" style="display: block; margin: 0px; padding: 0px;';
     $output .= $width ? ' width: '. min($width, $max_width) .'px;' : '';

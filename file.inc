@@ -71,6 +71,9 @@ function file_node_save(&$node, $file) {
     return drupal_write_record('file_nodes', $node->file, empty($node->is_new) && empty($node->revision) ? array('nid', 'vid') : array());
   }
   else {
+    global $user;
+    $file_tmp = (object)array('uid' => $user->uid, 'uri' => $file->parent ? $file->parent : $file->uri, 'created' => time());
+    return drupal_write_record('file_nodes_tmp', $file_tmp);
     return TRUE;
   }
 }
@@ -610,10 +613,10 @@ function file_generate_previews($file, $cron = NULL) {
             watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
           }
         }
-        if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]->value) {
+        if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]) {
           // Preview is already generated.
 	  // All derived files should have a MIME type set.
-          $previews[$mime][] = $item[$uri][rdf_qname_to_uri('dc:creator')][0]->value;
+          $previews[$mime][] = $item[$uri][rdf_qname_to_uri('dc:creator')][0];
         }
       }
     }
@@ -745,10 +748,10 @@ function file_handlers_for($file) {
     if ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
       foreach ($generated as $uri => $data) {
         $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        if ($handler = $item[$uri][rdf_qname_to_uri('dc:creator')][0]->value) {
+        if ($handler = $item[$uri][rdf_qname_to_uri('dc:creator')][0]) {
           $result[$handler] = array(
             'uri' => $uri,
-            'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0]->value,
+            'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
             'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
           );
         }
@@ -782,17 +785,15 @@ function file_handlers_for($file) {
  */
 function file_generated_for($file) {
   $result = array();
-
   // Find generated previews for the file.
-  $previews = array();
   if (!empty($file->uri)) {
     if ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
       foreach ($generated as $uri => $data) {
         $item = rdf_normalize(rdf_query($uri, NULL, NULL));
         $result[$uri] = array(
-          'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0]->value,
+          'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
           'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
-          'handler' => $item[$uri][rdf_qname_to_uri('dc:creator')][0]->value,
+          'handler' => $item[$uri][rdf_qname_to_uri('dc:creator')][0],
         );
       }
     }
@@ -823,6 +824,7 @@ function file_render_generated($file, $id = 0) {
       $formats[] = $data;
     }
   }
+
   return theme('file_generated', array('formats' => $formats, 'nid' => $file->nid, 'vid' => $file->vid, 'name' => check_plain($file->name), 'id' => $id));
 }
 
@@ -968,7 +970,7 @@ function file_bitcache($op, $id, $stream = NULL) {
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
       $rdf = rdf_normalize(rdf_query('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL));
-      $extensions = file_mime_extensions_for($rdf['bitcache://'. $id][rdf_qname_to_uri('dc:format')][0]->value);
+      $extensions = file_mime_extensions_for($rdf['bitcache://'. $id][rdf_qname_to_uri('dc:format')][0]);
       foreach ($extensions as $extension) {
         if (preg_match('/\.'. $extension .'$/', strtolower($node->title))) {
           $extension_correct = TRUE;
@@ -1012,7 +1014,7 @@ function file_get_hash(&$file) {
 function file_bitcache_access($id, $vid) {
   $uri = 'bitcache://'. $id;
   $parent = rdf_normalize(rdf_query('bitcache://'. $id, rdf_qname_to_uri('dc:source'), NULL));
-  $parent_uri = !empty($parent) ? $parent['bitcache://'. $id][rdf_qname_to_uri('dc:source')][0]->value : '';
+  $parent_uri = !empty($parent) ? $parent['bitcache://'. $id][rdf_qname_to_uri('dc:source')][0] : '';
   
   if (isset($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
@@ -1148,7 +1150,7 @@ function file_get_image($file, $handler, $dimensions) {
   if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
     foreach ($generated as $uri => $data) {
       $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0]->value == $handler) {
+      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0] == $handler) {
         // We gave a generated image.
         $image = file_get_hash($uri);
         $width = $item[$uri][rdf_qname_to_uri('exif:width')][0]->value;

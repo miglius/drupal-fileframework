@@ -24,6 +24,9 @@ function file_audio_xspf($nid, $vid, $hash) {
     if (!node_access('view', $node))
       exit;
   }
+  else {
+    exit;
+  }
   
   $file = $node->file;
   $uri = 'bitcache://'. $hash;

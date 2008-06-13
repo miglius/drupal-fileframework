@@ -10,6 +10,7 @@
 
 define('FILE_TEXT_PREVIEW_LINES',  variable_get('file_text_preview_lines', '0'));
 define('FILE_TEXT_PREVIEW_STRING', variable_get('file_text_preview_string', '<----- End of Preview ----->'));
+define('FILE_TEXT_CODE',           variable_get('file_text_code', 0));
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -20,6 +21,10 @@ define('FILE_TEXT_PREVIEW_STRING', variable_get('file_text_preview_string', '<--
 function file_text_theme() {
   return array(
     'file_text_text_render' => array(
+      'arguments' => array('uri', 'options'),
+      'file' => 'file_text.theme.inc'
+    ),
+    'file_text_code_render' => array(
       'arguments' => array('uri', 'options'),
       'file' => 'file_text.theme.inc'
     ),
@@ -55,6 +60,11 @@ function file_text_mime_handlers() {
       'dimensions' => '580x350',
       'weight' => 1,
     ),
+    'file_text_code' => array(
+      'name' => t('Code'),
+      'dimensions' => '590x360',
+      'weight' => 2,
+    ),
   );
 }
 
@@ -70,6 +80,7 @@ function file_text_mime_types() {
     ),
     'text/html' => array(
       'name' => t('HTML document'),
+      'handlers' => array('file_text_txt'),
     ),
     'text/css' => array(
       'name' => t('CSS stylesheet'),
@@ -91,12 +102,22 @@ function file_text_mime_types() {
     ),
     'application/xslt+xml' => array(
       'name' => t('XSLT document'),
+      'handlers' => array('file_text_txt'),
     ),
     'application/xhtml+xml' => array(
       'name' => t('XHTML document'),
+      'handlers' => array('file_text_txt'),
     ),
     'text/csv' => array(
       'name' => t('CSV text document'),
+      'handlers' => array('file_text_text'),
+    ),
+    'text/x-c++' => array(
+      'name' => t('C++ document'),
+      'handlers' => array('file_text_text'),
+    ),
+    'text/x-c++src' => array(
+      'name' => t('C++ document'),
       'handlers' => array('file_text_text'),
     ),
   );
@@ -168,6 +189,32 @@ function file_text_text_generate($file) {
 
     watchdog('file_text', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   }
+  else if (FILE_TEXT_CODE) {
+    if (module_exists('file_convert') && !$file->noconvert) {
+      // Convert the file.
+      if (!$converted = file_convert($file, "{code2html} --fallback ruby [in_file] [out_file]")) {
+         watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+      }
+
+      // Extract metadata.
+      $metadata = file_metadata_extract($converted, $file->filemime);
+
+      $file->filepath = $converted;
+
+      if ($converted) {
+        $file->metadata = array_merge(array(
+          'dc:creator' => array('file_text_code'),
+        ), $metadata);
+
+        // Save preview to the bitcache and RDF.
+        if (!file_data_save($file)) {
+          return FALSE;
+        }
+    
+        watchdog('file_text', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => 'file_text_code', '%uri' => $file->uri));
+      }
+    }
+  }
   return TRUE;
 }
 
@@ -177,6 +224,14 @@ function file_text_text_generate($file) {
 function file_text_text_render($uri, $options = array()) {
   $options = array_merge($options, _file_text_render_options($uri, $options));
   return theme('file_text_text_render', $options);
+}
+
+/**
+ * Implements a code text handler.
+ */
+function file_text_code_render($uri, $options = array()) {
+  $options = array_merge($options, _file_text_render_options($uri, $options));
+  return theme('file_text_code_render', $options);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -198,7 +253,8 @@ function file_text_rdf_namespaces() {
  * Renders options for the text display.
  */
 function _file_text_render_options($uri, $options = array()) {
-  $text = bitcache_get_contents(file_get_hash($uri));
+  $hash = file_get_hash($uri);
+  $text = bitcache_get_contents($hash);
   if (FILE_TEXT_PREVIEW_LINES > 0) {
     $text = explode("\n", $text);
     $lines = count($text);
@@ -212,6 +268,6 @@ function _file_text_render_options($uri, $options = array()) {
 
   }
 
-  return array_merge($options, compact('text', 'append'));
+  return array_merge($options, compact('hash', 'text', 'append'));
 }
 

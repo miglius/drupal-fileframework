@@ -31,7 +31,7 @@ function file_page_metadata($node) {
   foreach ($data as $subject => $predicates) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
-        db_query("INSERT INTO {file_properties} (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], $object->value);
+        db_query("INSERT INTO {file_properties} (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], is_object($object) ? $object->value : $object);
       }
     }
   }
@@ -123,7 +123,7 @@ function file_metadata($uri, $nid) {
   $access = FALSE;
   $uri = 'bitcache://'. $uri;
   $parent = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:source'), NULL));
-  $parent_uri = !empty($parent) ? $parent[$uri][rdf_qname_to_uri('dc:source')][0]->value : '';
+  $parent_uri = !empty($parent) ? $parent[$uri][rdf_qname_to_uri('dc:source')][0] : '';
 
   if (is_object($_SESSION['file_preview_file'])) {
     $file = $_SESSION['file_preview_file'];
@@ -162,7 +162,7 @@ function file_metadata($uri, $nid) {
       foreach ($predicates as $predicate => $objects) {
         foreach ($objects as $object) {
           if ($name = $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)]) {
-            $data[] = array($name, $object->value);
+            $data[] = array($name, is_object($object) ? $object->value : $object);
           }      
         }    
       }    

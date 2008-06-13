@@ -150,7 +150,7 @@ function file_archive_archive_render($uri, $options = array()) {
  * Renders options for the archive display.
  */
 function _file_archive_render_options($uri, $options = array()) {
-  $text = bitcache_get_contents(file_get_hash($uri));
+  $text = check_plain(bitcache_get_contents(file_get_hash($uri)));
   
   return array_merge($options, compact('text'));
 }

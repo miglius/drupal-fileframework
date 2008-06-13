@@ -316,7 +316,7 @@ function _file_gallery_preview($file) {
     $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri));
     foreach ($generated as $uri => $data) {
       $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0]->value == $handler) {
+      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0] == $handler) {
         $generated_found = TRUE;
         break;
       }

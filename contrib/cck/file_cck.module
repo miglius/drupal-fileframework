@@ -122,7 +122,7 @@ function file_cck_field_info() {
   return array(
     'file_cck' => array(
       'label' => t('File'),
-      'description' => t('Store file in the database.'),
+      'description' => t('Store file in the system. A file node will be created.'),
       'callbacks' => array(
         'tables' => CONTENT_CALLBACK_DEFAULT,
         'arguments' => CONTENT_CALLBACK_DEFAULT,

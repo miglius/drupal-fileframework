@@ -59,7 +59,7 @@ function file_antivirus_admin_settings() {
   );
   // Utility.
   $form['utility'] = array('#type' => 'fieldset', '#title' => t('ClamAV program'), '#description' => t('These settings will be used if you have chosen "Run a \'clamscan\' program" above.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
-  if ($clamav_utility_path = exec('which clamscan')) {
+  if ($clamav_utility_path = exec('which clamscan 2>/dev/null')) {
     $clamav_utility_version = _file_antivirus_check_clamav(array('path' => $clamav_utility_path));
     $clamav_utility_version = preg_match('/ClamAV/', $clamav_utility_version) ? $clamav_utility_version : '';
   }

@@ -71,6 +71,7 @@ function file_schema() {
           'description' => t("The file's bitstream URI."),
           'type' => 'varchar',
           'length' => 255,
+          'not null' => TRUE,
           'default' => '',
         ),
         'size' => array(
@@ -103,6 +104,31 @@ function file_schema() {
       ),
       'primary key' => array('nid', 'vid'),
       'indexes'     => array('file_nodes_uri' => array('uri')),
+    ),
+    'file_nodes_tmp' => array(
+      'description' => t('Stores temporal file node data.'),
+      'fields' => array(
+        'uid' => array(
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => t("User's {users}.uid."),
+        ),
+        'uri' => array(
+          'description' => t("The file's bitstream URI."),
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'created' => array(
+          'description' => t("The file's upload timestamp."),
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+      ),
+      'indexes' => array('file_nodes_tmp_created' => array('created')),
     ),
   );
 }

@@ -102,19 +102,19 @@ function theme_file_generated($data) {
   drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-  $formats = array();
+  $entries = array();
   foreach ($formats as $id => $format) {
     if (preg_match('/^file_image_/', $format['handler'])) {
       $handlers = file_get_mime_handlers();
       $description = $handlers[$format['handler']]['name'];
     }
-    $formats[] = '<div id="file_formats_'. $id .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</small></div>';
+    $entries[] = '<div id="file_formats_'. $id .'_'. $id .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') .' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</small></div>';
     drupal_add_js('$(document).ready(function() { $(\'#file_formats_'. $id .'_'. $id .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   }
-  if (!empty($formats)) {
+  if (!empty($entries)) {
     $output = '<div class="file-formats" id="file_formats_'. $id .'">';
     $output .= ($name ? t('File') .' '. ($name ? '"'. $name .'" ': '') . t('other available formats') : t('Other available formats')) .':<br />';
-    $output .= implode('', $formats);
+    $output .= implode('', $entries);
     $output .= '</div>';
   }
   //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');

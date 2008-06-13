@@ -51,7 +51,7 @@ function file_browser_theme() {
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_upload' => array(
-      'arguments' => array('data'),
+      'arguments' => array('form'),
       'file' => 'file_browser.theme.inc'
     ),
   );
@@ -557,7 +557,7 @@ function _file_browser_upload() {
   
   _file_browser_add_headers();
   $form = drupal_get_form('file_browser_upload_form');
-  return theme('file_browser_upload', compact('form'));
+  return theme('file_browser_upload', $form);
 }
 
 /**
