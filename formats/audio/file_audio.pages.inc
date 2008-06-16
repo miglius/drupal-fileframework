@@ -27,14 +27,12 @@ function file_audio_xspf($nid, $vid, $hash) {
   else {
     exit;
   }
-  
+
   $file = $node->file;
   $uri = 'bitcache://'. $hash;
 
   // Check if the requested uri is a derivatie of the original one.
-  $item = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:source'), $file->uri)); 
-
-  if ($file->uri != $uri && empty($item)) {
+  if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri)) {
     // The URI is not the node iteslf, nor the derivative.
     drupal_access_denied();
     exit;
@@ -47,16 +45,16 @@ function file_audio_xspf($nid, $vid, $hash) {
   $output .= '  <trackList>'."\n";
   $output .= '    <track>'."\n";
   $output .= '      <location>'. url('bitcache/'. $hash, array('query' => array('vid' => $vid), 'absolute' => true)) .'</location>'."\n";
-  if ($artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0]->value) {
+  if ($artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0]) {
     $output .= '      <creator>'. $artist .'</creator>'."\n";
   }
-  if ($album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0]->value) {
+  if ($album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0]) {
     $output .= '      <album>'. $album .'</album>'."\n";
   }
-  if ($title = $item[$uri][rdf_qname_to_uri('dc:title')][0]->value) {
+  if ($title = $item[$uri][rdf_qname_to_uri('dc:title')][0]) {
     $output .= '      <title>'. $title .'</title>'."\n";
   }
-  if ($length = $item[$uri][rdf_qname_to_uri('wordnet:length')][0]->value) {
+  if ($length = $item[$uri][rdf_qname_to_uri('wordnet:length')][0]) {
     list($m, $s) = split(':', $length);
     $length = (int)(($m * 60 + $s) * 1000);
     $output .= '      <duration>'. $length .'</duration>'."\n";

@@ -74,11 +74,10 @@ function file_image_menu() {
  */
 function file_image_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
-  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && user_access('view uploaded files')) {
+  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $metadata = rdf_normalize(rdf_query($node->file->uri));
-      $width = $metadata[$node->file->uri][rdf_qname_to_uri('exif:width')][0]->value;
-      $height = $metadata[$node->file->uri][rdf_qname_to_uri('exif:height')][0]->value;
+      $width = rdf_value($node->file->uri, rdf_qname_to_uri('exif:width'))->value;
+      $height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'))->value;
       if (!empty($width) && !empty($height)) {
         $links['file_image_resolution'] = array(
           'title' => t('%resolution pixels', array('%resolution' => $width .'x'. $height)),
@@ -427,9 +426,8 @@ function _file_image_allowed_attributes() {
  * Renders options for the image display.
  */
 function _file_image_render_options($uri, $options = array()) {
-  $metadata = rdf_normalize(rdf_query($uri));
-  $width = $metadata[$uri][rdf_qname_to_uri('exif:width')][0]->value;
-  $height = $metadata[$uri][rdf_qname_to_uri('exif:height')][0]->value;
+  $width = rdf_value($uri, rdf_qname_to_uri('exif:width'))->value;
+  $height = rdf_value($uri, rdf_qname_to_uri('exif:height'))->value;
 
   list($max_width, $max_height) = explode('x', FILE_IMAGE_PREVIEW_RESOLUTION);
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : $max_width);

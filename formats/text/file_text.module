@@ -193,7 +193,7 @@ function file_text_text_generate($file) {
     if (module_exists('file_convert') && !$file->noconvert) {
       // Convert the file.
       if (!$converted = file_convert($file, "{code2html} --fallback ruby [in_file] [out_file]")) {
-         watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+        watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       }
 
       // Extract metadata.

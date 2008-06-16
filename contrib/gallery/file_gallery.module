@@ -315,8 +315,7 @@ function _file_gallery_preview($file) {
     $generated_found = FALSE;
     $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri));
     foreach ($generated as $uri => $data) {
-      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0] == $handler) {
+      if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
         $generated_found = TRUE;
         break;
       }
@@ -324,15 +323,10 @@ function _file_gallery_preview($file) {
     if (!$generated_found) {
       // We're displaying the file itself.
       $uri = $file->uri;
-      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
     }
     foreach (array('exif', 'wordnet') as $name) {
-      if ($item[$uri][rdf_qname_to_uri($name .':width')][0]->value) {
-        $width += $item[$uri][rdf_qname_to_uri($name .':width')][0]->value;
-      }
-      if ($item[$uri][rdf_qname_to_uri($name .':height')][0]->value) {
-        $height += $item[$uri][rdf_qname_to_uri($name .':height')][0]->value;
-      }
+      $width += rdf_value($uri, rdf_qname_to_uri($name .':width'))->value;
+      $height += rdf_value($uri, rdf_qname_to_uri($name .':height'))->value;
     }
   }
   list($width_max, $height_max) = explode('x', FILE_GALLERY_POPUP_SIZE);

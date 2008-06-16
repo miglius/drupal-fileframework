@@ -31,7 +31,7 @@ function file_page_metadata($node) {
   foreach ($data as $subject => $predicates) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
-        db_query("INSERT INTO {file_properties} (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], is_object($object) ? $object->value : $object);
+        db_query("INSERT INTO {file_properties} (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], theme('rdf_value', $object));
       }
     }
   }
@@ -108,7 +108,7 @@ function file_serve($node, $vid, $disposition = NULL) {
 // File metadata
 
 /**
- * Redirects to the file view or download path.
+ * Prints file metadata.
  *
  * @param $uri
  *   A blob uri.
@@ -122,32 +122,20 @@ function file_metadata($uri, $nid) {
 
   $access = FALSE;
   $uri = 'bitcache://'. $uri;
-  $parent = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:source'), NULL));
-  $parent_uri = !empty($parent) ? $parent[$uri][rdf_qname_to_uri('dc:source')][0] : '';
+  $parent_uri = rdf_value($uri, rdf_qname_to_uri('dc:source'));
 
-  if (is_object($_SESSION['file_preview_file'])) {
-    $file = $_SESSION['file_preview_file'];
+  $files = array_merge(
+    is_object($_SESSION['file_preview_file']) ? array($_SESSION['file_preview_file']) : array(),
+    is_array($_SESSION['file_attach_files']) ? $_SESSION['file_attach_files'] : array(),
+    is_array($_SESSION['file_cck_files']) ? $_SESSION['file_cck_files'] : array()
+  );
+  
+  foreach ($files as $file) {
     if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
       $access = TRUE;
     }
   }
   
-  if (is_array($_SESSION['file_attach_files'])) {
-    foreach ($_SESSION['file_attach_files'] as $file) {
-      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
-        $access = TRUE;
-      }
-    }
-  }
-
-  if (is_array($_SESSION['file_cck_files'])) {
-    foreach ($_SESSION['file_cck_files'] as $file) {
-      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
-        $access = TRUE;
-      }
-    }
-  }
-
   if (is_numeric($nid)) {
     $node = node_load($nid);
     if (node_access('view', $node) && $node->type == 'file' && db_result(db_query("SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND (f.uri = '%s' OR f.uri = '%s')", $node->nid, $uri, $parent_uri))) {
@@ -162,7 +150,7 @@ function file_metadata($uri, $nid) {
       foreach ($predicates as $predicate => $objects) {
         foreach ($objects as $object) {
           if ($name = $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)]) {
-            $data[] = array($name, is_object($object) ? $object->value : $object);
+            $data[] = array($name, theme('rdf_value', $object));
           }      
         }    
       }    

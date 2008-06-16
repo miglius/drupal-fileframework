@@ -105,7 +105,7 @@ function file_schema() {
       'primary key' => array('nid', 'vid'),
       'indexes'     => array('file_nodes_uri' => array('uri')),
     ),
-    'file_nodes_tmp' => array(
+    'file_tmp' => array(
       'description' => t('Stores temporal file node data.'),
       'fields' => array(
         'uid' => array(

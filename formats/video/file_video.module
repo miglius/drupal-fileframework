@@ -71,11 +71,10 @@ function file_video_menu() {
  */
 function file_video_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
-  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^video\//', $node->file->type) && user_access('view uploaded files')) {
+  if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^video\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $metadata = rdf_normalize(rdf_query($node->file->uri));
-      $width = $metadata[$node->file->uri][rdf_qname_to_uri('wordnet:width')][0]->value;
-      $height = $metadata[$node->file->uri][rdf_qname_to_uri('wordnet:height')][0]->value;
+      $width = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:width'))->value;
+      $height = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:height'))->value;
       if (!empty($width) && !empty($height)) {
         $links['file_video_resolution'] = array(
           'title' => t('%resolution pixels', array('%resolution' => $width .'x'. $height)),
@@ -445,15 +444,13 @@ function file_video_rdf_namespaces() {
  * Renders options for the video display.
  */
 function _file_video_render_options($uri, $options = array()) {
-  $metadata = rdf_normalize(rdf_query($uri));
-  $width = $metadata[$uri][rdf_qname_to_uri('wordnet:width')][0]->value;    
-  $height = $metadata[$uri][rdf_qname_to_uri('wordnet:height')][0]->value;  
+  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'))->value;    
+  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'))->value;  
   
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : NULL);
   $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : NULL);
 
   $scale = !isset($options['scale']) ? TRUE : !empty($options['scale']);
-  //$width = !empty($file->metadata['width']) ? $file->metadata['width'] : NULL;
   $width = (int)($scale && !empty($options['width']) ? $options['width'] : $width);
   //set a minimum width to preserve player ui
   $width = (int)(!empty($options['min_width']) && $options['min_width']>$width ? $options['min_width'] : $width);
@@ -474,11 +471,10 @@ function _file_video_render_options($uri, $options = array()) {
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   // Thumbnail
-  $source = $metadata[$uri][rdf_qname_to_uri('dc:source')][0];
+  $source = rdf_value($uri, rdf_qname_to_uri('dc:source'));
   $derivatives = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), isset($source) ? $source : $uri));
   foreach ($derivatives as $derivative => $data) {
-    $result = rdf_normalize(rdf_query($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image'));
-    if (!empty($result)) {
+    if (rdf_exists($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image')) {
       $image = bitcache_resolve_uri($derivative, array('absolute' => FALSE)) .'?vid='. $node->vid;
       last;
     }

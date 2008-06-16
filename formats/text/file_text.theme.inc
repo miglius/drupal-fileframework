@@ -14,7 +14,7 @@
 function theme_file_text_text_render($options = array()) {
   extract($options, EXTR_SKIP);
  
- $form['preview'] = array(
+  $form['preview'] = array(
     '#type' => 'textarea',
     '#name' => 'file_preview',
     '#rows' => 15,

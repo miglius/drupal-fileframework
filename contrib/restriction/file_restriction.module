@@ -86,7 +86,8 @@ function file_restriction_description() {
   }
 
   $restrictions = _file_restriction_get_restrictions();
-  
+  $used = file_get_files_size($user->uid, $restrictions['quota_generated']);
+
   return array_merge(
     //!empty($restrictions['extension_allowed']) ? array(t('Only files with the following extensions may be uploaded: %extension_allowed.', array('%extension_allowed' => $restrictions['extension_allowed']))) : array(),
     array(t('The maximum upload size is %filesize.', array('%filesize' => format_size(min($restrictions['size'], file_upload_max_size()))))),
@@ -111,7 +112,7 @@ function _file_restriction_validate_quota($file) {
 
   $restrictions = _file_restriction_get_restrictions();
   $errors = array();
-  
+
   // Bypass validation for uid  = 1.
   if ($user->uid != 1) {
     if (file_get_files_size($user->uid, $restrictions['quota_generated']) + $file->filesize > $restrictions['quota']) {
@@ -136,7 +137,7 @@ function _file_restriction_get_restrictions() {
     $extension_allowed = explode(' ', FILE_RESTRICTION_EXTENSION_ALLOWED);
     $size = FILE_RESTRICTION_SIZE * 1024*1024;
     $quota = FILE_RESTRICTION_QUOTA * 1024*1024;
-    $used = FILE_RESTRICTION_QUOTA_GENERATED;
+    $quota_generated = FILE_RESTRICTION_QUOTA_GENERATED;
 
     $roles_extension_allowed = variable_get('file_restriction_roles_extension_allowed', array());
     $roles_size = variable_get('file_restriction_roles_size', array());

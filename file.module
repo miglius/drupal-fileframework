@@ -18,6 +18,8 @@ define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetecti
 define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_path', ''));
 
 define('FILE_HASH_SIZE',                     variable_get('file_hash_size', 40));
+//define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 86400)); // 24x60x60s 
+define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 60)); // 24x60x60s 
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -287,6 +289,16 @@ function file_cron() {
       watchdog('cron', 'Inspected %total file(s), %converted conversion(s) were performed on %files file(s) (%size) with %errors errors.', array('%total' => $total, '%converted' => $converted, '%files' => $files, '%errors' => $errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
     }
   }
+
+  // Delete temporal files when user navigated away before saving.
+  $time = time();
+  $result = db_query('SELECT *  FROM {file_tmp} WHERE created <= %d', $time - FILE_TMP_KEEP);
+  while ($row = db_fetch_object($result)) {
+    if (!db_result(db_query('SELECT uri FROM {file_tmp} WHERE created > %d', $time - FILE_TMP_KEEP))) {
+      file_node_delete_node($row);
+      db_query("DELETE FROM {file_tmp} WHERE uri = '%s' AND created = %d", $row->uri, $row->created);
+    }
+  }
 }
 
 /**
@@ -474,8 +486,7 @@ function file_nodeapi(&$node, $op, $teaser, $page) {
         else {
           if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
             foreach ($generated as $uri => $data) {
-              $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-              if ($item[$uri][rdf_qname_to_uri('dc:format')][0] == 'text/plain') {
+              if (rdf_value($uri, rdf_qname_to_uri('dc:format')) == 'text/plain') {
                 // A plain text preview.
                 $uri_txt = $uri;
                 break;

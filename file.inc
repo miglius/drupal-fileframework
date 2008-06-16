@@ -73,7 +73,7 @@ function file_node_save(&$node, $file) {
   else {
     global $user;
     $file_tmp = (object)array('uid' => $user->uid, 'uri' => $file->parent ? $file->parent : $file->uri, 'created' => time());
-    return drupal_write_record('file_nodes_tmp', $file_tmp);
+    return drupal_write_record('file_tmp', $file_tmp);
     return TRUE;
   }
 }
@@ -111,7 +111,7 @@ function file_data_save(&$file) {
   $file->uri = bitcache_uri($hash);
 
   // Save metadata information to the RDF.
-  if (!$saved = rdf_normalize(rdf_query($file->uri, NULL, NULL))) {
+  if (!rdf_exists($file->uri)) {
     $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => 'file'))) {
       watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
@@ -166,14 +166,17 @@ function file_node_create($node = array()) {
  */
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
-    if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == 1) {
+    $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
+    
+    // File object passed from cron has a created property.
+    if ((!$file->created && $count == 1) || ($file->created && $count == 0)) {
       // The last reference to the blob.
       // Search for a previews.
       $derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri));
       if ($derived) {
         // Delete all previews.
         foreach ($derived as $key => $data) {
-	  // Check if derived is not referenced in the table.
+          // Check if derived is not referenced in the table.
           if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $key)) == 0) {
             if (!rdf_delete($key, NULL, NULL, array('repository' => 'file'))) {
               watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
@@ -594,7 +597,7 @@ function file_generate_previews($file, $cron = NULL) {
     }
 
     //Extract metadata if it is missing and save to RDF.
-    if (!$rdf = rdf_normalize(rdf_query($file->uri, NULL, NULL))) {
+    if (!rdf_exists($file->uri)) {
       if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => 'file'))) {
         watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
         return FALSE;
@@ -969,9 +972,7 @@ function file_bitcache($op, $id, $stream = NULL) {
         $counter = $disposition == 'inline' ? 'views' : 'downloads';
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
-      $rdf = rdf_normalize(rdf_query('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL));
-      $extensions = file_mime_extensions_for($rdf['bitcache://'. $id][rdf_qname_to_uri('dc:format')][0]);
-      foreach ($extensions as $extension) {
+      foreach (file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL)) as $extension) {
         if (preg_match('/\.'. $extension .'$/', strtolower($node->title))) {
           $extension_correct = TRUE;
           break;
@@ -1013,8 +1014,7 @@ function file_get_hash(&$file) {
  */
 function file_bitcache_access($id, $vid) {
   $uri = 'bitcache://'. $id;
-  $parent = rdf_normalize(rdf_query('bitcache://'. $id, rdf_qname_to_uri('dc:source'), NULL));
-  $parent_uri = !empty($parent) ? $parent['bitcache://'. $id][rdf_qname_to_uri('dc:source')][0] : '';
+  $parent_uri = rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:source'));
   
   if (isset($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
@@ -1027,32 +1027,18 @@ function file_bitcache_access($id, $vid) {
     }
   }
 
-  // Allow view file preview.
-  if (is_object($_SESSION['file_preview_file'])) {
-    $file = $_SESSION['file_preview_file'];
+  $files = array_merge(
+    is_object($_SESSION['file_preview_file']) ? array($_SESSION['file_preview_file']) : array(),
+    is_array($_SESSION['file_attach_files']) ? $_SESSION['file_attach_files'] : array(),
+    is_array($_SESSION['file_cck_files']) ? $_SESSION['file_cck_files'] : array()
+  );
+
+  foreach ($files as $file) {
     if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
       return (object)array('title' => $file->name);
     }
   }
-  
-  // Allow view file attachments.
-  if (is_array($_SESSION['file_attach_files'])) {
-    foreach ($_SESSION['file_attach_files'] as $file) {
-      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
-        return (object)array('title' => $file->name);
-      }
-    }
-  }
-  
-  // Allow view cck files.
-  if (is_array($_SESSION['file_cck_files'])) {
-    foreach ($_SESSION['file_cck_files'] as $file) {
-      if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
-        return (object)array('title' => $file->name);
-      }
-    }
-  }
-  
+
   return FALSE;
 }
 
@@ -1098,10 +1084,7 @@ function file_get_files_size($uid, $converted = 1) {
     
     if ($converted && $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
       foreach ($generated as $uri => $data) {
-        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        if ($size_generated = $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value) {
-          $size += $size_generated;
-        }
+        $size += rdf_value($uri, rdf_qname_to_uri('dc:extent'))->value;
       }
     }
   }
@@ -1149,20 +1132,18 @@ function file_get_image($file, $handler, $dimensions) {
   $image = NULL;
   if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
     foreach ($generated as $uri => $data) {
-      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-      if ($item[$uri][rdf_qname_to_uri('dc:creator')][0] == $handler) {
+      if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
         // We gave a generated image.
         $image = file_get_hash($uri);
-        $width = $item[$uri][rdf_qname_to_uri('exif:width')][0]->value;
-        $height = $item[$uri][rdf_qname_to_uri('exif:height')][0]->value;
+        $width = rdf_value($uri, rdf_qname_to_uri('exif:width'))->value;
+        $height = rdf_value($uri, rdf_qname_to_uri('exif:height'))->value;
         break;
       }
     }
   }
   if (!$image && preg_match('/^image\//', $file->type)) {
-    $item = rdf_normalize(rdf_query($file->uri, NULL, NULL));
-    $width = $item[$file->uri][rdf_qname_to_uri('exif:width')][0]->value;
-    $height = $item[$file->uri][rdf_qname_to_uri('exif:height')][0]->value;
+    $width = rdf_value($file->uri, rdf_qname_to_uri('exif:width'))->value;
+    $height = rdf_value($file->uri, rdf_qname_to_uri('exif:height'))->value;
     if ($width < $dimensions[0] && $height < $dimensions[1]) {
       $image = file_get_hash($file->uri);
     }
