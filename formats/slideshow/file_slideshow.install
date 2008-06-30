@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Slideshow file module installation and upgrade code.
+ * File slideshow module installation and upgrade code.
  */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -27,6 +27,7 @@ function file_slideshow_install() {}
 function file_slideshow_uninstall() {
   variable_del('file_slideshow_pdf');
   variable_del('file_slideshow_pdf_data');
+  variable_del('file_slideshow_convert_pipelines');
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -31,12 +31,12 @@ function file_page_metadata($node) {
   foreach ($data as $subject => $predicates) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
-        db_query("INSERT INTO {file_properties} (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], theme('rdf_value', $object));
+        db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], theme('rdf_value', $object));
       }
     }
   }
 
-  $result = db_query('SELECT * FROM {file_properties}'. tablesort_sql($header));
+  $result = db_query('SELECT * FROM file_properties'. tablesort_sql($header));
   while ($row = db_fetch_object($result)) {
     $rows[] = array(
       array('data' => $row->name .':', 'align' => 'right'),
@@ -72,9 +72,9 @@ function file_embed($node, $handler) {
   else {
     drupal_set_header('HTTP/1.0 404 Not Found');
     drupal_set_header('Content-Type: text/plain; charset=utf-8');
-    print '404 Not Found';   
+    print '404 Not Found';
   }
- 
+
   exit();
 }
 
@@ -129,13 +129,13 @@ function file_metadata($uri, $nid) {
     is_array($_SESSION['file_attach_files']) ? $_SESSION['file_attach_files'] : array(),
     is_array($_SESSION['file_cck_files']) ? $_SESSION['file_cck_files'] : array()
   );
-  
+
   foreach ($files as $file) {
     if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
       $access = TRUE;
     }
   }
-  
+
   if (is_numeric($nid)) {
     $node = node_load($nid);
     if (node_access('view', $node) && $node->type == 'file' && db_result(db_query("SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND (f.uri = '%s' OR f.uri = '%s')", $node->nid, $uri, $parent_uri))) {
@@ -151,9 +151,9 @@ function file_metadata($uri, $nid) {
         foreach ($objects as $object) {
           if ($name = $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)]) {
             $data[] = array($name, theme('rdf_value', $object));
-          }      
-        }    
-      }    
+          }
+        }
+      }
     }
     return theme('file_metadata', $data);
   }

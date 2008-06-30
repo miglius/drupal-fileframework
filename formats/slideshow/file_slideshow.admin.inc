@@ -38,7 +38,10 @@ function file_slideshow_admin_settings() {
       '#default_value' => $pdf_data[$name],
     );
     $j++;
-    if ($j == 3) { $i++; $j = 0; }
+    if ($j == 3) {
+      $i++;
+      $j = 0;
+    }
   }
 
   $form['submit'] = array(

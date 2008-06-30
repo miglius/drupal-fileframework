@@ -16,7 +16,7 @@ function theme_file_attachments($files) {
   $mime_types = file_get_mime_types();
   $rows = array();
   foreach ($files as $file) {
-    $name = strlen($file->name) > 50 ? substr($file->name, 0, 50) .'...' : $file->name;
+    $name = drupal_strlen($file->name) > 50 ? drupal_substr($file->name, 0, 50) .'...' : $file->name;
     $rows[] = array(
       $file->nid ? l($name, 'node/'. $file->nid) : check_plain($name),
       file_mime_icon_for($file->type) .' '. file_mime_description_for($file->type),
@@ -95,7 +95,7 @@ function theme_file_attach_autocomplete($matches) {
   foreach ($matches as $match) {
     $name = db_result(db_query('SELECT u.name FROM {users} u WHERE u.uid = %d', $match['uid']));
     $title = check_plain($match['title']);
-    $title = strlen($title) > 50 ? substr($title, 0, 50) .'...' : $title;
+    $title = drupal_strlen($title) > 50 ? drupal_substr($title, 0, 50) .'...' : $title;
     $output['['. $match['nid'] .'] '. $match['title']] = file_mime_icon_for($match['type']) .' '. $title .' <span style="color: grey;">('.  format_size($match['size']) .') '. format_date($match['created'], 'small') .' - '. $name .'</span>';
   }
 

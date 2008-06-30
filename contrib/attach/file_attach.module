@@ -88,9 +88,16 @@ function file_attach_menu() {
 function file_attach_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
-      $block = array(array('info' => t('File references')));
+      $block = array(
+        array(
+          'info' => t('File references'),
+          'status' => 1,
+          'region' => 'right',
+          'weight' => -3,
+        ),
+      );
       return $block;
-    case 'view':   
+    case 'view':
       switch ($delta) {
         case 0:
           $block['subject'] = t('File references');
@@ -107,10 +114,10 @@ function file_attach_block($op = 'list', $delta = 0, $edit = array()) {
 function file_attach_init() {
   if (!empty($_POST) && $_POST['form_id'] == 'comment_form' && $_POST['op'] == t('Preview') && FILE_ATTACH_METHOD) {
     // When AHAH file attach is disabled everything is working
-    // as expected and this section is not needed, however, when it's 
-    // enabled, the AHAH sets #cache to TRUE and then hook_form_alter() 
+    // as expected and this section is not needed, however, when it's
+    // enabled, the AHAH sets #cache to TRUE and then hook_form_alter()
     // is not executed.
-    // This is the only place to save the upload and alter the saved 
+    // This is the only place to save the upload and alter the saved
     // cached form to add the latest preview.
 
     // Following include might be not loaded yet.
@@ -120,7 +127,7 @@ function file_attach_init() {
     $cache = cache_get('form_'. $_POST['form_build_id'], 'cache_form');
 
     $form_state = array('values' => $_POST);
-    unset($form_state['values']['files']['upload_0']); 
+    unset($form_state['values']['files']['upload_0']);
 
     // Handle new uploads, and merge tmp files into node-files.
     file_attach_form_submit($form, $form_state);
@@ -147,7 +154,7 @@ function file_attach_init() {
     $form_state_tmp = $form_state;
     $form_tmp = form_builder('comment_form', $cache->data, $form_state_tmp);
     unset($form_tmp['#suffix']);
-    $form_state['values'] = array_merge($form_state_tmp['values'], $form_state['values']);    
+    $form_state['values'] = array_merge($form_state_tmp['values'], $form_state['values']);
     $form_tmp = comment_form_add_preview($form_tmp, $form_state);
     $cache->data['comment_preview'] = $form_tmp['comment_preview'];
     $cache->data['comment_preview_below'] = $form_tmp['comment_preview_below'];
@@ -156,7 +163,7 @@ function file_attach_init() {
     // Add the new element to the stored form state and resave.
     $cache->data['attachments']['wrapper'] = is_array($cache->data['attachments']['wrapper']) ? array_merge($cache->data['attachments']['wrapper'], $form) : $form;
     cache_set('form_'. $_POST['form_build_id'], $cache->data, 'cache_form', $cache->expire);
- 
+
     // Add embed file attachments link.
     if (module_exists('file_embed') && !empty($form_state['values']['cid'])) {
       $node = node_load($form_state['values']['nid']);
@@ -193,7 +200,7 @@ function file_attach_link($type, $node, $teaser = NULL) {
 function file_attach_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'node_type_form') {
 
-    // Node type configuration pages. 
+    // Node type configuration pages.
     $type = $form['#node_type']->type;
     $form['attachment'] = array(
       '#type' => 'fieldset', '#title' => t('File attachments'),
@@ -219,8 +226,8 @@ function file_attach_form_alter(&$form, $form_state, $form_id) {
     }
   }
   else if ($form_id == 'comment_form') {
-    
-    // Comments API does not have a 'prepare' handler, so here we have 
+
+    // Comments API does not have a 'prepare' handler, so here we have
     // to clean a session from old files when user navigated away from the
     // comment preview page with unsaved files.
     if (!$_POST) {
@@ -228,18 +235,18 @@ function file_attach_form_alter(&$form, $form_state, $form_id) {
     }
 
     // Comment form. It does not execute file_attach_form_submit function
-    // when #submit form element is set. Have to do it manually from here. 
+    // when #submit form element is set. Have to do it manually from here.
     $node = node_load($form['nid']['#value']);
     if (variable_get('file_attach_comment_'. $node->type, 1) && user_access('attach files')) {
       $cid = $form['cid']['#value'];
       $object_files = isset($cid) ? _file_attach_load($node->nid, $node->vid, $cid) : array();
-    
+
       // Handle new uploads, and merge tmp files into node-files.
       if (!empty($form_state['post'])) {
         $form_state['values'] = $form_state['post'];
         file_attach_form_submit($form, $form_state);
       }
-     
+
       $object = (object)array('files' => empty($form_state['post']) ? $object_files : $form_state['values']['files']);
       _file_attach_form_fieldset($form, $object);
     }
@@ -300,7 +307,7 @@ function _file_attach_form_fieldset(&$form, $object) {
  *   A form array.
  */
 function _file_attach_form($object) {
-  
+
   $form = array(
     '#theme' => 'file_attach_form_new',
     //'#cache' => TRUE,
@@ -325,7 +332,7 @@ function _file_attach_form($object) {
         'uri'      => array('#type' => 'value', '#value' => $file->uri),
         'name'     => array('#type' => 'textfield', $value => $file->name, '#size' => 40, '#maxlength' => 256, '#disabled' => $file->nochange ? TRUE : FALSE),
         'nochange' => array('#type' => 'value', '#value' => $file->nochange),
-        'type'     => array('#type' => 'value', '#value' => $file->type), 
+        'type'     => array('#type' => 'value', '#value' => $file->type),
         'size'     => array('#type' => 'value', '#value' => $file->size),
         'remove'   => array('#type' => 'checkbox', $value => !empty($file->remove)),
         'list'     => array('#type' => 'checkbox', $value => $file->list),
@@ -333,7 +340,7 @@ function _file_attach_form($object) {
       );
     }
   }
-  
+
   if (user_access('attach files')) {
 
     if (FILE_ATTACH_METHOD) {
@@ -341,7 +348,7 @@ function _file_attach_form($object) {
       $form['file_attach_more']['upload_0'] = array(
         '#type' => 'file',
         '#title' => t('Attach new file'),
-        '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))), 
+        '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))),
         '#size' => 40,
       );
       $form['file_attach_more']['attach'] = array(
@@ -357,17 +364,17 @@ function _file_attach_form($object) {
       );
     }
     else {
-      // Can not take advantage of the #tree parameter, because for the file uploads FAPI does not 
-      // use it, but creates a uploaded files array instead. 
+      // Can not take advantage of the #tree parameter, because for the file uploads FAPI does not
+      // use it, but creates a uploaded files array instead.
       $form['files_new'] = array(
         '#theme' => 'file_attach_form_new',
         '#prefix' => '<div id="attachments-new">',
         '#suffix' => '</div>',
       );
-   
+
       for ($i = 0; $i < FILE_ATTACH_MAX_FILES; $i++) {
         $form['files_new'] += _file_attach_more_form($i);
-      } 
+      }
     }
     $form['attach_saved'] = array(
       '#type' => 'textfield',
@@ -410,7 +417,7 @@ function _file_attach_more_form($delta) {
 function file_attach_form_submit($form, &$form_state) {
   global $user;
 
-  // Loop through submitted data and fill in missing 
+  // Loop through submitted data and fill in missing
   // default values, such as bitcache URI, etc.
   if (is_array($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file) {
@@ -419,7 +426,7 @@ function file_attach_form_submit($form, &$form_state) {
       // will be overwritten with the default values.
       $file['list'] = isset($file['list']) ? $file['list'] : 0;
       $file['remove'] = isset($file['remove']) ? $file['remove'] : 0;
-      
+
       if (preg_match('/^n_(\d+)$/', $fid, $matches)) {
         $node = node_load($matches[1]);
         $form_state['values']['files'][$fid] = array_merge((array)$node->file, $file);
@@ -428,12 +435,12 @@ function file_attach_form_submit($form, &$form_state) {
         }
       }
       else {
-        $form_state['values']['files'][$fid] = array_merge((array)$_SESSION['file_attach_files'][$fid], $file); 
+        $form_state['values']['files'][$fid] = array_merge((array)$_SESSION['file_attach_files'][$fid], $file);
       }
     }
   }
 
-  // Handle the file uploads. The do cycle is needed if we use several file 
+  // Handle the file uploads. The do cycle is needed if we use several file
   // upload elements when ahah submission is disabled.
   $i = 0;
   do {
@@ -445,8 +452,8 @@ function file_attach_form_submit($form, &$form_state) {
       else {
 
         // Find the next session id and save it with the uploaded file.
-	// Remove 's_' when calculating next key. 
-        $node->file->sid = 's_'. (!empty($_SESSION['file_attach_files']) ? max(array_map(create_function('$a', 'return substr($a, 2);'), array_keys($_SESSION['file_attach_files']))) + 1 : '0'); 
+        // Remove 's_' when calculating next key.
+        $node->file->sid = 's_'. (!empty($_SESSION['file_attach_files']) ? max(array_map(create_function('$a', 'return substr($a, 2);'), array_keys($_SESSION['file_attach_files']))) + 1 : '0');
         _file_attach_file($form_state, $node->file);
       }
     }
@@ -479,7 +486,7 @@ function file_attach_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['files'])) {
     $microweight = 0.001;
     foreach ($form_state['values']['files'] as $fid => $file) {
-      
+
       // For the attached saved files the user does not have permision to change
       // node name the form name element is dissabled and the name is not passed
       // in the $form_state. Have to merge back the default name.
@@ -507,7 +514,7 @@ function _file_attach_file(&$form_state, $file) {
   // We do not allow the same file to be uploaded several times.
   $is_uploaded = FALSE;
   if (is_array($form_state['values']['files'])) {
-    foreach ($form_state['values']['files'] as $fid => $file_attached) { 
+    foreach ($form_state['values']['files'] as $fid => $file_attached) {
       if ($file_attached['uri'] == $file->uri) {
         $is_uploaded = TRUE;
         drupal_set_message(t("The file %file is already attached.", array('%file' => $file->name)), 'notice');
@@ -519,7 +526,7 @@ function _file_attach_file(&$form_state, $file) {
     // Add default list and weight parameters.
     $file->list = 1;
     $file->weight = is_array($form_state['values']['files']) ? count($form_state['values']['files']) + 1 : 1;
-    
+
     $fid = isset($file->sid) ? $file->sid : 'n_'. $file->nid;
     $_SESSION['file_attach_files'][$fid] = $file;
     $form_state['values']['files'][$fid] = (array)$file;
@@ -533,7 +540,7 @@ function file_attach_js() {
 
   // Load the form from the Form API cache.
   $cache = cache_get('form_'. $_POST['form_build_id'], 'cache_form');
-  
+
   $object = (object)array();
   if (isset($cache->data['type']['#value'])) {
     $object->type = $cache->data['type']['#value'];
@@ -541,11 +548,11 @@ function file_attach_js() {
 
   $form = $cache->data;
   $form_state = array('values' => $_POST);
-  unset($form_state['values']['files']['upload_0']); 
+  unset($form_state['values']['files']['upload_0']);
 
   // Handle new uploads, and merge tmp files into node-files.
   file_attach_form_submit($form, $form_state);
-  
+
   $files = array();
   if (is_array($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file) {
@@ -574,7 +581,7 @@ function file_attach_js() {
   // We send the updated file attachments form.
   // Don't call drupal_json(). ahah.js uses an iframe and
   // the header output by drupal_json() causes problems in some browsers.
-  
+
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }
@@ -586,12 +593,12 @@ function file_attach_autocomplete($string = '') {
   $string = trim($string);
   $string = preg_replace('/^(\[\d+\]\s*)/', '', $string);
   $matches = array();
-  
-  if (strlen($string) > 2) {
+
+  if (drupal_strlen($string) > 2) {
     $result = db_query(db_rewrite_sql("SELECT n.nid, fn.type, fn.size FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid WHERE n.type = 'file' AND LOWER(n.title) LIKE LOWER('%%%s%%')", 'n', 'nid'), $string);
     $i = 0;
     while (($row = db_fetch_object($result)) && $i < 10) {
-      $node = node_load($row->nid); 
+      $node = node_load($row->nid);
       if (node_access('view', $node)) {
         $matches[] = array(
           'nid'     => $node->nid,
@@ -650,7 +657,7 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
       if (!empty($node->files) && user_access('view attached files')) {
         if (!$a3) {
 
-	  // There is no teaser so we are showing attachment list and file previews.
+          // There is no teaser so we are showing attachment list and file previews.
           $content = _file_attach_view($node);
           $node->content = is_array($node->content) ? array_merge($node->content, $content) : $content;
         }
@@ -675,14 +682,14 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
       db_query('DELETE FROM {file_attachments} WHERE nid = %d', $node->nid);
       break;
 
-    case 'delete revision': 
+    case 'delete revision':
       db_query('DELETE FROM {file_attachments} WHERE nid = %d AND vid = %d', $node->nid, $node->vid);
       break;
 
     case 'search result':
       return is_array($node->files) ? format_plural(count($node->files), '1 attachment', '@count attachments') : NULL;
 
-    case 'rss item': 
+    case 'rss item':
       if ($node->type != 'file' && !empty($node->files)) {
         // RSS only allows one enclosure per item
         $file = array_shift($node->files);
@@ -711,7 +718,7 @@ function file_attach_comment(&$a1, $op) {
       // Validate that the file descriptions are not empty.
       if (!empty($a1['files'])) {
         foreach ($a1['files'] as $fid => $file) {
-          $name = trim($file['name']); 
+          $name = trim($file['name']);
           if (empty($name) && empty($file['nochange'])) {
             form_set_error('files]['. $fid .'][name', t('A file description can not be empty.'), 'error');
           }
@@ -722,7 +729,7 @@ function file_attach_comment(&$a1, $op) {
     case 'insert':
     case 'update':
       // $a1 is a comment array with a user input.
-        
+
       $node = node_load($a1['nid']);
       if (user_access('attach files') && variable_get('file_attach_comment_'. $node->type, TRUE)) {
         _file_attach_save($node, (object)$a1);
@@ -737,8 +744,8 @@ function file_attach_comment(&$a1, $op) {
     case 'view':
       // $a1 is a comment object.
       if (user_access('view attached files')) {
-        
-	// There is no 'load' operation for the comments. Have to load files manually.
+
+        // There is no 'load' operation for the comments. Have to load files manually.
         if (empty($a1->files) && isset($a1->cid)) {
           $node = node_load($a1->nid);
 
@@ -796,17 +803,17 @@ function _file_attach_load($nid, $vid, $cid = 0) {
  */
 function _file_attach_view($object) {
   drupal_add_css(drupal_get_path('module', 'file_attach') .'/file_attach.css', 'module');
-  
+
   $pid = $object->type ? 0 : $object->cid;
   $files = array();
-  
+
   // Hide not listed or marked for deletion files.
   if (is_array($object->files)) {
     foreach ($object->files as $file) {
       if (!empty($file->list) && empty($file->remove)) {
         $files[] = (object)$file;
       }
-    }  
+    }
   }
 
   // Add the attachments list to node body.
@@ -819,7 +826,7 @@ function _file_attach_view($object) {
       );
     }
 
-    // Add attachment previews. We need to ensure that each file on each 
+    // Add attachment previews. We need to ensure that each file on each
     // commnet gets a unique id to make sure jquery is not confused.
     $id = 0;
     foreach ($files as $file) {
@@ -880,7 +887,7 @@ function _file_attach_save($node, $comment = NULL) {
       $result = db_query('SELECT fa.fnid FROM {file_attachments} fa WHERE fa.fnid = %d AND fa.nid = %d AND fa.vid = %d AND fa.cid = %d', $file->nid, $node->nid, $node->vid, $cid);
       $file_update = (object)array('fnid' => $file->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_update, db_result($result) ? array('fnid', 'nid', 'vid', 'cid') : array());
-      
+
       // Save a new file node title.
       $node_file = node_load($file->nid);
       if (node_access('update', $node_file)) {
@@ -916,9 +923,9 @@ function _file_attach_propagate_terms($node) {
       $result = db_query('SELECT fa.fnid AS nid FROM {file_attachments} fa WHERE fa.nid = %d ORDER BY fa.fnid', $node->nid);
       while ($row = db_fetch_object($result)) {
         $file_node = node_load($row->nid);
-        
+
         $taxonomy = $file_node->taxonomy;
-	// creating union of the free tags.
+        // Creating union of the free tags.
         foreach (array_intersect_key(is_array($node->taxonomy['tags']) ? $node->taxonomy['tags'] : array(), array_flip($vocabs)) as $vid => $free_tags) {
           $terms = array();
           foreach ($taxonomy as $tid => $data) {
@@ -934,7 +941,7 @@ function _file_attach_propagate_terms($node) {
         foreach (array_intersect_key($node->taxonomy, array_flip($vocabs)) as $vid => $other_tags) {
           $taxonomy = array_merge($taxonomy, array_diff_key(is_array($node->taxonomy[$vid]) ? $node->taxonomy[$vid] : array(), $taxonomy));
         }
-	
+
         // merge both tag types.
         $taxonomy['tags'] = $tags;
 

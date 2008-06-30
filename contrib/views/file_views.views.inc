@@ -16,16 +16,16 @@ require_once $views_path .'/node.views.inc';
 // VIEWS API HOOKS
 
 /**
- * Implementation of hook_views_data()
+ * Implementation of hook_views_data().
  */
 function file_views_views_data() {
   $data = array();
-   
+
   // ----------------------------------------------------------------------
   // file_nodes table
-   
+
   $data['file_nodes']['table']['group']  = t('Files');
-  
+
   $data['file_nodes']['table']['join'] = array(
     'node' => array(
       'left_field' => 'nid',
@@ -123,9 +123,9 @@ function file_views_views_data() {
 
   // ----------------------------------------------------------------------
   // file_attachments table
-   
+
   $data['file_attachments']['table']['group']  = t('Files');
-  
+
   $data['file_attachments']['table']['name']  = 'file_attachments';
   $data['file_attachments']['table']['join'] = array(
     'node' => array(
@@ -155,7 +155,7 @@ function file_views_views_data() {
   );
 
   $data['file_attached_to']['table']['group']  = t('Files');
-  
+
   $data['file_attached_to']['table']['name']  = 'file_attachments';
   $data['file_attached_to']['table']['join'] = array(
     'node' => array(
@@ -334,7 +334,7 @@ class views_handler_field_file_attachments_fnid extends views_handler_field_prer
   function pre_render($values) {
     $nids = array();
     $this->items = array();
-    
+
     $data = array();
     foreach ($values as $result) {
       $nids[] = $result->{$this->aliases['nid']};
@@ -394,7 +394,7 @@ class views_handler_field_file_attachments_nid extends views_handler_field_prere
   function pre_render($values) {
     $nids = array();
     $this->items = array();
-    
+
     $data = array();
     foreach ($values as $result) {
       $nids[] = $result->{$this->aliases['nid']};

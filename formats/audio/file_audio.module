@@ -211,7 +211,7 @@ function file_audio_metadata_parse($filename, $mimetype) {
   $getid3_data = variable_get('file_audio_getid3_data', $getid3_data_default);
 
   if (($info = @$id3->analyze($filename)) && !empty($info['audio'])) {
-    
+
     if (empty($info['audio']['codec']) && !empty($info['audio']['encoder']))
       $info['audio']['codec'] = $info['audio']['encoder'];
 
@@ -242,7 +242,7 @@ function file_audio_metadata_parse($filename, $mimetype) {
  */
 function file_audio_mp3_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
-  
+
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
   if ($converted || $file->converted) {
@@ -256,7 +256,7 @@ function file_audio_mp3_generate($file) {
     }
 
     $file->converted = TRUE;
-    
+
     watchdog('file_audio', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   }
   return TRUE;

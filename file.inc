@@ -55,7 +55,7 @@ function file_node_save(&$node, $file) {
       return FALSE;
     }
 
-    // Remove the entry from the {files} table about the temporary file, which was 
+    // Remove the entry from the {files} table about the temporary file, which was
     // added by the file_save_upload().
     db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
 
@@ -97,7 +97,7 @@ function file_data_save(&$file) {
     return FALSE;
   }
 
-  // Hook with a parent file. 
+  // Hook with a parent file.
   $parent = isset($file->parent) || isset($file->uri) ? array(
     'dc:source' => array(isset($file->parent) ? $file->parent : $file->uri),
   ) : array();
@@ -167,7 +167,7 @@ function file_node_create($node = array()) {
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
     $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
-    
+
     // File object passed from cron has a created property.
     if ((!$file->created && $count == 1) || ($file->created && $count == 0)) {
       // The last reference to the blob.
@@ -185,7 +185,7 @@ function file_node_delete_node($file) {
             if (!bitcache_delete(file_get_hash($key))) {
               watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $key), WATCHDOG_ERROR);
             }
-          }    
+          }
         }
       }
       if (!rdf_delete($file->uri, NULL, NULL, array('repository' => 'file'))) {
@@ -238,7 +238,7 @@ function file_mime_registry_path($file = 'mime.types') {
  * module name, description and icon file.
  *
  * @return
- *   A structured array of the MIME types pointing to the arary of the MIME details. 
+ *   A structured array of the MIME types pointing to the arary of the MIME details.
  */
 function file_get_mime_types() {
   static $handlers = array();
@@ -279,7 +279,7 @@ function file_mime_types() {
  *   Default description for the MIME type to be return if no modules are implementing the MIME type.
  *
  * @return
- *   The description for the MIME type. 
+ *   The description for the MIME type.
  */
 function file_mime_description_for($type, $default = NULL) {
   $handlers = file_get_mime_types();
@@ -297,7 +297,7 @@ function file_mime_description_for($type, $default = NULL) {
  *   A MIME type.
  *
  * @return
- *   The HTML image block for the MIME type. 
+ *   The HTML image block for the MIME type.
  */
 function file_mime_icon_for($type, $description = NULL) {
   $handlers = file_get_mime_types();
@@ -314,7 +314,7 @@ function file_mime_icon_for($type, $description = NULL) {
  * Returns a MIME extensions registered with the web server.
  *
  * @return
- *   A structured array of the MIME types pointing to the array of extensions. 
+ *   A structured array of the MIME types pointing to the array of extensions.
  */
 function file_mime_extensions() {
   static $registry = NULL;
@@ -326,7 +326,7 @@ function file_mime_extensions() {
           if (($line = trim(preg_replace('/\s+/', ' ', fgets($file, 1024)))) && $line[0] != '#') {
             $extensions = explode(' ', $line);
             $type = array_shift($extensions);
-            if (count($extensions) > 0) 
+            if (count($extensions) > 0)
               $registry[$type] = $extensions;
           }
         }
@@ -349,7 +349,7 @@ function file_mime_extensions() {
  *   A MIME type.
  *
  * @return
- *   An array of the extensions. 
+ *   An array of the extensions.
  */
 function file_mime_extensions_for($type) {
   $extensions = file_mime_extensions();
@@ -363,7 +363,7 @@ function file_mime_extensions_for($type) {
  *   Full filename of the file.
  *
  * @return
- *   A MIME type of the file. 
+ *   A MIME type of the file.
  */
 function file_mime_guess($filename) {
   $registry = file_mime_extensions();
@@ -386,7 +386,7 @@ function file_mime_guess($filename) {
  *   Full filename of the file.
  *
  * @return
- *   A MIME type of the file. 
+ *   A MIME type of the file.
  */
 function file_mime_detect($file) {
   if (FILE_MIME_AUTODETECTION == 2) {
@@ -402,7 +402,7 @@ function file_mime_detect($file) {
         }
       }
     }
-    $ext = preg_replace('/^.*\.([^\.]+)$/', '$1', strtolower($file->filename));
+    $ext = preg_replace('/^.*\.([^\.]+)$/', '$1', drupal_strtolower($file->filename));
     if (!in_array($ext, $exts) && !in_array($file->filemime, $mimes)) {
       return FALSE;
     }
@@ -466,7 +466,7 @@ function file_default_mime_types() {
  * handler details.
  *
  * @return
- *   A structured array of the MIME type handlers pointing to the handler detailsi. 
+ *   A structured array of the MIME type handlers pointing to the handler detailsi.
  */
 function file_get_mime_handlers() {
   static $mime_handlers = array();
@@ -516,7 +516,7 @@ function file_get_mime_handlers() {
  * and creates an array of the metadata info.
  *
  * @return
- *   A structured array of the metadata information. 
+ *   A structured array of the metadata information.
  */
 function file_get_metadata_info() {
   static $result = array();
@@ -543,7 +543,7 @@ function file_get_metadata_info() {
  *   A file's MIME type.
  *
  * @return
- *   A structured array of the metadata information. 
+ *   A structured array of the metadata information.
  */
 function file_metadata_extract($filename, $mimetype) {
   $result = array(
@@ -588,7 +588,7 @@ function file_generate_previews($file, $cron = NULL) {
   $result = TRUE;
 
   $previews = array();
-  
+
   if (!empty($file->uri)) {
     // Check if file exists in the bitcache.
     if (!bitcache_exists(file_get_hash($file->uri))) {
@@ -603,22 +603,22 @@ function file_generate_previews($file, $cron = NULL) {
         return FALSE;
       }
     }
-    
+
     // Find generated previews for the file.
     if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
       foreach ($generated as $uri => $data) {
         $item = rdf_normalize(rdf_query($uri, NULL, NULL));
         if (!bitcache_exists(file_get_hash($uri)) || !$item[$uri][rdf_qname_to_uri('dc:extent')][0]->value) {
           // The blob does not exist in the bitcache or the size is zero.
-	  // We delete the generated entry reference in the RDF
-	  // and the file will be converted again.
+          // We delete the generated entry reference in the RDF
+          // and the file will be converted again.
           if (!rdf_delete($uri, NULL, NULL, array('repository' => 'file'))) {
             watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
           }
         }
         if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]) {
           // Preview is already generated.
-	  // All derived files should have a MIME type set.
+          // All derived files should have a MIME type set.
           $previews[$mime][] = $item[$uri][rdf_qname_to_uri('dc:creator')][0];
         }
       }
@@ -632,7 +632,7 @@ function file_generate_previews($file, $cron = NULL) {
       $handlers_enabled[] = $handler;
     }
   }
-  
+
   // Find all preview generation handlers for the MIME type and check if the preview is already generated.
   $mime_types = file_get_mime_types();
   if (is_array($mime_types[$file->filemime]['handlers'])) {
@@ -659,13 +659,13 @@ function file_generate_previews($file, $cron = NULL) {
           $converter['handlers'] = array_intersect($handlers_enabled, array_diff($converter['handlers'], is_array($previews[$to]) ? $previews[$to] : array()));
         }
         if ($converter['enabled']) {
-	  // Need to generate a preview if there is no converted
-	  // file of the targer MIME or if we have not used MIME 
-	  // handler of the target MIME.
+          // Need to generate a preview if there is no converted
+          // file of the targer MIME or if we have not used MIME
+          // handler of the target MIME.
           if ((!empty($converter['handlers']) || !is_array($previews[$to])) && $converted = file_convert($file, $converter['pipeline'])) {
             $file_converted = (object)array('uri' => $file->uri, 'filepath' => $converted, 'filename' => $file->filename, 'filemime' => $to, 'uri' => $file->uri, 'converted' => TRUE);
             if (!empty($converter['handlers'])) {
-	      // Apply generate handlers.
+              // Apply generate handlers.
               foreach ($converter['handlers'] as $handler) {
                 if (function_exists($full_handler = $handler .'_generate')) {
                   $result = $full_handler($file_converted) && $result;
@@ -674,15 +674,15 @@ function file_generate_previews($file, $cron = NULL) {
             }
             else {
               // Save the file to the bitcache and RDF.
-              $result = file_data_save($file_converted) && $result;  
+              $result = file_data_save($file_converted) && $result;
             }
             unlink($converted);
-	    // Flag the wile that conversion took place.
-	    // Needed for a cron to calculate conversions.
+            // Flag the wile that conversion took place.
+            // Needed for a cron to calculate conversions.
             $file->convert = $file->convert ? $file->convert + 1 : 1;
           }
         }
-      }   
+      }
     }
   }
   return $result;
@@ -719,7 +719,7 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
           if (!$handler_generate($file)) {
             watchdog($module, 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
           }
-          
+
           // Remove temporal file
           unlink($converted);
         }
@@ -732,7 +732,7 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
 // File rendering & theming
 
 /**
- * Generates an array of all  preview handlers for the file pointing 
+ * Generates an array of all  preview handlers for the file pointing.
  * to the previews' bitcache URIs.
  *
  * @param $file
@@ -778,7 +778,7 @@ function file_handlers_for($file) {
 
 /**
  * Generates an array of all file's generated derivatives URIs pointing
- * to the data of that derivative. 
+ * to the data of that derivative.
  *
  * @param $file
  *   A file object as returned from file_node_load().
@@ -833,7 +833,7 @@ function file_render_generated($file, $id = 0) {
 
 /**
  * Returns the controls section of the all file previews. The actual
- * preview is rendered later via the AHAH call. 
+ * preview is rendered later via the AHAH call.
  *
  * @param $file
  *   A file object as returned from file_node_load().
@@ -848,11 +848,11 @@ function file_render_previews($file, $id = 0) {
   $file_handlers = file_handlers_for($file);
   foreach (file_get_mime_handlers() as $handler => $data) {
     if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render')) {
-      $form = file_render_preview_for($file, $handler, $id); 
+      $form = file_render_preview_for($file, $handler, $id);
       $previews[] = array('handler' => $handler, 'name' => $data['name']);
     }
   }
-  
+
   return theme('file_previews', array('previews' => $previews, 'nid' => $file->nid, 'name' => check_plain($file->name), 'id' => $id));
 }
 
@@ -973,12 +973,12 @@ function file_bitcache($op, $id, $stream = NULL) {
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
       foreach (file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL)) as $extension) {
-        if (preg_match('/\.'. $extension .'$/', strtolower($node->title))) {
+        if (preg_match('/\.'. $extension .'$/', drupal_strtolower($node->title))) {
           $extension_correct = TRUE;
           break;
         }
       }
-      $ext = !empty($extensions) && !$extension_correct ? '.'. reset($extensions) : ''; 
+      $ext = !empty($extensions) && !$extension_correct ? '.'. reset($extensions) : '';
       $title = $node->title ? $node->title : 'file';
       return array(
         'Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"',
@@ -998,7 +998,7 @@ function file_bitcache($op, $id, $stream = NULL) {
  *   A file hash.
  */
 function file_get_hash(&$file) {
-  return is_object($file) ? substr($file->uri, -FILE_HASH_SIZE) : substr($file, -FILE_HASH_SIZE);
+  return is_object($file) ? drupal_substr($file->uri, -FILE_HASH_SIZE) : drupal_substr($file, -FILE_HASH_SIZE);
 }
 
 /**
@@ -1015,7 +1015,7 @@ function file_get_hash(&$file) {
 function file_bitcache_access($id, $vid) {
   $uri = 'bitcache://'. $id;
   $parent_uri = rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:source'));
-  
+
   if (isset($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
     if (!$row) {
@@ -1081,7 +1081,7 @@ function file_get_files_size($uid, $converted = 1) {
   $result = db_query('SELECT fn.size FROM {file_nodes} fn INNER JOIN {node} n ON fn.nid = n.nid WHERE n.uid = %d', $uid);
   while ($row = db_fetch_object($result)) {
     $size += $row->size;
-    
+
     if ($converted && $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
       foreach ($generated as $uri => $data) {
         $size += rdf_value($uri, rdf_qname_to_uri('dc:extent'))->value;

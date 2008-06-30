@@ -35,7 +35,7 @@ function file_text_admin_settings() {
     '#maxlength'     => 255,
     '#description'   => t('The string that will be displayed at the end of the text preview to indicate that the preview is not a complete text file.'),
   );
-  
+
   // Code preview settings
   $form['code'] = array('#type' => 'fieldset', '#title' => t('Code preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['code']['file_text_code'] = array(

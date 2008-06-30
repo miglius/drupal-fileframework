@@ -38,7 +38,10 @@ function file_video_admin_settings() {
       '#default_value' => $getid3_data[$name],
     );
     $j++;
-    if ($j == 3) { $i++; $j = 0; }
+    if ($j == 3) {
+      $i++;
+      $j = 0;
+    }
   }
 
   $form['submit'] = array(

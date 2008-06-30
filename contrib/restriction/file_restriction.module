@@ -62,9 +62,9 @@ function file_restriction_form_alter(&$form, $form_state, $form_id) {
  */
 function file_restriction_file_validate($file) {
   global $user;
-  
+
   $restrictions = _file_restriction_get_restrictions();
-  
+
   return $user->uid == 0 ? array() : array_merge(
     !empty($restrictions['extension_allowed']) ? file_validate_extensions($file, $restrictions['extension_allowed']) : array(),
     !empty($restrictions['size']) ? file_validate_size($file, $restrictions['size']) : array(),
@@ -76,7 +76,7 @@ function file_restriction_file_validate($file) {
  * Returns the description of applied restrictions.
  *
  * @return
- *   An array of valid restrictions descriptions. 
+ *   An array of valid restrictions descriptions.
  */
 function file_restriction_description() {
   global $user;

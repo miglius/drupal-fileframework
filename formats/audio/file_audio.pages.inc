@@ -65,7 +65,7 @@ function file_audio_xspf($nid, $vid, $hash) {
   $output .= '</playlist>'."\n";
 
   drupal_set_header('Content-Type: application/xspf+xml; charset=utf-8');
-  print($output);  
+  print($output);
   exit;
 }
 

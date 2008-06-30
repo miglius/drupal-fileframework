@@ -24,7 +24,7 @@ function file_convert_admin_settings() {
     '#size'          => 10,
     '#description'   => t('The size is in MB. If uploaded file is bigger than this value, then the conversion will be performed on cron run instead. This should allow avoiding page timeouts on the file uploads. Zero means that all files will be converted on the upload.'),
   );
-  
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -86,21 +86,21 @@ function file_convert_admin_converter_settings() {
   foreach ($mime_converters as $from => $targets) {
     ksort($targets);
     foreach ($targets as $to => $converter) {
-      $name = 'file_convert_'. preg_replace('/\./', '\\', $from) .'_'. preg_replace('/\./', '\\', $to);
-      $form['convert']['convert_'. $from][$to][$name .'_pipeline'] = array(
+      $module = $converter['module'];
+      $name = $module .'__'. preg_replace('/\./', '\\', $from) .'_'. preg_replace('/\./', '\\', $to);
+      $form['convert'][$module .'__'. $from][$to][$name .'_pipeline'] = array(
         '#type' => 'textfield',
         '#name' => $name .'_pipeline',
         '#default_value' => $converter['pipeline'],
         '#size' => 40,
         '#maxlength' => 1024,
       );
-      $form['convert']['convert_'. $from][$to]['#check'] = $converter['installed'] ? t('Yes') : t('No');
-      $form['convert']['convert_'. $from][$to][$name .'_enabled'] = array(
+      $form['convert'][$module .'__'. $from][$to]['#check'] = $converter['installed'] ? t('Yes') : t('No');
+      $form['convert'][$module .'__'. $from][$to][$name .'_enabled'] = array(
         '#type' => 'checkbox',
         '#name' => $name .'_enabled',
         '#default_value' => $converter['enabled'],
       );
-      $form['convert']['convert_'. $from][$to]['#module'] = $converter['module'];
     }
   }
 
@@ -132,21 +132,28 @@ function file_convert_admin_converter_settings_validate($form, &$form_state) {
  */
 function file_convert_admin_converter_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+
+  $pipelines = array();
+  foreach ($form_state['values'] as $key => $val) {
+    if (preg_match('/^file_.*_pipeline$/', $key)) {
+      list($module, $from_to) = explode('__', preg_replace('/_pipeline$/', '', $key));
+      list($from, $to) = explode('_', $from_to);
+      $enabled = !empty($form_state['values'][$module .'__'. $from .'_'. $to .'_enabled']) ? 1 : 0;
+      $pipelines[$module][preg_replace('/\\\\/', '.', $from)][preg_replace('/\\\\/', '.', $to)] = array('pipeline' => $val, 'enabled' => $enabled);
+    }
+  }
+
   switch ($op) {
     case "Save configuration":
-      $pipelines = array();
-      foreach ($form_state['values'] as $key => $val) {
-        if (preg_match('/^file_convert_.*_pipeline$/', $key)) {
-          list($from, $to) = explode('_', preg_replace(array('/^file_convert_/', '/_pipeline$/'), array('', ''), $key));
-          $enabled = !empty($form_state['values']['file_convert_'. $from .'_'. $to .'_enabled']) ? 1 : 0;
-          $pipelines[preg_replace('/\\\\/', '.', $from)][preg_replace('/\\\\/', '.', $to)] = array('pipeline' => $val, 'enabled' => $enabled);
-        }
+      foreach ($pipelines as $module => $module_pipelines) {
+        variable_set($module .'_convert_pipelines', $module_pipelines);
       }
-      variable_set('file_convert_pipelines', $pipelines);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case "Reset to defaults":
-      variable_del('file_convert_pipelines');
+      foreach ($pipelines as $module => $module_pipelines) {
+        variable_del($module .'_convert_pipelines');
+      }
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

@@ -72,7 +72,10 @@ function file_image_admin_settings() {
       '#default_value' => $exif_data[$name],
     );
     $j++;
-    if ($j == 3) { $i++; $j = 0; }
+    if ($j == 3) {
+      $i++;
+      $j = 0;
+    }
   }
 
   // Geo settings
@@ -83,7 +86,7 @@ function file_image_admin_settings() {
     '#default_value' => FILE_IMAGE_GEO,
     '#description'   => t('EXIF extraction should be enabled under the "EXIF settings" for the geo location saving to take effect.'),
   );
-  
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),

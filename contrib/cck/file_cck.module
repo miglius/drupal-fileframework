@@ -132,7 +132,7 @@ function file_cck_field_info() {
 }
 
 /**
- * Implementation of hook_field_settings(). 
+ * Implementation of hook_field_settings().
  */
 function file_cck_field_settings($op, $field) {
   switch ($op) {
@@ -144,7 +144,7 @@ function file_cck_field_settings($op, $field) {
       }
       break;
     case 'views data':
-      $data = content_views_field_views_data($field);        
+      $data = content_views_field_views_data($field);
       return $data;
   }
 }
@@ -196,7 +196,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
         }
         if (isset($nid)) {
           // I cannot modify field entry here since cck module resets the changes made to the fields.
-	  // Therefore I create a updates queue which is executed from the hook_nodeapi().
+          // Therefore I create a updates queue which is executed from the hook_nodeapi().
           _file_cck_sql('UPDATE {'. $db_info['table'] .'} SET '. $db_info['columns']['value']['column'] .' = %d WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), array($nid, $node->vid));
         }
         $delta++;
@@ -251,7 +251,7 @@ function theme_file_cck_formatter_generic($element) {
   else if (is_numeric($fid)) {
     $node = node_load($fid);
     $file = $node->file;
-    if (!is_object($file) || !node_access('view', $node)) 
+    if (!is_object($file) || !node_access('view', $node))
       return '';
 
     $file->name = $node->title;
@@ -347,7 +347,7 @@ function theme_file_cck_formatter_generic($element) {
  *   The HTML section of the file formats.
  */
 function file_cck_render_links($file, $id = 0) {
-  if (empty($file->nid)) 
+  if (empty($file->nid))
     return '';
 
   $output = '<div class="file-links" id="file_formats_'. $id .'">';
@@ -454,7 +454,7 @@ function file_cck_file_process($element, $edit, $form_state, $form) {
 // AUXILIARY FUNCTIONS
 
 /**
- * Since hook_field() does not allow changing of the field value and 
+ * Since hook_field() does not allow changing of the field value and
  * direct writes to the database are overwritten in the content.module,
  * here we accumulate the field change sqls which are executted later.
  *
@@ -477,7 +477,7 @@ function _file_cck_sql($sql = NULL, $args = array()) {
 }
 
 /**
- * Since hook_field() does not allow changing of the field value and 
+ * Since hook_field() does not allow changing of the field value and
  * direct writes to the database are overwritten in the content.module,
  * here we accumulate the field change sqls which are executted later.
  *

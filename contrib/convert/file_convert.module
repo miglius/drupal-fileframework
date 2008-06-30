@@ -66,19 +66,20 @@ function file_convert_menu() {
 function file_get_mime_converters() {
   static $converters = array();
   if (!$converters) {
+    $saved_converters = array();
     foreach (module_implements('mime_converters') as $module) {
       if (($types = module_invoke($module, 'mime_converters')) && is_array($types)) {
         foreach ($types as $from => $tos) {
           foreach ($tos as $to => $converter) {
             if (!is_array($converter['handlers'])) $types[$from][$to]['handlers'] = array();
-              $types[$from][$to]['module'] = $module;        
-              $types[$from][$to]['enabled'] = 1;        
+              $types[$from][$to]['module'] = $module;
+              $types[$from][$to]['enabled'] = 1;
           }
         }
         $converters = array_merge_recursive($converters, $types);
       }
+      $saved_converters = array_merge($saved_converters, variable_get($module .'_convert_pipelines', array()));
     }
-    $saved_converters = variable_get('file_convert_pipelines', array());
     foreach ($converters as $from => $tos) {
       foreach ($tos as $to => $converter) {
         if (isset($saved_converters[$from][$to])) {
@@ -129,13 +130,17 @@ function file_convert($file, $pipeline, $options = array()) {
   }
   if (!_file_convert_check_pipeline($pipeline)) {
     watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
-    if (!$keep_in_file) { unlink($in_file); }
+    if (!$keep_in_file)
+      unlink($in_file);
+
     return NULL;
   }
   foreach (explode('||', $pipeline) as $pipe) {
     if ($out_file) {
       // Second and following pipes.
-      if (!$keep_in_file) { unlink($in_file); }
+      if (!$keep_in_file)
+        unlink($in_file);
+
       $keep_in_file = FALSE;
       $in_file = $out_file;
     }
@@ -144,7 +149,9 @@ function file_convert($file, $pipeline, $options = array()) {
       return NULL;
     }
   }
-  if (!$keep_in_file) { unlink($in_file); }
+  if (!$keep_in_file)
+    unlink($in_file);
+
   watchdog('file_convert', 'File uri=%uri, name=%name was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline));
 
   return $out_file;
@@ -173,7 +180,7 @@ function _file_convert_check_command($command) {
   if (trim($command) == '') {
     return FALSE;
   }
-  
+
   // Escaping '{', '}', '[', ']'.
   $args = array('/\\\\{/', '/\\\\}/', '/\\\\\[/', '/\\\\\]/');
   $replacements = array('-left-curly-bracket-', '-right-curly-bracket-', '-left-square-bracket-', '-right-square-bracket-');
@@ -198,8 +205,8 @@ function _file_convert_check_command($command) {
       }
       else if (preg_match('/(\S+):(\d+)/', $function, $match)) {
         // network connection.
-        $fp = @fsockopen($match[1], $match[2], $errno, $errstr, 10); 
-        if (!$fp) { 
+        $fp = @fsockopen($match[1], $match[2], $errno, $errstr, 10);
+        if (!$fp) {
           return FALSE;
         }
         else {
@@ -223,12 +230,12 @@ function _file_convert_check_command($command) {
  */
 function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
   $result = TRUE;
-  
+
   // Escaping '{', '}', '[', ']'.
   $args = array('/\\\\{/', '/\\\\}/', '/\\\\\[/', '/\\\\\]/');
   $replacements = array('-left-curly-bracket-', '-right-curly-bracket-', '-left-square-bracket-', '-right-square-bracket-');
   $pipeline = preg_replace($args, $replacements, $pipeline);
-  
+
   $args = array('/{\S+:\d+}/', '/{{/', '/}}/', '/{/', '/}/', '/\[in_file\]/', '/\[out_file\]/', '/\[in_content\]/', '/\[out_content\]/');
   $replacements = array('', '', '', '', '', $from, $to, '$in_content', '$out_content');
   foreach ($options as $name => $val) {

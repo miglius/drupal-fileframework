@@ -83,7 +83,7 @@ function theme_file_video_windowsmedia_render($options = array()) {
  */
 function theme_file_video_realmedia_render($options = array()) {
   extract($options, EXTR_SKIP);
-  
+
   $height += 40; // Accommodate video controls
 
   $output = '<!--[if !IE]> <--><object type="audio/x-pn-realaudio-plugin" width="'. $width .'" height="'. $height .'" data="'. $src .'"><!--> <![endif]-->'."\n";
@@ -118,7 +118,7 @@ function theme_file_video_flash_flv_render($options = array()) {
   $output .= 'src="'. $player_path .'/FlowPlayerClassic.swf" ';
   $output .= 'type="application/x-shockwave-flash" ';
   $output .= '/>';
-  
+
   return theme('file_video_render_player', $options, $output, t('http://www.adobe.com/products/flashplayer/'), t('Download the latest Adobe Flash Player'));
 }
 

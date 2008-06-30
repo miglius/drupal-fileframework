@@ -170,7 +170,7 @@ function file_admin_handler_settings() {
           foreach ($converter['handlers'] as $h) {
             if ($h == $handler) {
               $converters[] = $from .' -> '. $to;
-            } 
+            }
           }
         }
       }

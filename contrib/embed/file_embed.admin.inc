@@ -16,7 +16,7 @@
  */
 function file_embed_admin_settings() {
   $form = array();
-  
+
   // Button settings
   $options = array(t('Show on textareas on every page except the listed pages.'), t('Show on textareas only on the listed pages.'));
   $form['button'] = array('#type' => 'fieldset', '#title' => t('Button settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);

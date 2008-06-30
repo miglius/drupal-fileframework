@@ -1,10 +1,10 @@
 <?php
 // $Id$
-
 /**
  * @file
  * Themes for file formats.
  */
+
 //////////////////////////////////////////////////////////////////////////////
 // Theme callbacks
 
@@ -13,7 +13,7 @@
  */
 function theme_file_admin_handler_settings($form) {
   drupal_add_tabledrag('file-table', 'order', 'sibling', 'handler-weight');
-  
+
   $header[] = '';
   $header[] = t('Handler');
   $header[] = t('MIME types');
@@ -66,7 +66,9 @@ function theme_file_previews($data) {
 
   $prevs = array();
   foreach ($previews as $preview) {
-    if (!isset($handler_first)) { $handler_first = $preview['handler']; }
+    if (!isset($handler_first)) {
+      $handler_first = $preview['handler'];
+    }
     $prevs[] = '<span class="file_preview_toggle" id="'. $preview['handler'] .'_'. $id .'">'. l($preview['name'], !empty($nid) ? 'node/'. $nid .'/file_preview/'. $preview['handler'] : '') .'</span>';
   }
   if (!empty($prevs)) {
@@ -74,7 +76,7 @@ function theme_file_previews($data) {
     $output .= t('File') .' '. ($name ? '"'. $name .'" ': '') . t('preview') .': '. implode(' | ', $prevs);
     $output .= !isset($nid) ? '<div id="file_preview_notice_'. $id .'">'. t(' (works only with a Javascript enabled)') .'</div>' : '';
     $output .= '</div>';
- 
+
     $output .= '<div id="file_preview_container_'. $id .'"></div>';
     if (!isset($nid)) {
       drupal_add_js('$(document).ready(function() { $(\'#file_preview_notice_'. $id .'\').hide(); });', 'inline');
@@ -98,7 +100,7 @@ function theme_file_previews($data) {
  */
 function theme_file_generated($data) {
   extract($data, EXTR_SKIP);
-  
+
   drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
   drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');

@@ -120,7 +120,7 @@ function filearchive_metadata_info() {
  */
 function file_archive_archive_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
-  
+
   if (function_exists('file_text_text_generate')) {
     $file->noconvert = TRUE;
     $file->handler = 'file_archive_archive';
@@ -151,7 +151,7 @@ function file_archive_archive_render($uri, $options = array()) {
  */
 function _file_archive_render_options($uri, $options = array()) {
   $text = check_plain(bitcache_get_contents(file_get_hash($uri)));
-  
+
   return array_merge($options, compact('text'));
 }
 

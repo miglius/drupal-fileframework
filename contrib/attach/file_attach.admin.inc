@@ -16,7 +16,7 @@
  */
 function file_attach_admin_settings() {
   $form = array();
-  
+
   // Attachments settings
   $form['attachments'] = array('#type' => 'fieldset', '#title' => t('Attachments settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['attachments']['file_attach_method'] = array(
@@ -33,7 +33,7 @@ function file_attach_admin_settings() {
     '#options'       => drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
     '#description'   => t('If uploads are performed on node submit, select a number of files allowed to attach to the form. This setting does not restrict the total number of attachments. More attachments can be added on the preview page.'),
   );
-  
+
   // Visibility settings
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['visibility']['file_attach_show_attachments'] = array(
@@ -54,7 +54,7 @@ function file_attach_admin_settings() {
     '#description'   => 'Show a list of the avialable converted attachments in other MIME types. The list is also available as a block.',
     '#default_value' => FILE_ATTACH_SHOW_GENERATED,
   );
-  
+
   // Vocabulary settings
   $options = array();
   foreach (taxonomy_get_vocabularies() as $vid => $vocab) {

@@ -244,11 +244,11 @@ function file_image_metadata_parse($filename, $mimetype) {
       $metadata =  array_merge($rdf_exif, $metadata);
       if (FILE_IMAGE_GEO && $info['GPSLatitudeRef'] && $info['GPSLatitude'] && $info['GPSLongitudeRef'] && $info['GPSLongitude']) {
         // Geo data.
-        $lat = _file_image_geo_convert($info['GPSLatitude'], 'float'); 
-        $long = _file_image_geo_convert($info['GPSLongitude'], 'float'); 
+        $lat = _file_image_geo_convert($info['GPSLatitude'], 'float');
+        $long = _file_image_geo_convert($info['GPSLongitude'], 'float');
         $rdf_geo = array(
-          'geo:lat'  => $info['GPSLatitudeRef'] == 'N' ? array((string)$lat) : array((string)-$lat), 
-          'geo:long' => $info['GPSLongitudeRef'] == 'E' ? array((string)$long) : array((string)-$long), 
+          'geo:lat'  => $info['GPSLatitudeRef'] == 'N' ? array((string)$lat) : array((string)-$lat),
+          'geo:long' => $info['GPSLongitudeRef'] == 'E' ? array((string)$long) : array((string)-$long),
         );
         $metadata =  array_merge($rdf_geo, $metadata);
       }
@@ -274,7 +274,7 @@ function file_image_preview_generate($file) {
     watchdog('file_image', 'A file %file, %uri is zero size.', array('%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
     return TRUE;
   }
-  
+
   if ($file->converted) {
     $file->metadata = array_merge(array(
       'dc:creator' => array($file->handler),
@@ -284,12 +284,12 @@ function file_image_preview_generate($file) {
     if (!file_data_save($file)) {
       return FALSE;
     }
- 
+
     $file->converted = TRUE;
-    
+
     watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $file->handler, '%uri' => $file->uri));
   }
-  
+
   $handlers = array();
   foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
     $line = trim(preg_replace('/\s+/', ' ', $line));
@@ -308,7 +308,7 @@ function file_image_preview_generate($file) {
   foreach ($handlers as $handler => $data) {
     list($max_width, $max_height) = explode('x', $data['resolution']);
     $ratio = min($max_width / $width, $max_height / $height);
-    if ($ratio > 0.0 && $ratio < 1.0) { 
+    if ($ratio > 0.0 && $ratio < 1.0) {
       $previews[(string)$ratio] = array('handler' => $handler, 'resolution' => $data['resolution']);
     }
   }
@@ -326,10 +326,10 @@ function file_image_preview_generate($file) {
       if (!$converted = file_convert($file, "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
         watchdog('file_image', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       }
-    
+
       // Extract metadata.
       $metadata = file_metadata_extract($converted, $file->filemime);
-  
+
       $file->filepath = $converted;
       $file->converted = TRUE;
       $files[] = $converted;
@@ -344,15 +344,15 @@ function file_image_preview_generate($file) {
       if (!file_data_save($file)) {
         return FALSE;
       }
-   
+
       $file->converted = TRUE;
       unset($converted);
-    
+
       watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%uri' => $file->uri));
     }
   }
 
-  array_map(create_function('$f', 'return unlink($f);'), $files);  
+  array_map(create_function('$f', 'return unlink($f);'), $files);
 
   return TRUE;
 }

@@ -28,6 +28,7 @@ function file_text_uninstall() {
   variable_del('file_text_preview_lines');
   variable_del('file_text_preview_string');
   variable_del('file_text_code');
+  variable_del('file_text_convert_pipelines');
 }
 
 //////////////////////////////////////////////////////////////////////////////

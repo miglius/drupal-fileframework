@@ -27,7 +27,7 @@ function theme_file_browser_page($data) {
  */
 function theme_file_browser_term($data) {
   extract($data, EXTR_SKIP);
-  
+
   $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
@@ -51,11 +51,11 @@ function theme_file_browser_term($data) {
  */
 function theme_file_browser_file($data) {
   extract($data, EXTR_SKIP);
-  
+
   $title_length = $columns ? 50 : 14;
-  $title = strlen($title) > $title_length ? substr($title, 0, $title_length - 3) .'...' : $title;
+  $title = drupal_strlen($title) > $title_length ? drupal_substr($title, 0, $title_length - 3) .'...' : $title;
   $link = l($title, $url, array('attributes' => array('title' => $title), 'onclick' => 'return Drupal.file_browserFileLinkClick(this);'));
-  
+
   $output = '<div class="file-node" id="file-node-'. $id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
   $output .= '<div class="file-icon">'. $icon .'</div>';
@@ -74,7 +74,7 @@ function theme_file_browser_file($data) {
  */
 function theme_file_browser_preview($data) {
   extract($data, EXTR_SKIP);
-  
+
   $output = '<input id="file-preview-url" type="hidden" value="'. url('file_browser/preview') .'" />';
   $output .= '<div id="file-preview-spinner" style="display: none;"></div>';
   $output .= '<div id="file-preview">';
@@ -133,7 +133,7 @@ function theme_file_browser_preview($data) {
  */
 function theme_file_browser_block($data) {
   extract($data, EXTR_SKIP);
-  
+
   $output = '<div class="file-system" id="file-system-'. $vid .'">';
   $output .= $terms;
   $output .= '</div>';

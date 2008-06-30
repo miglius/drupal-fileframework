@@ -61,9 +61,9 @@ function file_gallery_menu() {
       'file' => 'file_gallery.admin.inc',
     ),
     'file_gallery' => array(
-      'title' => t('File gallery'),
+      'title' => 'File gallery',
       'page callback' => 'file_gallery_page',
-      'access arguments' => array('view files'), 
+      'access arguments' => array('view files'),
       'type' => MENU_NORMAL_ITEM,
     ),
   );
@@ -90,7 +90,7 @@ function file_gallery_page($vid = 'my', $tid = NULL, $filter = NULL) {
 //////////////////////////////////////////////////////////////////////////////
 
 /*
- * Builds a gallery content. 
+ * Builds a gallery content.
  */
 function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = array()) {
   $module = empty($options['module']) ? NULL : $options['module'];
@@ -110,34 +110,31 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
 
   $folders = $files = 0;
   if ($vid == 'my') {
-    // For the vocabulary view, get the list of file_taxonomy.module
+    // For the vocabulary view, get the list of file_browser.module
     // vocabularies, if available, and the user's og_vocab.module
     // subscriptions:
     $terms = array();
-    
-    /*
-    if (module_exists('file_taxonomy')) {
-      $terms = array_filter(variable_get('file_taxonomy_vocabularies', array()), 'is_string');
-    }
-    */
 
-    /*
-    if (module_exists('og_vocab')) {
+    if (module_exists('file_browser')) {
+      $terms = array_filter(variable_get('file_browser_vocabularies', array()), 'is_string');
+    }
+
+    if (module_exists('og_vocab') && FILE_BROWSER_OG_VOCABULARIES) {
       global $user;
-      foreach (array_keys(og_get_subscriptions($user->uid)) as $nid) {
-        if ($vid = db_result(db_query('SELECT vid FROM {og_vocab} WHERE nid = %d', $nid))) {
+      foreach (array_keys($user->og_groups) as $nid) {
+        $result = db_query('SELECT vid FROM {og_vocab} WHERE nid = %d', $nid);
+        while ($vid = db_result($result)) {
           if (!array_key_exists($vid, $terms)) {
             $terms[$vid] = (string)$vid;
           }
         }
       }
     }
-    */
 
-    //foreach (array_map('taxonomy_get_vocabulary', $terms) as $term) {
-    foreach (taxonomy_get_vocabularies() as $term) {
+    $vocabularies = taxonomy_get_vocabularies('file');
+    foreach ($terms as $term) {
       $folders++;
-      $output .= _file_gallery_term($term, $embed_options, $module);
+      $output .= _file_gallery_term($vocabularies[$term], $embed_options, $module);
     }
   }
   else {
@@ -161,11 +158,11 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
       if (($node = node_load($node->nid)) && $node->type == 'file' && is_object($node->file)) {
         if (!$filter || preg_match('/^'. $filter .'\//', $node->file->type)) {
           $files++;
-          db_query("INSERT INTO {file_gallery} (nid) VALUES (%d)", $node->nid);
+          db_query("INSERT INTO file_gallery (nid) VALUES (%d)", $node->nid);
         }
       }
     }
-    $result = pager_query('SELECT nid FROM {file_gallery}', $pager, 1, NULL);
+    $result = pager_query('SELECT nid FROM file_gallery', $pager, 1, NULL);
     while ($nid = db_result($result)) {
       $node = node_load($nid);
       $output .= _file_gallery_node($node, $embed_options, $module);
@@ -268,7 +265,7 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : NULL;
 
   $file = $node->file;
-  
+
   // Find a thumbnail for the file.
   $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
   $thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
@@ -280,9 +277,9 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
 
   $url_preview = $url_preview ? $url_preview : array('link' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']));
   $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : array('link' => 'node/'. $node->nid);
- 
+
   $title = check_plain($node->title);
-  $title_short = strlen($title) > 20 ? substr($title, 0, 17) .'...' : $title;
+  $title_short = drupal_strlen($title) > 20 ? drupal_substr($title, 0, 17) .'...' : $title;
 
   return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview'), $options);
 }
@@ -298,7 +295,7 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
  *
  * @return
  *   An array with a preview parameters.
- */ 
+ */
 function _file_gallery_preview($file) {
   $previews = array();
   $file_handlers = file_handlers_for($file);
@@ -338,7 +335,7 @@ function _file_gallery_preview($file) {
 
 /*
  * Sets a default embed options.
- */ 
+ */
 function _file_gallery_embed_options() {
   list($width, $height) = explode('x', FILE_GALLERY_EMBED_SIZE);
   return array('max_width' => $width, 'max_height' => $height, 'container' => FALSE);
@@ -346,7 +343,7 @@ function _file_gallery_embed_options() {
 
 /*
  * Loads a page headders.
- */ 
+ */
 function _file_gallery_add_headers($module = NULL) {
   static $initialized = FALSE;
   if (!$initialized) { // once only
@@ -355,7 +352,7 @@ function _file_gallery_add_headers($module = NULL) {
     // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
     drupal_add_css(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.css', 'module');
     drupal_add_css(drupal_get_path('module', 'file_gallery') .'/file_gallery.css', 'module');
-    
+
     drupal_add_js(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file_gallery') .'/file_gallery.js', 'module');
 
@@ -370,12 +367,12 @@ function _file_gallery_add_headers($module = NULL) {
 
 /*
  * Loads a page footers.
- */ 
+ */
 function _file_gallery_add_footers($module = NULL) {
   static $initialized = FALSE;
   if (!$initialized) { // once only
     $initialized = TRUE;
-    
+
     //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
     drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
   }

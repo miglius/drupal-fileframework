@@ -27,80 +27,9 @@ function file_audio_install() {}
 function file_audio_uninstall() {
   variable_del('file_audio_getid3');
   variable_del('file_audio_getid3_data');
+  variable_del('file_audio_convert_pipelines');
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // MODULE UPGRADE MIGRATIONS
 
-/**
- * Implementation of hook_update_N().
- *
- * Performs a conversion of any existing audio.module data. Nodes of the
- * type 'audio' become 'file' nodes, and the constituent file object is
- * fingerprinted, renamed, and moved to the default files repository.
- */
-/*
-function file_audio_update_1() {
-  // Make sure file.module has been installed or enabled. Without it, none
-  // of the following will work, and the administrator will just have to
-  // attempt the update again later...
-  if (!module_exist('file')) {
-    watchdog('install', t('Module installation failed. file_audio.module requires that file.module be installed and enabled.'), WATCHDOG_ERROR);
-    return array(update_sql("UPDATE {system} SET status = 0 WHERE type = 'module' AND name = 'file_audio'"));
-  }
-
-  // Remove PHP's execution time limit to prevent timeout:
-  set_time_limit(0);
-  clearstatcache();
-
-  $updates = array();
-  $total = $errors = 0;
-
-  // Process all audio.module nodes in the database
-  $nodes = db_query("SELECT nid FROM {node} WHERE type = 'audio' ORDER BY nid");
-  while ($node = db_fetch_object($nodes)) {
-    $total++;
-    $node = node_load($node->nid);
-
-    // There should be exactly one entry in the `audio_file` table for the audio node's vid:
-    $files = db_query("SELECT * FROM {audio_file} WHERE vid = %d", $node->vid);
-    if ($file = db_fetch_object($files)) {
-      $old_path = file_create_path($file->filepath);
-
-      if (!file_exists($old_path)) {
-        $errors++;
-        watchdog('update', t('File conversion (audio.module file ID #%fid) failed. file_audio.module update #1 failed to convert the file %filepath because the file does not exist.', array('%fid' => $file->fid, '%filepath' => theme('placeholder', $old_path))), WATCHDOG_WARNING);
-        continue; // skip to next node
-      }
-
-      $file = (object)array('nid' => $node->nid, 'filename' => $file->origname, 'filepath' => 'audio/' . $file->filename, 'filemime' => $file->filemime, 'filesize' => $file->filesize);
-
-      // Save the audio node's views/downloads statistics:
-      $file->views = db_result(db_query("SELECT SUM(play_count) FROM {audio} WHERE nid = %d", $node->nid));
-      $file->downloads = db_result(db_query("SELECT SUM(download_count) FROM {audio} WHERE nid = %d", $node->nid));
-
-      // Defer fingerprinting to the file.module cron repair runs
-      $file->fingerprint = NULL;
-
-      // Parse any available metadata:
-      _file_update_metadata($file, $old_path);
-
-      // TODO: should we save potentially user-entered metadata from the table `audio_metadata`?
-
-      // Create a standard Drupal file object in the database
-      $file->rid = FILE_REPOSITORY;
-      $file->fid = file_create($file);
-    }
-
-    $updates[] = update_sql("UPDATE {node} SET type = 'file' WHERE nid = " . $node->nid);
-    $updates[] = update_sql("DELETE FROM {audio_metadata} WHERE vid = " . $node->vid);
-    $updates[] = update_sql("DELETE FROM {audio_file} WHERE vid = " . $node->vid);
-    $updates[] = update_sql("DELETE FROM {audio} WHERE nid = " . $node->nid);
-  }
-
-  watchdog('update', t('Converted %total audio.module files to file.module nodes with %errors errors.', array('%total' => $total, '%errors' => $errors)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
-
-  return $updates;
-}
- */
-//////////////////////////////////////////////////////////////////////////////

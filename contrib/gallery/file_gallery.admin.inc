@@ -16,7 +16,7 @@
  */
 function file_gallery_admin_settings() {
   $form = array();
-  
+
   // Display settings
   $form['display'] = array('#type' => 'fieldset', '#title' => t('Display settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['display']['file_gallery_per_page'] = array(

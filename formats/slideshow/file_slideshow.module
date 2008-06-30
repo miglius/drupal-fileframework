@@ -154,7 +154,7 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
     return NULL;
 
   $pdfinfo = exec('which pdfinfo');
-  if (empty($pdfinfo)) 
+  if (empty($pdfinfo))
     return NULL;
 
   $metadata = array();

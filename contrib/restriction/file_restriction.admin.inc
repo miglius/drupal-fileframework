@@ -18,7 +18,7 @@ function file_restriction_admin_settings() {
   $form = array();
 
   $form['description'] = array(
-    '#value' => t('The restrictions are applied to all users except administration account with ID=\'1\'.'), 
+    '#value' => t('The restrictions are applied to all users except administration account with ID=\'1\'.'),
   );
   $form['general'] = array('#type' => 'fieldset', '#title' => t('General settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['general']['file_restriction_extension_allowed'] = array(

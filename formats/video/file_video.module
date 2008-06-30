@@ -180,6 +180,12 @@ function file_video_mime_converters() {
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
+    'video/mp4' => array(
+      'video/x-flv' => array(
+        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'handlers' => array('file_video_flash_flv'),
+      ),
+    ),
     'video/mpeg' => array(
       'video/x-flv' => array(
         'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
@@ -253,7 +259,7 @@ function file_video_metadata_parse($filename, $mimetype) {
       $info['comments'] = $info['asf']['comments'];
     if (empty($info['video']['codec']) && !empty($info['video']['encoder']))
       $info['video']['codec'] = $info['video']['encoder'];
-    
+
     // Needed to get the resolution for Windows Media files
     if (is_array($info['video']['streams'])) {
       foreach (reset($info['video']['streams']) as $key => $value) {
@@ -273,7 +279,7 @@ function file_video_metadata_parse($filename, $mimetype) {
       unset($info['video']['resolution_x']);
     if ($info['video']['resolution_y'] < 0 || $info['video']['resolution_y'] > 2048)
       unset($info['video']['resolution_y']);
-    
+
     $rdf_getid3 = array();
     foreach ($getid3 as $name => $data) {
       if ($getid3_data[$name] && $element = file_get_recursive($info, $data['getid3'])) {
@@ -292,7 +298,7 @@ function file_video_metadata_parse($filename, $mimetype) {
     }
     $metadata =  array_merge($rdf_getid3, $metadata);
   }
-  
+
   return $metadata;
 }
 
@@ -304,7 +310,7 @@ function file_video_metadata_parse($filename, $mimetype) {
  */
 function file_video_flash_swf_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
-  
+
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
   if ($file->converted) {
@@ -316,7 +322,7 @@ function file_video_flash_swf_generate($file) {
     if (!file_data_save($file)) {
       return FALSE;
     }
-    
+
     $file->converted = TRUE;
 
     watchdog('file_video', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
@@ -329,7 +335,7 @@ function file_video_flash_swf_generate($file) {
  */
 function file_video_flash_flv_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
-   
+
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
   if ($file->converted) {
@@ -341,7 +347,7 @@ function file_video_flash_flv_generate($file) {
     if (!file_data_save($file)) {
       return FALSE;
     }
-    
+
     watchdog('file_video', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
 
     // Create a flash thumbnail image.
@@ -357,13 +363,13 @@ function file_video_flash_flv_generate($file) {
  */
 function file_video_flash_image_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
-  
+
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
   if ($file->converted) {
     //$file->noconvert = TRUE;
     $file->handler = 'file_video_flash_image';
-    
+
     if (function_exists('file_image_preview_generate') && !file_image_preview_generate($file)) {
       watchdog('file_video', 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => 'image/jpeg', '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       return FALSE;
@@ -444,9 +450,9 @@ function file_video_rdf_namespaces() {
  * Renders options for the video display.
  */
 function _file_video_render_options($uri, $options = array()) {
-  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'))->value;    
-  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'))->value;  
-  
+  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'))->value;
+  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'))->value;
+
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : NULL);
   $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : NULL);
 

@@ -183,13 +183,13 @@ function file_embed_textarea_process($element) {
 
       // Ensure that no matter the field settings, only one link is added per
       // page - this prevents problems with file_gallery's Thickbox.js library
-      /* 
+      /*
       static $counter = 0;
       if (++$counter == 1) {
         $element['#suffix'] .= _file_embed_textarea_link($element, $type);
       }
       */
-      // For the comment the textarea is proccesed twice, therefore commenting out 
+      // For the comment the textarea is proccesed twice, therefore commenting out
       // this section for now.
       $element['#suffix'] .= _file_embed_textarea_link($element, $type);
     }
@@ -226,7 +226,7 @@ function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TY
     }
   }
   $url_gallery = array('url' => 'file_gallery', 'query' => array_merge(file_embed_file_gallery('query'), $query));
-  
+
   $output = theme('file_embed_textarea_link', compact('id', 'url_attach', 'url_gallery', 'link'));
 
   return $output;
@@ -246,7 +246,7 @@ function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TY
  *   Output string with a filter substituted with the actual HTML snippet.
  */
 function file_embed_file_filter($op, $text) {
-  $callback = 'file_embed_file_filter_'. $op; 
+  $callback = 'file_embed_file_filter_'. $op;
   return preg_replace_callback('/\[file:\s{0,1}(\d+)(\s*[^\]]*)\]/', $callback, $text);
 }
 
@@ -278,7 +278,7 @@ function file_embed_file_filter_process($matches) {
         }
       }
     }
-    
+
     // Set the default handler if not specified in the filter.
     if (!isset($options['handler'])) {
       $file_handlers = file_handlers_for($node->file);
@@ -350,7 +350,7 @@ function file_embed_options_form($form_state) {
       return '';
     }
   }
- 
+
   $options = array();
   $file_handlers = file_handlers_for($file);
   foreach (file_get_mime_handlers() as $handler => $data) {
@@ -443,7 +443,7 @@ function file_embed_attachments($node) {
       $list .= _file_gallery_node($file_node, $embed_options, 'file_embed');
     }
   }
-  
+
   print theme('file_gallery_page', theme('file_embed_attachments', compact('list')));
 }
 
@@ -454,7 +454,7 @@ function file_embed_options() {
   // This would ideally be in file_embed.js, but IE6 gives us grief by not
   // loading the external JS file in successive Thickbox openings, so we'll
   // just do this the old-fashioned ugly way:
- 
+
   $script = '<script type="text/javascript">';
   $script .= '$(document).ready(function(context) {
     // Display options dialog
@@ -478,12 +478,12 @@ function file_embed_options() {
     });
   });';
   $script .= '</script>';
-  
+
   $node = node_load($_GET['nid']);
   $title = check_plain($node->title);
   $preview = file_get_image($node->file, 'file_image_medium', explode('x', FILE_IMAGE_MEDIUM_RESOLUTION));
   $form = drupal_get_form('file_embed_options_form');
-  
+
   print theme('file_gallery_page', theme('file_embed_options', compact('script', 'title', 'preview', 'form')));
 }
 

@@ -26,7 +26,6 @@ function file_convert_install() {}
  */
 function file_convert_uninstall() {
   variable_del('file_convert_limit_size');
-  variable_del('file_convert_pipelines');
 }
 
 //////////////////////////////////////////////////////////////////////////////

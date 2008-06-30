@@ -16,11 +16,11 @@
  */
 function file_browser_admin_settings() {
   $form = array();
-  
+
   // Vocabulary settings
   $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $options = array();
-  foreach (taxonomy_get_vocabularies() as $vid => $vocabulary) {
+  foreach (taxonomy_get_vocabularies('file') as $vid => $vocabulary) {
     $options[$vid] = $vocabulary->name;
   }
   $form['vocabs']['file_browser_vocabularies'] = array(
@@ -29,6 +29,7 @@ function file_browser_admin_settings() {
     '#default_value' => array_filter(variable_get('file_browser_vocabularies', array()), 'is_string'),
     '#options'       => $options,
     '#multiple'      => TRUE,
+    '#description'   => t('Only the selected vocabularies will be shown in the file browser.'),
   );
 
   // Display settings
@@ -65,19 +66,20 @@ function file_browser_admin_settings() {
   // Organic groups integration
   if (module_exists('og')) {
     $form['og'] = array('#type' => 'fieldset', '#title' => t('Organic groups integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    if (module_exists('og_vocab')) {
+      $form['og']['file_browser_og_vocabularies'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t('Include group vocabularies'),
+        '#default_value' => FILE_BROWSER_OG_VOCABULARIES,
+        '#description'   => t('Vocabularies defined in the group\'s scope by og_vocab module will be included in the browser automatically even if they are not explicitly selected in "Include cross-cutting vocabularies".'),
+      );
+    }
     $form['og']['file_browser_og_upload'] = array(
       '#type'          => 'select',
       '#title'         => t('Enable selection of audience on file upload'),
       '#default_value' => FILE_BROWSER_OG_UPLOAD,
       '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
       '#description'   => t('Whether the file upload block should allow selection of the audience/groups for the files to be uploaded.'),
-    );
-    $form['og']['file_browser_og_filter'] = array(
-      '#type'          => 'select',
-      '#title'         => t('Filter files by subscribed groups'),
-      '#default_value' => FILE_BROWSER_OG_FILTER,
-      '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
-      '#description'   => t('Whether the file browser should display only those files that the current user has access to via the user\'s group subscriptions.'),
     );
     $form['og']['file_browser_og_preview'] = array(
       '#type'          => 'select',
@@ -86,14 +88,16 @@ function file_browser_admin_settings() {
       '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
       '#description'   => t('Whether the file preview block should include information about the audience/groups the currently selected file is targeted at.'),
     );
-    $form['og']['file_browser_og_unfiled'] = array(
-      '#type'          => 'textfield',
-      '#title'         => t('Associate non-categorized file nodes with group folder'),
-      '#default_value' => FILE_BROWSER_OG_UNFILED,
-      '#size'          => 20,
-      '#maxlength'     => 255,
-      '#description'   => t('Input a folder name here if you wish to enforce that all unfiled file nodes are automatically associated with a category of that name in the og_vocab.module vocabularies for the groups the file belongs to. Leave empty to disable this functionality.'),
-    );
+    if (module_exists('og_vocab')) {
+      $form['og']['file_browser_og_unfiled'] = array(
+        '#type'          => 'textfield',
+        '#title'         => t('Associate non-categorized file nodes with group folder'),
+        '#default_value' => FILE_BROWSER_OG_UNFILED,
+        '#size'          => 20,
+        '#maxlength'     => 255,
+        '#description'   => t('Input a folder name here if you wish to enforce that all unfiled file nodes are automatically associated with a category of that name in the og_vocab.module vocabularies for the groups the file belongs to. Leave empty to disable this functionality.'),
+      );
+    }
   }
 
   // Location module integration
@@ -107,7 +111,7 @@ function file_browser_admin_settings() {
       '#description'   => t('Whether to display latitude and longitude information for spatially-enabled nodes. <em>Requires location.module.</em>'),
     );
   }
-  
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -143,8 +147,8 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_set('file_browser_hide_empty', $form_state['values']['file_browser_hide_empty']);
       variable_set('file_browser_embed_previews', $form_state['values']['file_browser_embed_previews']);
       variable_set('file_browser_folder_properties', $form_state['values']['file_browser_folder_properties']);
+      variable_set('file_browser_og_vocabularies', $form_state['values']['file_browser_og_vocabularies']);
       variable_set('file_browser_og_upload', $form_state['values']['file_browser_og_upload']);
-      variable_set('file_browser_og_filter', $form_state['values']['file_browser_og_filter']);
       variable_set('file_browser_og_preview', $form_state['values']['file_browser_og_preview']);
       variable_set('file_browser_og_unfiled', $form_state['values']['file_browser_og_unfiled']);
       variable_set('file_browser_location_preview', $form_state['values']['file_browser_location_preview']);
@@ -156,8 +160,8 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_del('file_browser_hide_empty');
       variable_del('file_browser_embed_previews');
       variable_del('file_browser_folder_properties');
+      variable_del('file_browser_og_vocabularies');
       variable_del('file_browser_og_upload');
-      variable_del('file_browser_og_filter');
       variable_del('file_browser_og_preview');
       variable_del('file_browser_og_unfiled');
       variable_del('file_browser_location_preview');

@@ -158,7 +158,7 @@ function file_text_metadata_parse($filename, $mimetype) {
 
   $text = file_get_contents($filename);
   return array(
-    'wordnet:characters' => array((int)(strlen($text) - substr_count($text, ' ') - $lines)),
+    'wordnet:characters' => array((int)(drupal_strlen($text) - substr_count($text, ' ') - $lines)),
     'wordnet:words'      => array((int)str_word_count($text)),
     'wordnet:lines'      => array((int)substr_count($text, "\n")),
   );
@@ -172,19 +172,19 @@ function file_text_metadata_parse($filename, $mimetype) {
  */
 function file_text_text_generate($file) {
   if (!isset($file->parent)) $file->parent = $file->uri;
- 
+
   $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
 
   if ($converted || $file->converted) {
     $file->metadata = array_merge(array(
       'dc:creator' => array($file->handler ? $file->handler : 'file_text_text'),
     ), $metadata);
- 
+
     // Save preview to the bitcache and RDF.
     if (!file_data_save($file)) {
       return FALSE;
     }
-    
+
     $file->converted = TRUE;
 
     watchdog('file_text', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
@@ -210,7 +210,7 @@ function file_text_text_generate($file) {
         if (!file_data_save($file)) {
           return FALSE;
         }
-    
+
         watchdog('file_text', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => 'file_text_code', '%uri' => $file->uri));
       }
     }

@@ -18,8 +18,8 @@ define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetecti
 define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_path', ''));
 
 define('FILE_HASH_SIZE',                     variable_get('file_hash_size', 40));
-//define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 86400)); // 24x60x60s 
-define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 60)); // 24x60x60s 
+//define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 86400)); // 24x60x60s
+define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 60)); // 24x60x60s
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -199,11 +199,21 @@ function file_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
       $block = array(
-        array('info' => t('File properties')),
-        array('info' => t('File formats')),
+        array(
+          'info' => t('File properties'),
+          'status' => 1,
+          'region' => 'right',
+          'weight' => -2,
+        ),
+        array(
+          'info' => t('File formats'),
+          'status' => 1,
+          'region' => 'right',
+          'weight' => -1,
+        ),
       );
       return $block;
-    case 'view':   
+    case 'view':
       switch ($delta) {
         case 0:
           $block['subject'] = t('File properties');
@@ -281,7 +291,7 @@ function file_cron() {
         $byte_counter += $file->size;
       }
     }
-    
+
     // Log a concise summary message to let the administrator know what
     // occurred. Note that if any problems were encountered, file_repair()
     // will have already logged them on its part.
@@ -371,7 +381,7 @@ function file_node_form(&$node, $form_state) {
   $type = node_get_types('type', $node);
 
   $form['file'] = array('#type' => 'file', '#title' => t('File'), '#size' => 50, '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))), '#weight' => -10);
-  
+
   // The uploaded file is saved to the system and session is set on the file preview rendering.
   $file = is_object($_SESSION['file_preview_file']) ? $_SESSION['file_preview_file'] : NULL;
   if ($file || !empty($node->file->uri)) {
@@ -406,7 +416,7 @@ function file_node_load($node) {
  * Implementation of hook_validate().
  */
 function file_node_validate($node) {
-  
+
   // Save the file upload on the file preview page. The uploaded file is saved in RDF and bitcache,
   // but not in the database at this stage since a user can navigate away from this page. We also set
   // a session variable to be used in the file form and following file previews.
@@ -418,7 +428,7 @@ function file_node_validate($node) {
     $file = $node_new->file;
     $_SESSION['file_preview_file'] = $file;
   }
-  
+
   // Make sure a file has been uploaded at some point
   if (!is_object($_SESSION['file_preview_file']) && !is_object(file_node_load($node)->file)) {
     form_set_error('file', t('A file upload must be provided.'));
@@ -497,13 +507,13 @@ function file_nodeapi(&$node, $op, $teaser, $page) {
       }
       return $uri_txt ? array(bitcache_get_contents(file_get_hash($uri_txt))) : array();
       break;
-    
+
     case 'delete revision':
       db_query('DELETE FROM {file_nodes} WHERE nid = %d AND vid = %d', $node->nid, $node->vid);
       file_node_delete_node($node->file);
       break;
-    
-    case 'rss item': 
+
+    case 'rss item':
       if ($node->type == 'file' && !empty($node->file)) {
         // RSS only allows one enclosure per item
         return array(array('key' => 'enclosure', 'attributes' => array('url' => url('file/'. $node->file->nid .'/download', array('absolute' => TRUE)), 'length' => $node->file->size, 'type' => $node->file->type)));
@@ -525,18 +535,18 @@ function file_node_prepare(&$node) {
  * Implementation of hook_view().
  */
 function file_node_view($node, $teaser = FALSE, $page = FALSE) {
-  
+
   // $page variable is set to TRUE on the normal page rendering, when the node is saved to the database.
   // For the previews it is FALSE.
   if (!$page && !$teaser) {
-    
+
     // When looking at the preview of the saved file the file_node_load() is not triggered and file
     // object is not loaded and asociated with the node. Have to do it manually.
     if ($node->nid && !is_object($node->file)) {
       $node->file = file_node_load($node)->file;
     }
   }
-  
+
   if (is_object($_SESSION['file_preview_file'])) {
 
     // The file was uploaded on the previous preview page and it is saved in the session variable.
@@ -544,7 +554,7 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
   }
 
   // The following code checks if this function is called during the creation of the search index.
-  // We don't want the preview contrlol heading and generated pages be indexed as they do not belong 
+  // We don't want the preview contrlol heading and generated pages be indexed as they do not belong
   // to the node or file content, but are only suplementary to the page.
   foreach (array_slice(debug_backtrace(), 1) as $stackframe) {
     if (in_array($stackframe['function'], array ('_node_index_node', 'node_search'))) {
@@ -555,7 +565,7 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
 
   $file = is_object($file) ? $file : $node->file;
   $node = node_prepare($node, $teaser);
-  
+
   // We show generated files only on full page view, where the teaser is not set.
   if (!$teaser && is_object($file) && !$search) {
     $file->name = $file->name ? $file->name : $node->title;
