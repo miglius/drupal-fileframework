@@ -1,0 +1,31 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * File archive module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE INSTALLATION/UNINSTALLATION
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_archive_enable() {}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_archive_install() {}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_archive_uninstall() {
+  variable_del('file_archive_convert_pipelines');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE MIGRATIONS
+

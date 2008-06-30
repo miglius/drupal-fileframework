@@ -1,0 +1,31 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * File document module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE INSTALLATION/UNINSTALLATION
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_document_enable() {}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_document_install() {}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_document_uninstall() {
+  variable_del('file_document_convert_pipelines');
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// MODULE UPGRADE MIGRATIONS
+

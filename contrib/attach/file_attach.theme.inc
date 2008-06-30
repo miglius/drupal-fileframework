@@ -21,7 +21,7 @@ function theme_file_attachments($files) {
       $file->nid ? l($name, 'node/'. $file->nid) : check_plain($name),
       file_mime_icon_for($file->type) .' '. file_mime_description_for($file->type),
       format_size($file->size),
-      $file->nid ? l(t('view'), 'file/'. $file->nid .'/view') .' '. l(t('download'), 'file/'. $file->nid .'/download') : l(t('view'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE)), array('query' => array('disposition' => 'inline'))) .' '. l(t('download'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE))),
+      $file->nid ? (FILE_VIEW_LINK ? l(t('view'), 'file/'. $file->nid .'/view') .' ' : '') . l(t('download'), 'file/'. $file->nid .'/download') : l(t('view'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE)), array('query' => array('disposition' => 'inline'))) .' '. l(t('download'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE))),
     );
   }
 

@@ -351,12 +351,8 @@ function file_cck_render_links($file, $id = 0) {
     return '';
 
   $output = '<div class="file-links" id="file_formats_'. $id .'">';
-  $links = array(
-    l('open', 'node/'. $file->nid),
-    l('view', 'file/'. $file->nid .'/view/'. $file->vid),
-    l('download', 'file/'. $file->nid .'/download/'. $file->vid),
-  );
-  $output .= t('File') .' '. ($file->name ? '"'. check_plain($file->name) .'" ': '') . t('options') .': '. implode(' | ', $links);
+  $links = l('open', 'node/'. $file->nid) . (FILE_VIEW_LINK ? ' | '. l('view', 'file/'. $file->nid .'/view/'. $file->vid) : '') .' | '. l('download', 'file/'. $file->nid .'/download/'. $file->vid);
+  $output .= t('File') .' '. ($file->name ? '"'. check_plain($file->name) .'" ': '') . t('options') .': '. $links;
   $output .= '</div>';
   return $output;
 }
