@@ -17,6 +17,16 @@ define('FILE_RESTRICTION_QUOTA_GENERATED',   variable_get('file_restriction_quot
 // CORE API HOOKS
 
 /**
+ * Implementation of hook_help().
+ */
+function file_restriction_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/file/restriction':
+      return '<p>'. t('The restrictions are applied to all users except administration account with ID=\'1\'.') .'</p>';
+  }
+}
+
+/**
  * Implementation of hook_menu().
  */
 function file_restriction_menu() {

@@ -43,11 +43,11 @@ function file_image_init() {
 function file_image_theme() {
   return array(
     'file_image_admin_settings' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_image.theme.inc'
     ),
     'file_image_image_render' => array(
-      'arguments' => array('options'),
+      'arguments' => array('options' => NULL),
       'file' => 'file_image.theme.inc'
     ),
   );

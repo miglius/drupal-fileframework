@@ -15,7 +15,7 @@
 function file_archive_theme() {
   return array(
     'file_archive_archive_render' => array(
-      'arguments' => array('uri', 'options'),
+      'arguments' => array('uri' => NULL, 'options' => NULL),
       'file' => 'file_archive.theme.inc'
     ),
   );

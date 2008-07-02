@@ -903,10 +903,10 @@ function file_render_preview_for($file, $handler, $id) {
  * @return
  *   A  or HTML or JSON data of the rendered HTML of the file preview.
  */
-function file_wrapper($handler, $uri, $node = NULL, $type = NULL) {
+function file_wrapper($handler, $uri, $node = NULL, $options = array(), $type = NULL) {
   if (array_key_exists($handler, file_get_mime_handlers()) && function_exists($handler .'_render')) {
     $handler_full = $handler .'_render';
-    $output = $handler_full($uri, is_object($node) ? array('nid' => $node->nid, 'vid' => $node->vid) : array());
+    $output = $handler_full($uri, is_object($node) ? array_merge(array('nid' => $node->nid, 'vid' => $node->vid), $options) : $options);
   }
   if ($type == 'html') {
     return $output;
@@ -923,10 +923,10 @@ function file_wrapper($handler, $uri, $node = NULL, $type = NULL) {
  * @return
  *   A HTML data of the rendered HTML of the file preview.
  */
-function file_wrapper_html($node, $handler) {
+function file_wrapper_html($node, $handler, $options = array()) {
   // Access control is done at the menu layer.
   $handlers = file_handlers_for($node->file);
-  return file_wrapper($handler, $handlers[$handler]['uri'], $node, 'html');
+  return file_wrapper($handler, $handlers[$handler]['uri'], $node, $options, 'html');
 }
 
 /**
@@ -940,14 +940,14 @@ function file_wrapper_html($node, $handler) {
  * @return
  *   A JAvascript data of the rendered HTML of the file preview.
  */
-function file_wrapper_ahah($handler, $hash, $vid) {
+function file_wrapper_ahah($handler, $hash, $vid, $options = array()) {
   // Access control is not done at menu layer.
   if ($node = file_bitcache_access($hash, $vid)) {
     $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
     if (empty($handlers[$handler])) {
       $handlers[$handler]['uri'] = 'bitcache://'. $hash;
     }
-    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', 'js');
+    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', $options, 'js');
   }
   //header("HTTP/1.1 403 Forbidden");
   drupal_access_denied();

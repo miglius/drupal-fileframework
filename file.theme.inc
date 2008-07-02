@@ -167,3 +167,4 @@ function theme_file_block_formats($data) {
     return $output;
   }
 }
+

@@ -151,9 +151,6 @@ function file_admin_settings_submit($form, &$form_state) {
  */
 function file_admin_handler_settings() {
   // Handler settings
-  $form['handler']['description'] = array(
-    '#value' => t('Select which file handlers are enabled. Enabled file handlers will process and display files with  corresponding MIME types. If a file can be displayed by more then one handler, then handlers\' order will be preserved while displaying the file. "MIME types" shows which MIME types are processed by the hanler directly. However, the file can be first converted to other MIME type first, and then displayed by that type handler. One MIME type can have several handlers.'),
-  );
   $mime_types = file_get_mime_types();
   $mime_handlers = file_get_mime_handlers();
   foreach ($mime_handlers as $handler => $data) {

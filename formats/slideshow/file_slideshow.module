@@ -19,7 +19,7 @@ define('FILE_SLIDESHOW_PDF', variable_get('file_slideshow_pdf', 1));
 function file_slideshow_theme() {
   return array(
     'file_slideshow_admin_settings' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_slideshow.theme.inc'
     ),
   );

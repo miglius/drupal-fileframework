@@ -33,7 +33,7 @@ function theme_file_video_admin_settings($form) {
  */
 function theme_file_video_render_player($options, $output, $url, $link_text, $title = '') {
   extract($options, EXTR_SKIP);
-
+watchdog('ttt', print_r($options, true), array());
   $output = "\n".'<div'. drupal_attributes(array('class' => $class)) .'>'. $output;
   if (is_null($container) || !empty($container)) {
     $output .= '<p><small>'. t('Problems viewing the video?') .' ';
@@ -58,7 +58,7 @@ function theme_file_video_quicktime_render($options = array()) {
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
 
-  return theme('file_video_render_player', $options, $output, t('http://www.apple.com/quicktime/download'), t('Download the latest Quicktime Player'));
+  return theme('file_video_render_player', $options, $output, FILE_VIDEO_QUICKTIME_LINK, t('Download the latest Quicktime Player'));
 }
 
 /**
@@ -75,7 +75,7 @@ function theme_file_video_windowsmedia_render($options = array()) {
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
 
-  return theme('file_video_render_player', $options, $output, t('http://windowsupdate.microsoft.com/'), t('Download the latest Windows Media Player'));
+  return theme('file_video_render_player', $options, $output, FILE_VIDEO_WINDOWSMEDIA_LINK, t('Download the latest Windows Media Player'));
 }
 
 /**
@@ -92,7 +92,7 @@ function theme_file_video_realmedia_render($options = array()) {
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
 
-  return theme('file_video_render_player', $options, $output, t('http://www.real.com/'), t('Download the latest RealPlayer'));
+  return theme('file_video_render_player', $options, $output, FILE_VIDEO_REALMEDIA_LINK, t('Download the latest RealPlayer'));
 }
 
 /**
@@ -119,7 +119,7 @@ function theme_file_video_flash_flv_render($options = array()) {
   $output .= 'type="application/x-shockwave-flash" ';
   $output .= '/>';
 
-  return theme('file_video_render_player', $options, $output, t('http://www.adobe.com/products/flashplayer/'), t('Download the latest Adobe Flash Player'));
+  return theme('file_video_render_player', $options, $output, FILE_VIDEO_FLASH_LINK, t('Download the latest Adobe Flash Player'));
 }
 
 /**
@@ -134,6 +134,6 @@ function theme_file_video_flash_swf_render($options = array()) {
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
 
-  return theme('file_video_render_player', $options, $output, t('http://www.adobe.com/products/flashplayer/'), t('Download the latest Adobe Flash Player'));
+  return theme('file_video_render_player', $options, $output, FILE_VIDEO_FLASH_LINK, t('Download the latest Adobe Flash Player'));
 }
 

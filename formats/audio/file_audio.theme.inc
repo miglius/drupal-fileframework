@@ -34,7 +34,8 @@ function theme_file_audio_admin_settings($form) {
 function theme_file_audio_mp3_render($options = array()) {
   extract($options, EXTR_SKIP);
 
-  unset($options['src'], $options['nid'], $options['vid'], $options['title']);
+  $output = "\n".'<div'. drupal_attributes(array('class' => $class)) .'>';
+  unset($options['src'], $options['nid'], $options['vid'], $options['title'], $options['class'], $options['continer']);
   $options = array_merge((array) $options, array(
     'playlist_url' => url('file_audio/xspf/'. $src),
     'player_title' => $title,
@@ -42,9 +43,15 @@ function theme_file_audio_mp3_render($options = array()) {
   $player_path = url() . drupal_get_path('module', 'file') .'/vendor/xspf_player';
 
   $url = $player_path .'/xspf_player_slim.swf?'. drupal_query_string_encode($options);
-  $output = '<object type="application/x-shockwave-flash" data="'. $url .'" width="400" height="15">';
+  $output .= '<object type="application/x-shockwave-flash" data="'. $url .'" width="400" height="15">';
   $output .= '<param name="movie" value="'. $url .'" />';
   $output .= '</object>';
+  if (is_null($container) || !empty($container)) {
+    $output .= '<p><small>'. t('Problems with audio?') .' ';
+    $output .= str_replace('&gt;&gt;', '&raquo;', l(t('Download the latest Adobe Flash Player') .' >>', FILE_AUDIO_FLASH_LINK, array('title' => $title), NULL, NULL, TRUE));
+    $output .= '</small></p>';
+  }
+  $output .= '</div>'."\n";
   return $output;
 }
 

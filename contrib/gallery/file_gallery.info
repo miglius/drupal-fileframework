@@ -3,6 +3,7 @@ name = Gallery
 description = Provides a taxonomy-based gallery view of various file types.
 package = File management
 dependencies[] = file
+dependencies[] = file_browser
 dependencies[] = taxonomy
 core = 6.x
 php = 5.2

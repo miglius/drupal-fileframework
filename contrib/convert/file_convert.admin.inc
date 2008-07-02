@@ -76,10 +76,8 @@ function file_convert_admin_settings_submit($form, &$form_state) {
  */
 function file_convert_admin_converter_settings() {
   $form = array();
+
   // MIME type converters
-  $form['convert']['description'] = array(
-    '#value' => t('Command line or php functions as utilities to convert between MIME types and create file previews of other MIME type. Empty field means that no conversion will take place. \'||\' separates utilities, which will be executed in sequence. Shell commands or php functios should be enclosed in {} brackets. The system will check if those functions are available or commands are executable. If there is a string and digits separated by the colon in the brackets like {localhost:8100} the system will check if the port on the host is opened. Other files which should be readable should be enclosed in double {{}} brackets. Brackets {}[] in command line can be escaped with \{\}\[\]. \'No\' in the "Installed" column means that not all commands and functions are found or network connection cannot be opened and the conversion will not take place.'),
-  );
   $rows = array();
   $mime_converters = file_get_mime_converters();
   ksort($mime_converters);

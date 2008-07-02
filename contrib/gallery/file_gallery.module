@@ -18,24 +18,34 @@ define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
 // CODE API HOOKS
 
 /**
+ * Implementation of hook_help().
+ */
+function file_gallery_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/file/gallery':
+      return '<p>'. t('File gallery uses the same vocabularies as !file_browser module.', array('!file_browser' => l('file browser', 'admin/settings/file/browser'))) .'</p>';
+  }
+}
+
+/**
  * Implementation of hook_theme().
  */
 function file_gallery_theme() {
   return array(
     'file_gallery_page' => array(
-      'arguments' => array('content', 'options'),
+      'arguments' => array('content' => NULL, 'options' => NULL),
       'file' => 'file_gallery.theme.inc'
     ),
     'file_gallery_term' => array(
-      'arguments' => array('data', 'options'),
+      'arguments' => array('data' => NULL, 'options' => NULL),
       'file' => 'file_gallery.theme.inc'
     ),
     'file_gallery_node' => array(
-      'arguments' => array('data', 'options'),
+      'arguments' => array('data' => NULL, 'options' => NULL),
       'file' => 'file_gallery.theme.inc'
     ),
     'file_gallery_empty' => array(
-      'arguments' => array('filter'),
+      'arguments' => array('filter' => NULL),
       'file' => 'file_gallery.theme.inc'
     ),
   );
@@ -338,7 +348,7 @@ function _file_gallery_preview($file) {
  */
 function _file_gallery_embed_options() {
   list($width, $height) = explode('x', FILE_GALLERY_EMBED_SIZE);
-  return array('max_width' => $width, 'max_height' => $height, 'container' => FALSE);
+  return array('max_width' => $width, 'max_height' => $height);
 }
 
 /*

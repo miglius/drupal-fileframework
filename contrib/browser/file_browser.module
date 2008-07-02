@@ -27,31 +27,31 @@ define('FILE_BROWSER_LOCATION_PREVIEW',  variable_get('file_browser_location_pre
 function file_browser_theme() {
   return array(
     'file_browser_page' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_term' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_file' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_preview' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_block' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_newterm' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
     'file_browser_upload' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
   );

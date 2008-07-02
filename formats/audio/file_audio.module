@@ -8,7 +8,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_AUDIO_GETID3', variable_get('file_audio_getid3', 1));
+define('FILE_AUDIO_GETID3',     variable_get('file_audio_getid3', 1));
+define('FILE_AUDIO_FLASH_LINK', 'http://www.adobe.com/products/flashplayer');
 
 //////////////////////////////////////////////////////////////////////////////
 // CORE API HOOKS
@@ -19,11 +20,11 @@ define('FILE_AUDIO_GETID3', variable_get('file_audio_getid3', 1));
 function file_audio_theme() {
   return array(
     'file_audio_admin_settings' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_audio.theme.inc'
     ),
     'file_audio_mp3_render' => array(
-      'arguments' => array('uri', 'options'),
+      'arguments' => array('uri' => NULL, 'options' => NULL),
       'file' => 'file_audio.theme.inc'
     ),
   );
@@ -63,7 +64,7 @@ function file_audio_mime_handlers() {
   return array(
     'file_audio_mp3' => array(
       'name' => t('Audio MP3'),
-      'dimensions' => '400x15',
+      'dimensions' => '400x75',
     ),
   );
 }
@@ -295,6 +296,7 @@ function _file_audio_render_options($uri, $options = array()) {
   $src = $node->nid .'/'. $node->vid .'/'. file_get_hash($uri);
   $title = $node->title;
 
+  $options = array_merge(array('class' => 'file-audio'), $options);
   return array_merge($options, compact('src', 'title'));
 }
 

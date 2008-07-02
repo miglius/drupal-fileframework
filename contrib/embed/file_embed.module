@@ -21,24 +21,34 @@ define('FILE_EMBED_FILE_FILTER', 0);
 // CORE API HOOKS
 
 /**
+ * Implementation of hook_help().
+ */
+function file_embed_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/file/embed':
+      return '<p>'. t('"File embedding" filter should be enabled in selected !filters to activate the file embedding.', array('!filters' => l('input formats', 'admin/settings/filters'))) .'</p>';
+  }
+}
+
+/**
  * Implementation of hook_theme().
  */
 function file_embed_theme() {
   return array(
     'file_embed_textarea_link' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
     ),
     'file_embed_attachments' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
     ),
     'file_embed_options' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
     ),
     'file_embed_file' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
     ),
   );
@@ -290,11 +300,10 @@ function file_embed_file_filter_process($matches) {
       }
     }
 
-    $options['file_html'] = file_wrapper_html($node, $options['handler']);
+    $options['file_html'] = file_wrapper_html($node, $options['handler'], array('container' => FALSE));
     if ($options['link']) {
       $options['file_html'] = l($options['file_html'], 'node/'. $node->nid, array('html' => TRUE));
     }
-    //$options = array_merge(array('container' => FALSE), $options);
     return theme('file_embed_file', $options);
   }
   return '';

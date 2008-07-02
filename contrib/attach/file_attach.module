@@ -24,27 +24,27 @@ define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_al
 function file_attach_theme() {
   return array(
     'file_attachments' => array(
-      'arguments' => array('files'),
+      'arguments' => array('files' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_form_current' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_form_new' => array(
-      'arguments' => array('form'),
+      'arguments' => array('form' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_show' => array(
-      'arguments' => array('data'),
+      'arguments' => array('data' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_backreferences' => array(
-      'arguments' => array('nodes'),
+      'arguments' => array('nodes' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_autocomplete' => array(
-      'arguments' => array('matches'),
+      'arguments' => array('matches' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
   );
