@@ -940,14 +940,14 @@ function file_wrapper_html($node, $handler, $options = array()) {
  * @return
  *   A JAvascript data of the rendered HTML of the file preview.
  */
-function file_wrapper_ahah($handler, $hash, $vid, $options = array()) {
+function file_wrapper_ahah($handler, $hash, $vid) {
   // Access control is not done at menu layer.
   if ($node = file_bitcache_access($hash, $vid)) {
     $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
     if (empty($handlers[$handler])) {
       $handlers[$handler]['uri'] = 'bitcache://'. $hash;
     }
-    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', $options, 'js');
+    return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', array(), 'js');
   }
   //header("HTTP/1.1 403 Forbidden");
   drupal_access_denied();

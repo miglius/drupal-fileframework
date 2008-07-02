@@ -170,7 +170,7 @@ function file_menu() {
       'title' => 'File preview',
       'type' => MENU_CALLBACK,
       'page callback' => 'file_wrapper_html',
-      'page arguments' => array(1, 3),
+      'page arguments' => array(1, 3, array()),
       'access callback' => 'node_access',
       'access arguments' => array('view', 1),
       'file' => 'file.inc',
