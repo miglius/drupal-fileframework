@@ -1,6 +1,20 @@
 
 == New and Noteworthy ==
 
+== 0.9.8 ==
+
+* fixed problem with metadata plugin compatibility; 
+* fixed problem with non-iterating nested options by using recursive $.extend
+* added optional first argument that allows loading cluetip contents from provided string
+
+== 0.9.7 ==
+
+* added support for metadata plugin
+* patch for problem with outerHeight returning 0
+* fixed problem with title attribute conflict when using custom title 
+* avoided opera bug for img loading countdown with ajax; this had the effect of not loading cluetip first time it was hovered
+* added initial semicolon to avoid problems with file concats
+
 == 0.9.6 ==
 
 * fixed tip width measurement bug, which affected Safari

@@ -1,7 +1,7 @@
 
 /* the next line is an example of how you can override default options globally (currently commented out) ... */
  // $.fn.cluetip.defaults.tracking = true;
-
+// $.fn.cluetip.defaults.debug = true;
 $(document).ready(function() {
 
  // $.cluetip.setup({insertionType: 'insertBefore', insertionElement: 'div:first'});
@@ -19,7 +19,7 @@ $(document).ready(function() {
     closeText: '<img src="cross.png" alt="close" width="16" height="16" />',
     truncate: 60
   });
-  $('a.load-local').cluetip({local:true, arrows: true, cursor: 'pointer'});
+  $('a.load-local').cluetip({local:true, hideLocal: false, arrows: true, cursor: 'pointer'});
   $('#clickme').cluetip({activation: 'click', width: 650});
 
 // jTip theme
@@ -43,7 +43,10 @@ $(document).ready(function() {
     sticky: true,
     positionBy: 'bottomTop'    
   });
-  $('a.jt:eq(3)').cluetip({
+
+  $('a.jt:eq(3)').cluetip({local: true, hideLocal: false});
+  
+  $('a.jt:eq(4)').cluetip({
     cluetipClass: 'jtip', arrows: true, 
     dropShadow: false, 
     onActivate: function(e) {
