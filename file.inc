@@ -20,7 +20,6 @@
  *   SAVED_NEW or SAVED_UPDATED on success or FALSE on failure.
  */
 function file_node_save(&$node, $file) {
-
   if (!is_object($file)) {
     watchdog('file', 'The file object is not passed to a file_node_save() function for the node with nid=%nid.', array('%nid' => $node->nid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $node->nid));
     return FALSE;
@@ -57,11 +56,15 @@ function file_node_save(&$node, $file) {
 
     // Remove the entry from the {files} table about the temporary file, which was
     // added by the file_save_upload().
-    db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
+    if ($file->fid) {
+      db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
+    }
 
     // Generate and save the preview of the file.
-    if (!file_generate_previews($file)) {
-      watchdog('file', 'The preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, $node->nid ? l(t('edit'), 'node/'. $node->nid) : '');
+    if (!$file->noconvert) {
+      if (!file_generate_previews($file)) {
+        watchdog('file', 'The preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, $node->nid ? l(t('edit'), 'node/'. $node->nid) : '');
+      }
     }
   }
 
@@ -91,7 +94,7 @@ function file_data_save(&$file) {
   // Check the file size.
   if (!filesize($file->filepath)) {
     if (!isset($file->converted)) {
-      unlink($file->filepath);
+      file_delete($file->filepath);
     }
     watchdog('file', 'The file converted from uri=%uri, name=%name to %mime was not saved because it was empty.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
     return FALSE;
@@ -676,7 +679,7 @@ function file_generate_previews($file, $cron = NULL) {
               // Save the file to the bitcache and RDF.
               $result = file_data_save($file_converted) && $result;
             }
-            unlink($converted);
+            file_delete($converted);
             // Flag the wile that conversion took place.
             // Needed for a cron to calculate conversions.
             $file->convert = $file->convert ? $file->convert + 1 : 1;
@@ -721,7 +724,7 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
           }
 
           // Remove temporal file
-          unlink($converted);
+          file_delete($converted);
         }
       }
     }
@@ -982,7 +985,8 @@ function file_bitcache($op, $id, $stream = NULL) {
       $title = $node->title ? $node->title : 'file';
       return array(
         'Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"',
-        'Last-Modified' => gmdate('D, d M Y H:i:s', is_object($node) ? $node->changed : time()) .' GMT',
+        'Content-Length' => $node->file->size,
+        'Last-Modified' => gmdate('D, d M Y H:i:s', $node->changed ? $node->changed : time()) .' GMT',
       );
       break;
   }
@@ -1035,7 +1039,7 @@ function file_bitcache_access($id, $vid) {
 
   foreach ($files as $file) {
     if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
-      return (object)array('title' => $file->name);
+      return (object)array('title' => $file->name, 'file' => $file);
     }
   }
 

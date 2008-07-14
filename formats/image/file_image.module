@@ -175,6 +175,20 @@ function file_image_mime_types() {
 }
 
 /**
+ * Implementation of hook_mime_converters().
+ */
+function file_image_mime_converters() {
+  return array(
+    'image/tiff' => array(
+      'text/plain' => array(
+        'pipeline' => '{mv} [in_file] [in_file].tif; {tesseract} [in_file].tif [out_file]; {mv} [in_file].tif [in_file]; mv [out_file].txt [out_file]',
+        'handlers' => array('file_text_text'),
+      ),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_mime_detect().
  */
 function file_image_mime_detect($filename) {
@@ -315,6 +329,7 @@ function file_image_preview_generate($file) {
   krsort($previews);
 
   $files = array();
+  $is_converted = $file->converted;
   foreach ($previews as $ratio => $data) {
     list($max_width, $max_height) = explode('x', $data['resolution']);
     if (module_exists('file_convert') && (!$file->noconvert || in_array($data['handler'], array('file_image_medium', 'file_image_thumbnail')))) {
@@ -352,7 +367,8 @@ function file_image_preview_generate($file) {
     }
   }
 
-  array_map(create_function('$f', 'return unlink($f);'), $files);
+  $file->converted = $is_converted;
+  array_map(create_function('$f', 'return file_delete($f);'), $files);
 
   return TRUE;
 }

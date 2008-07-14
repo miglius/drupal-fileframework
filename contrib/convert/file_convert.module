@@ -118,7 +118,7 @@ function file_get_mime_converters() {
  *
  * @return
  *   A converted file's filename or NULL. Calling function
- *   should unlink the tomporal file.
+ *   should delete the tomporal file.
  */
 function file_convert($file, $pipeline, $options = array()) {
   $options['filename'] = $file->filename;
@@ -141,7 +141,7 @@ function file_convert($file, $pipeline, $options = array()) {
   if (!_file_convert_check_pipeline($pipeline)) {
     watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
     if (!$keep_in_file)
-      unlink($in_file);
+      file_delete($in_file);
 
     return NULL;
   }
@@ -149,7 +149,7 @@ function file_convert($file, $pipeline, $options = array()) {
     if ($out_file) {
       // Second and following pipes.
       if (!$keep_in_file)
-        unlink($in_file);
+        file_delete($in_file);
 
       $keep_in_file = FALSE;
       $in_file = $out_file;
@@ -160,11 +160,17 @@ function file_convert($file, $pipeline, $options = array()) {
     }
   }
   if (!$keep_in_file)
-    unlink($in_file);
+    file_delete($in_file);
 
-  watchdog('file_convert', 'File uri=%uri, name=%name was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline));
-
-  return $out_file;
+  if (filesize($out_file)) {
+    watchdog('file_convert', 'File uri=%uri, name=%name was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline));
+    return $out_file;
+  }
+  else {
+    watchdog('file_convert', 'File uri=%uri, name=%name was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline), WATCHDOG_ERROR);
+    file_delete($out_file);
+    return NULL;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -33,7 +33,7 @@ function theme_file_video_admin_settings($form) {
  */
 function theme_file_video_render_player($options, $output, $url, $link_text, $title = '') {
   extract($options, EXTR_SKIP);
-watchdog('ttt', print_r($options, true), array());
+
   $output = "\n".'<div'. drupal_attributes(array('class' => $class)) .'>'. $output;
   if (is_null($container) || !empty($container)) {
     $output .= '<p><small>'. t('Problems viewing the video?') .' ';
