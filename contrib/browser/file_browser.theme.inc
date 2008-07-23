@@ -105,11 +105,9 @@ function theme_file_browser_preview($data) {
     $output .= '</table>';
     $output .= '</div>';
     $output .= $url_preview ? '<a'. drupal_attributes(array('href' => $url_preview, 'title' => check_plain($node->title), 'class' => $class, 'rel' => 'file-gallery')) .'>'. $thumbnail .'</a>' : $thumbnail;
-    $output .= '<div id="file-preview-download">'. (FILE_VIEW_LINK ? l(t('view'), 'file/'. $file->nid .'/view/'. $file->vid) .' | ' : '') . l(t('download'), 'file/'. $file->nid .'/download/'. $file->vid) .'</div>';
-    $output .= '<script type=\'text/javascript\'>$(document).ready(function() { $(\'#file-preview-download\').append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); }); $(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });</script>';
-    if ($script) {
-      $output .= $script;
-    }
+    $output .= '<div id="file-preview-links">'. (FILE_VIEW_LINK ? l(t('view'), 'file/'. $file->nid .'/view/'. $file->vid) .' | ' : '') . l(t('download'), 'file/'. $file->nid .'/download/'. $file->vid) .'</div>';
+    $output .= FILE_INFO_LINK ? '<script type=\'text/javascript\'>$(document).ready(function() { $(\'#file-preview-links\').append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); }); $(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });</script>' : '';
+    $output .= $script ? $script : '';
   }
 
   // Backreferences

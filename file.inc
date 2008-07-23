@@ -877,10 +877,10 @@ function file_render_previews($file, $id = 0) {
 function file_render_preview_for($file, $handler, $id) {
   $form['preview'] = array(
     '#type' => 'button',
-    '#id' => $handler .'_'. $id,
+    '#id' => $handler .'-'. $id,
     '#ahah' => array(
       'path' => 'file_preview/'. $handler .'/'. file_get_hash($file->uri) .'/'. $file->vid,
-      'wrapper' => 'file_preview_container_'. $id,
+      'wrapper' => 'file-preview-container-'. $id,
       'method' => 'replace',
       'effect' => 'slide',
     ),

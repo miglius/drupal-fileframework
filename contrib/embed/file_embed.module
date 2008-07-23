@@ -229,10 +229,14 @@ function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TY
   $url_attach = NULL;
   if (module_exists('file_attach') && $type) {
     if ($type['element'] == 'node' && variable_get('file_attach_node_'. $type['type'], 1)) {
-      $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'], 'query' => $query);
+      if (is_numeric($type['nid']) && ($node = node_load($type['nid'])) && !empty($node->files)) {
+        $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'], 'query' => $query);
+      }
     }
     if ($type['element'] == 'comment' && variable_get('file_attach_comment_'. $type['type'], 1)) {
-      $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'] .'/'. $type['cid'], 'query' => $query);
+      if (is_numeric($type['cid']) && ($node = node_load($type['nid'])) && ($files = _file_attach_load($type['nid'], $node->vid, $type['cid'])) && !empty($files)) {
+        $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'] .'/'. $type['cid'], 'query' => $query);
+      }
     }
   }
   $url_gallery = array('url' => 'file_gallery', 'query' => array_merge(file_embed_file_gallery('query'), $query));

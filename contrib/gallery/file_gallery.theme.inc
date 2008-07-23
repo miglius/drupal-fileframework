@@ -55,7 +55,7 @@ function theme_file_gallery_node($data, $options) {
   extract($data, EXTR_SKIP);
   extract($options, EXTR_SKIP);
 
-  $output = '<li class="file-gallery" id="file_'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
+  $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
   $output .= !empty($url_preview) ? l($thumbnail, $url_preview['link'], array('html' => TRUE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'rel' => 'file-gallery'))) : $thumbnail;
   $output .= '<span>'. l($title_short, $url_open['link'], array('attributes' => array('onclick' => $url_open['onclick'], 'title' => $title))) .'</span>';
   if (FILE_GALLERY_SHOW_TYPE) {
@@ -63,7 +63,7 @@ function theme_file_gallery_node($data, $options) {
   }
   $output .= '</li>';
 
-  drupal_add_js('$(document).ready(function() { $(\'#file_'. $file->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
+  drupal_add_js('$(document).ready(function() { $(\'#file-'. $file->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   return $output;
 }
 

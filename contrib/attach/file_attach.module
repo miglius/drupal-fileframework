@@ -831,8 +831,8 @@ function _file_attach_view($object) {
     $id = 0;
     foreach ($files as $file) {
       $data = array(
-        'preview' => FILE_ATTACH_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $pid .'_'. $id) : '',
-        'generated' => FILE_ATTACH_SHOW_GENERATED ? file_render_generated($file, 'files_'. $pid .'_'. $id) : '',
+        'preview' => FILE_ATTACH_SHOW_PREVIEWS ? file_render_previews($file, 'files-'. $pid .'-'. $id) : '',
+        'generated' => FILE_ATTACH_SHOW_GENERATED ? file_render_generated($file, 'files-'. $pid .'-'. $id) : '',
       );
       $content['files_'. $pid .'_'. $id] = array(
         '#value' => theme('file_attach_show', theme('file_show', $data)),
