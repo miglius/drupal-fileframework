@@ -103,11 +103,9 @@ function theme_file_generated($data) {
   extract($data, EXTR_SKIP);
 
   $entries = array();
+  $handlers = file_get_mime_handlers();
   foreach ($formats as $gid => $format) {
-    if (preg_match('/^file_image_/', $format['handler'])) {
-      $handlers = file_get_mime_handlers();
-      $description = $handlers[$format['handler']]['name'];
-    }
+    $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : '';
     $entries[] = '<div id="file-formats-'. $id .'-'. $gid .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') . (FILE_VIEW_LINK ? ' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) : '') .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</small></div>';
     if (FILE_INFO_LINK) {
       drupal_add_js('$(document).ready(function() { $(\'#file-formats-'. $id .'-'. $gid .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');

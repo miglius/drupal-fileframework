@@ -39,7 +39,8 @@ function file_page_metadata($node) {
   $result = db_query('SELECT * FROM file_properties'. tablesort_sql($header));
   while ($row = db_fetch_object($result)) {
     $rows[] = array(
-      array('data' => $row->name .':', 'align' => 'right'),
+      //array('data' => $row->name .':', 'align' => 'right'),
+      $row->name,
       $row->value,
     );
   }

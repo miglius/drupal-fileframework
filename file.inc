@@ -957,7 +957,7 @@ function file_wrapper_ahah($handler, $hash, $vid) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// BITCACHE
+// Bitcache
 
 /**
  * Implementation of hook_bitcache().
@@ -985,6 +985,7 @@ function file_bitcache($op, $id, $stream = NULL) {
       $title = $node->title ? $node->title : 'file';
       return array(
         'Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"',
+        'Content-Type' => $node->file->type,
         'Content-Length' => $node->file->size,
         'Last-Modified' => gmdate('D, d M Y H:i:s', $node->changed ? $node->changed : time()) .' GMT',
       );

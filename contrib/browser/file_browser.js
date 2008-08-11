@@ -302,11 +302,8 @@ Drupal.file_browserFileClick = function(obj) {
   // highlighting the row that was selected
   Drupal.file_browserSelectRow(obj, id, false, false);
   // set the download click action to point to the file url
-  $(obj).children().children("a").each(function() {
-    var url = this.href;
-    $('#file-dropdown-download-b' + block).unbind('click').click(function() {
-      window.location.href = url;
-    });
+  $('#file-dropdown-download-b' + block).unbind('click').click(function() {
+    window.location.href = $('#file-download-url').val() + nid + '/download';
     $('.file-dropdown').hide();
   });
   // allow the user to go directly to the node from the action menu

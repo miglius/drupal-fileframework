@@ -38,7 +38,7 @@ function file_browser_admin_settings() {
     '#type'          => 'select',
     '#title'         => t('Link file names to'),
     '#default_value' => FILE_BROWSER_FILE_LINK,
-    '#options'       => array('file' => t('File download'), 'node' => t('File node')),
+    '#options'       => array('nolink' => t('No link'), 'file' => t('File download'), 'node' => t('File node')),
     '#description'   => t('Whether to link to the file download, or to the containing node.'),
   );
   $form['display']['file_browser_hide_empty'] = array(

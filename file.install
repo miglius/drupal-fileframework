@@ -34,6 +34,7 @@ function file_uninstall() {
   variable_del('file_show_generated');
   variable_del('file_view_link');
   variable_del('file_info_link');
+  variable_del('file_properties_tab');
   variable_del('file_cron');
   variable_del('file_cron_limit_size');
   variable_del('file_mime_autodetection');

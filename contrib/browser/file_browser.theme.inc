@@ -54,7 +54,8 @@ function theme_file_browser_file($data) {
 
   $title_length = $columns ? 50 : 14;
   $title = drupal_strlen($title) > $title_length ? drupal_substr($title, 0, $title_length - 3) .'...' : $title;
-  $link = l($title, $url, array('attributes' => array('title' => $title), 'onclick' => 'return Drupal.file_browserFileLinkClick(this);'));
+  //$link = l($title, $url, array('attributes' => array('title' => $title), 'onclick' => 'return Drupal.file_browserFileLinkClick(this);'));
+  $link = $url ? l($title, $url, array('attributes' => array('title' => $title))) : $title;
 
   $output = '<div class="file-node" id="file-node-'. $id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
@@ -86,7 +87,7 @@ function theme_file_browser_preview($data) {
     $output .= '<tr><th>'. t('Name:') .'</th><td>'. l($node->title, 'node/'. $file->nid) .'</td></tr>';
     $output .= '<tr><th>'. t('Type:') .'</th><td>'. file_mime_icon_for($file->type) .'&nbsp;'. file_mime_description_for($file->type) .'</td></tr>';
     $output .= '<tr><th>'. t('Size:') .'</th><td>'. format_size($file->size) .'</td></tr>';
-    $output .= '<tr><th>'. t('Author:') .'</th><td>'. l($node->name, 'user/'. $node->uid) .'</td></tr>';
+    $output .= '<tr><th>'. t('Author:') .'</th><td>'. theme('username', user_load($node->uid)) .'</td></tr>';
     $output .= '<tr><th>'. t('Created:') .'</th><td>'. format_date($node->created, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Modified:') .'</th><td>'. format_date($node->changed, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Views:') .'</th><td>'. $file->views .'</td></tr>';

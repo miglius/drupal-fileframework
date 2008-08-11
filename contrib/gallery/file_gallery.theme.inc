@@ -56,7 +56,7 @@ function theme_file_gallery_node($data, $options) {
   extract($options, EXTR_SKIP);
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l($thumbnail, $url_preview['link'], array('html' => TRUE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'rel' => 'file-gallery'))) : $thumbnail;
+  $output .= !empty($url_preview) ? l($thumbnail, $url_preview['link'], array('html' => TRUE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class))) : $thumbnail;
   $output .= '<span>'. l($title_short, $url_open['link'], array('attributes' => array('onclick' => $url_open['onclick'], 'title' => $title))) .'</span>';
   if (FILE_GALLERY_SHOW_TYPE) {
     $output .= '<span>'. file_mime_icon_for($file->type) .'&nbsp;'. file_mime_description_for($file->type) .'</span>';

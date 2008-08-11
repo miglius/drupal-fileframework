@@ -44,7 +44,6 @@ Drupal.file_embedInsert = function(options) {
     try {
      if (tinyMCE.selectedInstance) {
         tinyMCE.execCommand('mceInsertContent', true, content);
-        tinyMCE.selectedInstance.repaint();
         return;
      }
     } catch(e) {}

@@ -8,7 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_BROWSER_FILE_LINK',         variable_get('file_browser_file_link', 'file'));
+define('FILE_BROWSER_FILE_LINK',         variable_get('file_browser_file_link', 'nolink'));
 define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', FALSE));
 define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', TRUE));
 define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', TRUE));
@@ -693,7 +693,7 @@ function _file_browser_page($vid, $expanded_tids = array()) {
   $popupdiv .= '<div id="file-dropdown-preview-bpage" class="file-dropdown-element">Preview</div>';
   $popupdiv .= '<div id="file-dropdown-nodeview-bpage" class="file-dropdown-element">View Post</div>';
   $popupdiv .= '</div>';
-  $popupdiv .= '<form id="file-node-url-form"><input id="file-node-url" type="hidden" value="'. url('node/') .'" /></form>';
+  $popupdiv .= '<form id="file-node-url-form"><input id="file-node-url" type="hidden" value="'. url('node/') .'" /><input id="file-download-url" type="hidden" value="'. url('file/') .'" /></form>';
 
   $terms = _file_browser_build_terms('page', $vid, $expanded_tids);
   $terms = !empty($terms) ? $terms : t('No vocabularies configured.');
@@ -823,7 +823,17 @@ function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE) {
   $title = check_plain($node->title);
   $file = $node->file;
   $id = 't'. $node->tid .'-n'. $file->nid .'-b'. $block;
-  $url = FILE_BROWSER_FILE_LINK == 'file' ? 'file/'. $node->nid .'/download/'. $node->vid : 'node/'. $node->nid;
+  switch (FILE_BROWSER_FILE_LINK) {
+    case 'file':
+      $url = 'file/'. $node->nid .'/download/'. $node->vid;
+      break;
+    case 'node':
+      $url = 'node/'. $node->nid;
+      break;
+    case 'nolink':
+      $url = NULL;
+      break;
+  }
   $icon = file_mime_icon_for($file->type, file_mime_description_for($file->type));
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);

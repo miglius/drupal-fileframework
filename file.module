@@ -13,6 +13,7 @@ define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
 define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
+define('FILE_PROPERTIES_TAB',                variable_get('file_properties_tab', 1));
 define('FILE_CRON',                          variable_get('file_cron', 1));
 define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_size', 512));
 define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetection', 0));
@@ -136,8 +137,8 @@ function file_menu() {
       'weight' => 1,
       'page callback' => 'file_page_metadata',
       'page arguments' => array(1),
-      'access callback' => 'node_access',
-      'access arguments' => array('view', 1),
+      'access callback' => 'file_metadata_show',
+      'access arguments' => array(1),
       'file' => 'file.pages.inc',
     ),
     'node/%node/embed' => array(
@@ -192,6 +193,13 @@ function file_menu() {
       'file' => 'file.pages.inc',
     ),
   );
+}
+
+/**
+ * Check if a properties tab should be printed..
+ */
+function file_metadata_show($node) {
+  return FILE_PROPERTIES_TAB ? node_access('view', $node) : FALSE;
 }
 
 /**
@@ -426,7 +434,7 @@ function file_node_form(&$node, $form_state) {
  * Implementation of hook_load().
  */
 function file_node_load($node) {
-  return (object)array('file' => db_fetch_object(db_query('SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND f.vid = %d', $node->nid, $node->vid)));
+  return (object)array('file' => db_fetch_object(db_query('SELECT f.* FROM {file_nodes} f WHERE f.nid = %d AND f.vid = %d', $node->nid, $node->old_vid ? $node->old_vid : $node->vid)));
 }
 
 /**
@@ -457,12 +465,11 @@ function file_node_validate($node) {
  */
 function file_node_insert($node) {
   $file = is_object($node->file) ? $node->file : NULL;
-  if (!is_object($file)) {
+  if (!is_object($file))
     $file = file_save_upload('file');
-    if (!is_object($file)) {
-      $file = $_SESSION['file_preview_file'];
-    }
-  }
+  if (!is_object($file))
+    $file = $_SESSION['file_preview_file'];
+
   if (is_object($file)) {
     file_node_save($node, $file);
     module_invoke_all('file', 'insert', $node);
@@ -475,9 +482,11 @@ function file_node_insert($node) {
  */
 function file_node_update($node) {
   $file = file_save_upload('file');
-  if (!is_object($file)) {
+  if (!is_object($file))
     $file = $_SESSION['file_preview_file'];
-  }
+  if (!is_object($file))
+    $file = file_node_load($node)->file;
+
   if (is_object($file)) {
     file_node_save($node, $file);
     module_invoke_all('file', 'update', $node);
