@@ -91,19 +91,6 @@ function file_init() {
   require_once drupal_get_path('module', 'file') .'/file.inc';
   drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
   drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
-
-  /*
-  if (FILE_INFO_LINK) {
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline', 'footer');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline', 'footer');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip(); });', 'inline', 'footer');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip(); });', 'inline');
-  }
-  */
 }
 
 /**
@@ -288,6 +275,7 @@ function file_block($op = 'list', $delta = 0, $edit = array()) {
 function file_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file)) {
+    /*
     if (FILE_VIEW_LINK) {
       $links['file_view'] = array(
         'title' => t('View'),
@@ -295,6 +283,7 @@ function file_link($type, $node = NULL, $teaser = FALSE) {
         'attributes' => array('title' => t('View this file inline in browser.')),
       );
     }
+    */
     $links['file_download'] = array(
       'title' => t('Download'),
       'href' => 'file/'. $node->nid .'/download/'. $node->vid,

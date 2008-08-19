@@ -263,7 +263,7 @@ function _file_gallery_term($term, $options = array(), $module = NULL) {
  * Builds a file node block.
  */
 function _file_gallery_node($node, $options = array(), $module = NULL) {
-  $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'thickbox';
+  $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'file-thickbox';
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid) : NULL;
   $file_links = $module ? module_invoke($module, 'file_gallery', 'file_links', $node->nid) : array();
 

@@ -59,7 +59,7 @@ function theme_file_render($file, $links_add = array()) {
   $is_node = $file->nid && !$file->derived;
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
-  for ($i = 0; $i < 6; $i++)
+  for ($i = 0; $i < 8; $i++)
     $id .= mt_rand(0, 9);
 
   if (!$initialized) {

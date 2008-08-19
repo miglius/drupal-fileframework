@@ -55,8 +55,14 @@ function theme_file_gallery_node($data, $options) {
   extract($data, EXTR_SKIP);
   extract($options, EXTR_SKIP);
 
+  // If the same file is displayed several times, the js bindes incorrectly.
+  // Have to ensure unique IDs.
+  for ($i = 0; $i < 8; $i++)
+    $id .= mt_rand(0, 9);
+
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
+  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'id' => 'file-'. $file->nid .'-'. $id))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
+  $output .= '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
   $file->name = $title_short;
   $output .= '<br />'. theme('file_render', $file, $file_links);
   $output .= '</li>';
