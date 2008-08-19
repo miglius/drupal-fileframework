@@ -18,6 +18,10 @@ define('FILE_BROWSER_OG_PREVIEW',        variable_get('file_browser_og_preview',
 define('FILE_BROWSER_OG_UNFILED',        variable_get('file_browser_og_unfiled', ''));
 define('FILE_BROWSER_LOCATION_PREVIEW',  variable_get('file_browser_location_preview', FALSE));
 
+define('FILE_BROWSER_TITLE_LENGTH',        50);
+define('FILE_BROWSER_TITLE_LENGTH_SHORT',  14);
+define('FILE_BROWSER_TITLE_LENGTH_BLOCK',  20);
+
 //////////////////////////////////////////////////////////////////////////////
 // CORE API HOOKS
 
@@ -137,7 +141,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
       );
       $vocabularies = taxonomy_get_vocabularies('file');
       foreach ($vocabularies as $vid => $vocabulary) {
-        $block_info = t('@title file taxonomy', array('@title' => $vocabulary->name));
+        $block_info = t('@title file browser', array('@title' => $vocabulary->name));
         $block['file_browser-'. $vocabulary->vid] = array('info' => $block_info);
       }
       return $block;
@@ -648,14 +652,6 @@ function file_browser_preview($node = NULL) {
     // Find a thumbnail for the file.
     $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
     $thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
-
-    if (module_exists('file_gallery')) {
-      // Find a first enabled handler for the file.
-      $preview = _file_gallery_preview($file);
-      $url_preview = $url_preview ? $url_preview : url('node/'. $file->nid .'/embed/'. $preview['handler'], array('query' => array('width' => $preview['width'], 'height' => $preview['height'])));
-      $class = 'thickbox';
-      $script = "<script type='text/javascript'>tb_init('a.thickbox, area.thickbox, input.thickbox'); imgLoader = new Image(); imgLoader.src = tb_pathToImage;</script>";
-    }
   }
 
   // File back references.
@@ -667,7 +663,7 @@ function file_browser_preview($node = NULL) {
     }
   }
 
-  print theme('file_browser_preview', compact('node', 'groups', 'location', 'thumbnail', 'url_preview', 'class', 'script', 'nodes'));
+  print theme('file_browser_preview', compact('node', 'groups', 'location', 'thumbnail', 'url_preview', 'nodes'));
   exit;
 }
 
@@ -822,6 +818,7 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
 function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE) {
   $title = check_plain($node->title);
   $file = $node->file;
+  $file->name = $node->title;
   $id = 't'. $node->tid .'-n'. $file->nid .'-b'. $block;
   switch (FILE_BROWSER_FILE_LINK) {
     case 'file':
@@ -838,7 +835,7 @@ function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE) {
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);
 
-  return theme('file_browser_file', compact('id', 'icon', 'title', 'url', 'date', 'size', 'visibile', 'columns'));
+  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'url', 'date', 'size', 'visibile', 'columns'));
 }
 
 /**
@@ -981,11 +978,10 @@ function _file_browser_add_headers() {
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
 
-    if (module_exists('file_gallery')) {
-      drupal_add_css(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.css', 'module');
-      drupal_add_js('var tb_pathToImage = "'. base_path() . drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/loadingAnimation.gif";', 'inline');
-      drupal_add_js(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.js', 'module');
-    }
+    // Thickbox.
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+    drupal_add_js('var tb_pathToImage = "'. base_path() . drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif";', 'inline');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
 
     // Translations to javascript.
     drupal_add_js(array('file_browser' => array('no_file_selected' => t('No file selected.'))), 'setting');

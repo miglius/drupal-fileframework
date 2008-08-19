@@ -18,22 +18,25 @@ span.file-gallery-empty {
 }
 
 ul.file-gallery {
+  display: inline;
   list-style-type: none;
   margin: 0px;
   padding: 0px;
 }
 
 ul.file-gallery li.file-gallery {
+  background: transparent;
   display: inline;
   float: left;
-  width: 120px;
-  height: 120px;
+  font-size: x-small;
   text-align: center;
-  text-decoration: none;
+  list-style: none;
   background-color: #eee;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
   border: 1px #ccc solid;
-  margin: 0.5em 0.5em 0em 0em;
-  padding: 1em;
+  padding: 5pt 0pt 0pt 0pt;
 }
 
 ul.file-gallery li a {
@@ -41,17 +44,12 @@ ul.file-gallery li a {
 
 ul.file-gallery li a img {
   border: none;
-  padding: 5px;
 }
 
-ul.file-gallery li span {
-  display: block;
-  font-size: x-small;
-  text-align: center;
-}
-
-ul.file-gallery li span.no-thumbnail {
+ul.file-gallery li span div.no-thumbnail {
+  width: 80pt;
   border: 1px #ccc solid;
-  padding: 10px;
+  padding: 2px;
   font-size: small;
 }
+

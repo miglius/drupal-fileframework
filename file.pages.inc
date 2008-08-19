@@ -92,7 +92,7 @@ function file_embed($node, $handler) {
  * @param $disposition
  *   Disposition of the file. Might be 'download' or 'inline'.
  */
-function file_serve($node, $vid, $disposition = NULL) {
+function file_serve($node, $vid, $disposition = 'download') {
   if (isset($vid) && $node->vid != $vid) {
     $node = node_load($node->nid, $vid);
   }

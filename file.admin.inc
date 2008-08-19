@@ -41,12 +41,14 @@ function file_admin_settings() {
     '#description'   => t('Show a "view" link next to "download" link. Clicking the view link will bring the file with a headder content-disposition set to inline.'),
     '#default_value' => FILE_VIEW_LINK,
   );
+  /*
   $form['visibility']['file_info_link'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Info link'),
     '#description'   => t('Show an "info" link next to "download" link. Clicking the info link will show file\'s metadata.'),
     '#default_value' => FILE_INFO_LINK,
   );
+  */
   $form['visibility']['file_properties_tab'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Properties tab'),
@@ -133,7 +135,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_handler_autoload', $form_state['values']['file_handler_autoload']);
       variable_set('file_show_generated', $form_state['values']['file_show_generated']);
       variable_set('file_view_link', $form_state['values']['file_view_link']);
-      variable_set('file_info_link', $form_state['values']['file_info_link']);
+      //variable_set('file_info_link', $form_state['values']['file_info_link']);
       variable_set('file_properties_tab', $form_state['values']['file_properties_tab']);
       variable_set('file_cron', $form_state['values']['file_cron']);
       variable_set('file_cron_limit_size', $form_state['values']['file_cron_limit_size']);
@@ -147,7 +149,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_handler_autoload');
       variable_del('file_show_generated');
       variable_del('file_view_link');
-      variable_del('file_info_link');
+      //variable_del('file_info_link');
       variable_del('file_properties_tab');
       variable_del('file_cron');
       variable_del('file_cron_limit_size');

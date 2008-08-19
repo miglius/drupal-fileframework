@@ -115,8 +115,10 @@ function file_views_views_data() {
 
   $data['file_nodes']['uri'] = array(
     'field' => array(
-      'title' => t('Thumbnail'),
-      'help' => t('Provide a thumbnail of the file.'),
+      //'title' => t('Thumbnail'),
+      'title' => t('File'),
+      //'help' => t('Provide a thumbnail of the file.'),
+      'help' => t('Provide a file.'),
       'handler' => 'views_handler_field_file_nodes_uri',
     ),
   );
@@ -269,30 +271,16 @@ class views_handler_field_file_nodes_uri extends views_handler_field {
     parent::construct();
     $this->additional_fields['nid'] = 'nid';
     $this->additional_fields['vid'] = 'vid';
-    $this->additional_fields['type'] = 'type';
-    $this->additional_fields['uri'] = 'uri';
-  }
-
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-    $form['link_to'] = array(
-      '#title' => t('Link this field'),
-      '#type' => 'select',
-      '#default_value' => $this->options['link_to'],
-      '#options' => array(t('No link'), t('Node'), t('Download')),
-    );
   }
 
   function render($values) {
     $nid = $values->{$this->aliases['nid']};
     $vid = $values->{$this->aliases['vid']};
-    $type = $values->{$this->aliases['type']};
-    $uri = $values->{$this->aliases['uri']};
-    if (!empty($uri)) {
-      $file = (object)compact('nid', 'vid', 'type', 'uri');
-      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
-      return !empty($this->options['link_to']) ? l($thumbnail, $this->options['link_to'] == 1 ? 'node/'. $nid : 'file/'. $nid .'/download', array('html' => TRUE)) : $thumbnail;
+    $node = node_load(array('nid' => $nid, 'vid' => $vid));
+    $file = $node->file;
+    if (is_object($file)) {
+      $file->name = drupal_strlen($node->title) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($node->title, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $node->title;
+      return theme('file_render', $file) .'<script type=\'text/javascript\'>$(\'a.file-metadata\').cluetip();</script>';
     }
     return '';
   }
@@ -309,20 +297,10 @@ class views_handler_field_file_attachments_fnid extends views_handler_field_prer
 
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
-    $form['link_to_file'] = array(
-      '#title' => t('Link this field to file download'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['link_to_file']),
-    );
     $form['only_listed'] = array(
       '#title' => t('Only show "listed" file attachments'),
       '#type' => 'checkbox',
       '#default_value' => !empty($this->options['only_listed']),
-    );
-    $form['show_icon'] = array(
-      '#title' => t('Show type icon'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['show_icon']),
     );
   }
 
@@ -345,25 +323,11 @@ class views_handler_field_file_attachments_fnid extends views_handler_field_prer
       if (!empty($this->options['only_listed'])) {
         $where = " AND fa.list <> 0";
       }
-      $result = db_query("SELECT fa.fnid, fa.nid, fn.type, n.title FROM {file_attachments} fa LEFT JOIN {file_nodes} fn ON fa.fnid = fn.nid LEFT JOIN {node} n ON fa.fnid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
-      while ($row = db_fetch_object($result)) {
-        $this->items[$row->nid][$row->fnid] = $this->render_link(check_plain($row->title), $row->fnid, $row->type);
+      $result = db_query("SELECT fa.nid AS pnid, fn.*, n.title AS name FROM {file_attachments} fa LEFT JOIN {file_nodes} fn ON fa.fnid = fn.nid LEFT JOIN {node} n ON fa.fnid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
+      while ($file = db_fetch_object($result)) {
+        $file->name = drupal_strlen($file->name) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($file->name, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $file->name;
+        $this->items[$file->pnid][$file->nid] = theme('file_render', $file);
       }
-    }
-  }
-
-  /**
-   * Render title as a link to the node or file.
-   *
-   * Data should be made XSS safe prior to calling this function.
-   */
-  function render_link($title, $nid, $type) {
-    $icon = !empty($this->options['show_icon']) ? file_mime_icon_for($type) .'&nbsp;' : '';
-    if (!empty($this->options['link_to_file'])) {
-      return $icon . l($title, 'file/'. $nid .'/download');
-    }
-    else {
-      return $icon . l($title, 'node/'. $nid);
     }
   }
 }

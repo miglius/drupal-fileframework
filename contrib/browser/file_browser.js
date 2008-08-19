@@ -272,11 +272,19 @@ Drupal.file_browserFolderClick = function(obj) {
   // if the shelf currently is closed then open the shelf
   // the class 'expanded' is already toggled in SelectRow.
   if ($(parent).hasClass('expanded')) {
+    $('#' + id + '-spinner').show();
     $.get($('#file-ajax-url').val() + '/' + tid + '/' + block, function(result) {
       $(obj).parent().addClass('expanded');
       // to stop duplicate info from double clicks
-      if (parent.childNodes.length == 1)
+      if (parent.childNodes.length == 1) {
         $('#' + id).append(result);
+        $('#' + id).find('span.file.with-menu').click(function(event) {
+          $(this).toggleClass('active');
+          $(this).find('ul').toggle();
+        });
+	$('a.file-metadata').cluetip({arrows: true});
+      }
+      $('#' + id + '-spinner').hide();
     });
   } else {
     // shelf is open hence remove all the children except the shelf name
@@ -302,20 +310,25 @@ Drupal.file_browserFileClick = function(obj) {
   // highlighting the row that was selected
   Drupal.file_browserSelectRow(obj, id, false, false);
   // set the download click action to point to the file url
+  /*
   $('#file-dropdown-download-b' + block).unbind('click').click(function() {
     window.location.href = $('#file-download-url').val() + nid + '/download';
     $('.file-dropdown').hide();
   });
+  */
   // allow the user to go directly to the node from the action menu
+  /*
   $('#file-dropdown-nodeview-b' + block).unbind('click').click(function() {
     window.location.href = $('#file-node-url').val() + nid;
     $('.file-dropdown').hide();
   });
+  */
   // hide the create term block since they have clicked on a file
   //$('#block-file_browser-newterm').hide();
   Drupal.file_browserToggleNewterm(id);
   Drupal.file_browserToggleUpload();
   // bind the AJAX request to the Preview option in the action div
+  /*
   $('#file-dropdown-preview-b' + block).unbind('click').click(function() {
     $('#file-preview').hide(); // hide any previous file preview information
     $('#block-file_browser-preview').show();
@@ -337,6 +350,7 @@ Drupal.file_browserFileClick = function(obj) {
   }
   $('#file-dropdown-b' + block).css({ top: y + 'px', left: x + 'px' }).show();
   Drupal.file_browserVars.ftDropDownTimeout = setTimeout(function() { $('#file-dropdown-b' + block).hide(); }, 2000); // hide action div
+  */
   return false;
 }
 

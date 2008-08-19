@@ -43,7 +43,7 @@ function theme_file_gallery_term($data, $options) {
   $image = theme('image', drupal_get_path('module', 'file_gallery') .'/images/folder.gif', NULL, NULL, array('width' => 96, 'height' => 96), FALSE);
   $output = '<li class="file-gallery" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
   $output .= l($image, $url, array('html' => TRUE, 'query' => $query, 'attributes' => array('class' => 'folder', 'title' => check_plain($term->name))));
-  $output .= '<span>'. l($term->name, $url, array('query' => $query, 'attributes' => array('title' => check_plain($term->description)))) .'</span>';
+  $output .= '<br /><span>'. l($term->name, $url, array('query' => $query, 'attributes' => array('title' => check_plain($term->description)))) .'</span>';
   $output .= '</li>';
   return $output;
 }
@@ -56,14 +56,10 @@ function theme_file_gallery_node($data, $options) {
   extract($options, EXTR_SKIP);
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l($thumbnail, $url_preview['link'], array('html' => TRUE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class))) : $thumbnail;
-  $output .= '<span>'. l($title_short, $url_open['link'], array('attributes' => array('onclick' => $url_open['onclick'], 'title' => $title))) .'</span>';
-  if (FILE_GALLERY_SHOW_TYPE) {
-    $output .= '<span>'. file_mime_icon_for($file->type) .'&nbsp;'. file_mime_description_for($file->type) .'</span>';
-  }
+  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
+  $file->name = $title_short;
+  $output .= '<br />'. theme('file_render', $file, $file_links);
   $output .= '</li>';
-
-  drupal_add_js('$(document).ready(function() { $(\'#file-'. $file->nid .' > span > a\').parent().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
   return $output;
 }
 

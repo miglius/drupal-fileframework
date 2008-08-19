@@ -18,16 +18,11 @@ function file_cck_theme() {
       'arguments' => array('element' => NULL),
     ),
     'file_cck_formatter_default' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_file' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_preview' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview_file' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_preview_formats' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_preview_links' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_preview_formats_links' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_name' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_icon_name' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_name_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_icon_name_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_name_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_icon_name_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_formatter_preview_formats_file' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
@@ -221,16 +216,11 @@ function file_cck_content_is_empty($item, $field) {
 function file_cck_field_formatter_info() {
   return array(
     'default' => array('label' => t('first handler'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'file' => array('label' => t('file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview' => array('label' => t('preview'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview_file' => array('label' => t('preview and file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview_formats' => array('label' => t('preview and other formats'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'preview_links' => array('label' => t('preview and links'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'preview_formats_links' => array('label' => t('preview, other formats and links'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'name' => array('label' => t('name'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'icon_name' => array('label' => t('icon, name'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'name_open' => array('label' => t('name with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'icon_name_open' => array('label' => t('icon, name with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'name_download' => array('label' => t('name with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'icon_name_download' => array('label' => t('icon, name with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    'preview_formats_file' => array('label' => t('preview, other formats and file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'thumbnail' => array('label' => t('thumbnail'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'thumbnail_open' => array('label' => t('thumbnail with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'thumbnail_download' => array('label' => t('thumbnail with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
@@ -262,9 +252,22 @@ function theme_file_cck_formatter_generic($element) {
   }
 
   switch ($element['#formatter']) {
+    case 'file':
+      $data = array(
+        'file' => theme('file_render', $file),
+      );
+      return theme('file_show', $data);
+      break;
     case 'preview':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+      );
+      return theme('file_show', $data);
+      break;
+    case 'preview_file':
+      $data = array(
+        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
+        'file' => theme('file_render', $file),
       );
       return theme('file_show', $data);
       break;
@@ -275,38 +278,13 @@ function theme_file_cck_formatter_generic($element) {
       );
       return theme('file_show', $data);
       break;
-    case 'preview_links':
-      $data = array(
-        'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
-        'links' => file_cck_render_links($file, 'files_'. $id),
-      );
-      return theme('file_show', $data);
-      break;
-    case 'preview_formats_links':
+    case 'preview_formats_file':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
         'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files_'. $id) : '',
-        'links' => file_cck_render_links($file, 'files_'. $id),
+        'file' => theme('file_render', $file),
       );
       return theme('file_show', $data);
-      break;
-    case 'name':
-      return check_plain($file->name);
-      break;
-    case 'icon_name':
-      return file_mime_icon_for($file->type) .' '. check_plain($file->name);
-      break;
-    case 'name_open':
-      return !empty($file->nid) ? l($file->name, 'node/'. $file->nid) : check_plain($file->name);
-      break;
-    case 'icon_name_open':
-      return file_mime_icon_for($file->type) .' '. (!empty($file->nid) ? l($file->name, 'node/'. $file->nid) : check_plain($file->name));
-      break;
-    case 'name_download':
-      return !empty($file->nid) ? l($file->name, 'file/'. $file->nid .'/download/'. $file->vid) : check_plain($file->name);
-      break;
-    case 'icon_name_download':
-      return file_mime_icon_for($file->type) .' '. (!empty($file->nid) ? l($file->name, 'file/'. $file->nid .'/download/'. $file->vid) : check_plain($file->name));
       break;
     case 'thumbnail':
       $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));

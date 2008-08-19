@@ -824,10 +824,10 @@ function file_render_generated($file, $id = 0) {
   $file_uris = file_generated_for($file);
   foreach ($file_uris as $uri => $data) {
     if ($file->uri != $uri) {
-      $data['uri'] = bitcache_resolve_uri($uri, array('absolute' => TRUE));
-      $data['hash'] = file_get_hash($uri);
-      $data['description'] = file_mime_description_for($data['type']);
-      $formats[] = $data;
+      $formats[] = array_merge($data, array(
+        'uri' => $uri,
+        'description' => file_mime_description_for($data['type']),
+      ));
     }
   }
 
@@ -975,7 +975,8 @@ function file_bitcache($op, $id, $stream = NULL) {
         $counter = $disposition == 'inline' ? 'views' : 'downloads';
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
-      foreach (file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL)) as $extension) {
+      $extensions = file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL));
+      foreach ($extensions as $extension) {
         if (preg_match('/\.'. $extension .'$/', drupal_strtolower($node->title))) {
           $extension_correct = TRUE;
           break;
@@ -985,8 +986,8 @@ function file_bitcache($op, $id, $stream = NULL) {
       $title = $node->title ? $node->title : 'file';
       return array(
         'Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"',
-        'Content-Type' => $node->file->type,
-        'Content-Length' => $node->file->size,
+        'Content-Type' => rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format')),
+        'Content-Length' => rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:extent'))->value,
         'Last-Modified' => gmdate('D, d M Y H:i:s', $node->changed ? $node->changed : time()) .' GMT',
       );
       break;

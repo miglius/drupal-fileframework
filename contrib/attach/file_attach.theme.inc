@@ -12,35 +12,24 @@
  * Renders a node's or comment's file attachments in a table layout.
  */
 function theme_file_attachments($files) {
-  $header = array(t('Attachment'), t('Type'), t('Size'), t('Operations'));
+  //$header = array(t('Attachment'), t('Type'), t('Size'), t('Operations'));
+  $header = array(t('Attachment'), t('Type'), t('Size'));
   $mime_types = file_get_mime_types();
   $rows = array();
   $id = 0;
   foreach ($files as $file) {
-    $name = drupal_strlen($file->name) > 50 ? drupal_substr($file->name, 0, 50) .'...' : $file->name;
+    $file->name = drupal_strlen($file->name) > FILE_ATTACH_TITLE_LENGTH ? drupal_substr($file->name, 0, FILE_ATTACH_TITLE_LENGTH - 3) .'...' : $file->name;
     $rows[] = array(
-      $file->nid ? l($name, 'node/'. $file->nid) : check_plain($name),
-      file_mime_icon_for($file->type) .' '. file_mime_description_for($file->type),
+      theme('file_render', $file),
+      file_mime_description_for($file->type),
       format_size($file->size),
-      '<div id="file-attach-links-'. $id .'">'. ($file->nid ? (FILE_VIEW_LINK ? l(t('view'), 'file/'. $file->nid .'/view') .' ' : '') . l(t('download'), 'file/'. $file->nid .'/download') : (FILE_VIEW_LINK ? l(t('view'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE)), array('query' => array('disposition' => 'inline'))) .' ' : '') . l(t('download'), bitcache_resolve_uri($file->uri, array('absolute' => TRUE)))) .'</div>',
     );
-    if (FILE_INFO_LINK) {
-      drupal_add_js('$(document).ready(function() { $(\'#file-attach-links-'. $id .'\').append(\' <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
-    }
     $id++;
   }
 
   $output = '<div class="file-attachments">';
   $output .= !empty($rows) ? theme('table', $header, $rows, array('id' => 'attachments')) : '';
   $output .= '</div>';
-  if (FILE_INFO_LINK) {
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-
-    //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
-  }
   return $output;
 }
 

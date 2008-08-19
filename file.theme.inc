@@ -52,10 +52,62 @@ function theme_file_admin_handler_settings($form) {
 }
 
 /**
+ * Theme for showing a file with a links.
+ */
+function theme_file_render($file, $links_add = array()) {
+  static $initialized = FALSE;
+  $is_node = $file->nid && !$file->derived;
+  // If the same file is displayed several times, the js bindes incorrectly.
+  // Have to ensure unique IDs.
+  for ($i = 0; $i < 6; $i++)
+    $id .= mt_rand(0, 9);
+
+  if (!$initialized) {
+    $initialized = TRUE;
+
+    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+    // Cluetip for metadata.
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); });', 'inline');
+
+    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+  }
+
+  if ($is_node)
+    $links['open'] = array('title' => t('Open'), 'href' => 'node/'. $file->nid, 'attributes' => array('title' => t('Open file.')));
+  if ($is_node) {
+    // Find a first enabled handler for the file.
+    $preview = _file_gallery_preview($file);
+    $links['show'] = array('title' => t('Show'), 'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']), 'attributes' => array('title' => t('Show file in the thickbox.'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id));
+  }
+  if (FILE_VIEW_LINK) {
+    $links['view'] = array('title' => t('View'), 'attributes' => array('title' => t('View file inline in the browser.')));
+    $links['view']['href'] = $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
+    $links['view']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'inline');
+  }
+  $links['download'] = array('title' => t('Download'), 'attributes' => array('title' => t('Download file.')));
+  $links['download']['href'] = $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
+  $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'download');
+  if ($is_node)
+    $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info'));
+  $links['metadata'] = array('title' => t('Metadata'), 'href' => '', 'attributes' => array('title' => t('File\'s metadata.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid));
+  $links = theme('links', array_merge($links, $links_add), array('class' => 'profile-links'));
+  $output = '<span class="file with-menu"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="label">'. file_mime_icon_for($file->type) . check_plain($file->name ? ' '. $file->name : '') .'</span>'. $links .'</span>';
+  if ($is_node)
+    $output .= '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
+  return $output;
+}
+
+/**
  * Theme for showing previews and generated files.
  */
 function theme_file_show($data) {
-  $output = implode('.....', array_filter($data, create_function('$a', 'return !empty($a);')));
+  $output = implode('<br />', array_filter($data, create_function('$a', 'return !empty($a);')));
   return !empty($output) ? '<div class="file-show">'. $output .'</div>'."\n" : '';
 }
 
@@ -74,7 +126,8 @@ function theme_file_previews($data) {
   }
   if (!empty($prevs)) {
     $output = '<div class="file-generated" id="file-preview-'. $id .'">';
-    $output .= t('File') .' '. ($name ? '"'. $name .'" ': '') . t('preview') .': '. implode(' | ', $prevs);
+    // If there is no string before the first previre, the first preview does not work.
+    $output .= t('Preview') .': '. implode(' | ', $prevs);
     $output .= !isset($nid) ? '<div id="file-preview-notice-'. $id .'">'. t(' (works only with a Javascript enabled)') .'</div>' : '';
     $output .= '</div>';
 
@@ -84,13 +137,8 @@ function theme_file_previews($data) {
     }
     drupal_add_js('$(document).ready(function() { $(\'#file-preview-'. $id .'\').append(\' | <a href="'. base_path() .'" id="file-preview-hide-'. $id .'" >'. t('hide') .'</a>\'); });', 'inline');
     drupal_add_js('$(document).ready(function() { $(\'#file-preview-hide-'. $id .'\').click(function() { $(\'#file-preview-container-'. $id .'\').html(\'\'); return false; }); });', 'inline');
-    if (variable_get('file_handler_autoload', FILE_HANDLER_AUTOLOAD)) {
+    if (FILE_HANDLER_AUTOLOAD) {
       drupal_add_js('$(document).ready(function() { $(\'#'. $handler_first .'-'. $id .'\').trigger(\'mousedown\'); });', 'inline');
-      /*
-      if (count($prevs) == 1) {
-        drupal_add_js('$(document).ready(function() { $(\'#file-preview-'. $id .'\').hide(); });', 'inline');
-      }
-      */
     }
   }
   return $output;
@@ -106,24 +154,13 @@ function theme_file_generated($data) {
   $handlers = file_get_mime_handlers();
   foreach ($formats as $gid => $format) {
     $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : '';
-    $entries[] = '<div id="file-formats-'. $id .'-'. $gid .'">&nbsp;&nbsp;'. file_mime_icon_for($format['type']) .' <small><span class="file-description">'. $format['description'] .'</span> (<span class="file-size">'. format_size($format['size']) .'</span>)'. ($description ? ' [<span class="file-size">'. $description .'</span>]' : '') . (FILE_VIEW_LINK ? ' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) : '') .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</small></div>';
-    if (FILE_INFO_LINK) {
-      drupal_add_js('$(document).ready(function() { $(\'#file-formats-'. $id .'-'. $gid .'\').children().append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
-    }
+    $entries[] = theme('file_render', (object)array('nid' => $nid, 'vid' => $vid, 'name' => '', 'type' => $format['type'], 'size' => $format['size'], 'uri' => $format['uri'], 'derived' => TRUE, 'desc' => $description));
   }
   if (!empty($entries)) {
     $output = '<div class="file-formats" id="file-formats-'. $id .'">';
-    $output .= ($name ? t('File') .' '. ($name ? '"'. $name .'" ': '') . t('other available formats') : t('Other available formats')) .':<br />';
-    $output .= implode('', $entries);
+    $output .= t('Other available formats') .': ';
+    $output .= implode(' ', $entries);
     $output .= '</div>';
-  }
-  if (FILE_INFO_LINK) {
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-
-    //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
   }
   return $output;
 }
@@ -142,6 +179,39 @@ function theme_file_metadata($data) {
 }
 
 /**
+ * Theme for ajax file info.
+ */
+function theme_file_info($node) {
+  if (!is_object($node->file))
+    exit;
+
+  $data = array(
+    array('name' => t('Author'), 'data' => array(theme('username', user_load($node->uid)))),
+    array('name' => t('Title'), 'data' => array(check_plain($node->title))),
+    array('name' => t('Created'), 'data' => array(format_date($node->created, 'small'))),
+    array('name' => t('Modified'), 'data' => array(format_date($node->changed, 'small'))),
+    array('name' => t('Type'), 'data' => array(file_mime_description_for($node->file->type))),
+    array('name' => t('Size'), 'data' => array(format_size($node->file->size))),
+    array('name' => t('Views'), 'data' => array($node->file->views)),
+    array('name' => t('Downloads'), 'data' => array($node->file->downloads)),
+  );
+
+  // Integration with og.module
+  if (module_exists('og') && ($groups = og_get_node_groups($node)) && !empty($groups)) {
+    foreach ($groups as $gid => $group) {
+      $groups[$gid] = l($group, 'node/'. $gid);
+    }
+    $data[] = array('name' => t('Groups'), 'data' => $groups);
+  }
+
+  foreach ($data as $d) {
+    $output[] = '<strong>'. $d['name'] .':</strong><br />&nbsp;&nbsp;'. implode('<br />&nbsp;&nbsp;', $d['data']);
+  }
+  print implode('<br />', $output);
+  exit;
+}
+
+/**
  * Renders a block containing file's metadata.
  */
 function theme_file_block_properties($metadata) {
@@ -149,7 +219,6 @@ function theme_file_block_properties($metadata) {
     foreach ($metadata as $data) {
       $fields[] = '<span class="metadata-name"><strong>'. $data['name'] .':</strong></span><br />&nbsp;&nbsp;<span class="metadata-value">'. $data['value'] .'</span>';
     }
-    //return theme('table', NULL, $rows, array('id' => 'file-block-properties'));
     if (!empty($fields)) {
       return '<div id="file-block-properties">'. implode('<br />', $fields) .'</div>';
     }
@@ -163,24 +232,15 @@ function theme_file_block_formats($data) {
   extract($data, EXTR_SKIP);
 
   $entries = array();
+  $handlers = file_get_mime_handlers();
   foreach ($formats as $id => $format) {
-    $entries[] = '<div id="block-file-formats-'. $id .'">'. file_mime_icon_for($format['type'], $format['description']) .' <span class="file-size">'. format_size($format['size']) .'</span>'. (FILE_VIEW_LINK ? ' | '. l(t('view'), $format['uri'], array('query' => array('vid' => $vid, 'disposition' => 'inline'))) : '') .' | '. l(t('download'), $format['uri'], array('query' => array('vid' => $vid))) .'</div>';
-    if (FILE_INFO_LINK) {
-      drupal_add_js('$(document).ready(function() { $(\'#block-file-formats-'. $id .'\').append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. $format['hash'] .'/'. $nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); });', 'inline');
-    }
+    $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : '';
+    $entries[] = theme('file_render', (object)array('nid' => $nid, 'vid' => $vid, 'name' => file_mime_description_for($format['type']), 'type' => $format['type'], 'size' => $format['size'], 'uri' => $format['uri'], 'derived' => TRUE, 'desc' => $description));
   }
   if (!empty($entries)) {
     $output = '<div id="file-block-formats">';
-    $output .= implode('', $entries);
+    $output .= implode('<br />', $entries);
     $output .= '</div>';
-    if (FILE_INFO_LINK) {
-      drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
-      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-
-      //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
-      drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
-    }
     return $output;
   }
 }

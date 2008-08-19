@@ -12,7 +12,7 @@ define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
-define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
+//define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
 define('FILE_PROPERTIES_TAB',                variable_get('file_properties_tab', 1));
 define('FILE_CRON',                          variable_get('file_cron', 1));
 define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_size', 512));
@@ -49,6 +49,10 @@ function file_theme() {
       'arguments' => array('form' => NULL),
       'file' => 'file.theme.inc'
     ),
+    'file_render' => array(
+      'arguments' => array('file' => NULL),
+      'file' => 'file.theme.inc'
+    ),
     'file_show' => array(
       'arguments' => array('data' => NULL),
       'file' => 'file.theme.inc'
@@ -63,6 +67,10 @@ function file_theme() {
     ),
     'file_metadata' => array(
       'arguments' => array('data' => NULL),
+      'file' => 'file.theme.inc'
+    ),
+    'file_info' => array(
+      'arguments' => array('node' => NULL),
       'file' => 'file.theme.inc'
     ),
     'file_block_properties' => array(
@@ -81,6 +89,21 @@ function file_theme() {
  */
 function file_init() {
   require_once drupal_get_path('module', 'file') .'/file.inc';
+  drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
+  drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
+
+  /*
+  if (FILE_INFO_LINK) {
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+
+    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline', 'footer');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline', 'footer');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip(); });', 'inline', 'footer');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip(); });', 'inline');
+  }
+  */
 }
 
 /**
@@ -154,7 +177,7 @@ function file_menu() {
       'title' => 'File download',
       'type' => MENU_CALLBACK,
       'page callback' => 'file_serve',
-      'page arguments' => array(1, 3),
+      'page arguments' => array(1, 3, 'download'),
       'access callback' => 'node_access',
       'access arguments' => array('view', 1),
       'file' => 'file.pages.inc',
@@ -191,6 +214,14 @@ function file_menu() {
       'page arguments' => array(1, 2),
       'access callback' => TRUE,
       'file' => 'file.pages.inc',
+    ),
+    'node/%node/info' => array(
+      'title' => 'AJAX file info',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'theme',
+      'page arguments' => array('file_info', 1),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
     ),
   );
 }
@@ -273,7 +304,8 @@ function file_link($type, $node = NULL, $teaser = FALSE) {
       'title' => format_size($node->file->size),
     );
     $links['file_type'] = array(
-      'title' => file_mime_icon_for($node->file->type) .' '. file_mime_description_for($node->file->type),
+      //'title' => file_mime_icon_for($node->file->type) .' '. file_mime_description_for($node->file->type),
+      'title' => file_mime_description_for($node->file->type),
       'html' => TRUE,
     );
     $links['file_views'] = array(
@@ -391,7 +423,7 @@ function file_node_access($op, $node, $account) {
  * Implementation of hook_form().
  */
 function file_node_form(&$node, $form_state) {
-  drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
+  //drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
 
   // TODO: This node_form() craziness here is needed because when
   // drupal_retrieve_form('file_node_form') is performed, it will
@@ -591,21 +623,28 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
 
   $file = is_object($file) ? $file : $node->file;
   $node = node_prepare($node, $teaser);
+  if (!is_object($file))
+    return $node;
+
+  $file->name = $file->name ? $file->name : $node->title;
 
   // We show generated files only on full page view, where the teaser is not set.
-  if (!$teaser && is_object($file) && !$search) {
-    $file->name = $file->name ? $file->name : $node->title;
+  $data = array();
+  if (!$teaser && !$search) {
     $data = array(
       'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file) : '',
       'generated' => FILE_SHOW_GENERATED ? file_render_generated($file) : '',
     );
-    $output = theme('file_show', $data);
-    // For browsers with javascript disabled.
-    if (FILE_SHOW_PREVIEWS && arg(2) == 'file_preview') {
-      $output .= file_wrapper_html($node, arg(3));
-    }
-    $node->content['file_preview'] = array('#value' => $output, '#weight' => 10);
   }
+  $data = array_merge($data, array('file' => theme('file_render', $file)));
+  $output = theme('file_show', $data);
+
+  // For browsers with javascript disabled.
+  if (FILE_SHOW_PREVIEWS && arg(2) == 'file_preview') {
+    $output .= file_wrapper_html($node, arg(3));
+  }
+
+  $node->content['file_preview'] = array('#value' => $output, '#weight' => 10);
   return $node;
 }
 
@@ -666,10 +705,12 @@ function _file_block_formats() {
       $file_uris = file_generated_for($file_node->file);
       foreach ($file_uris as $uri => $data) {
         if ($file->uri != $uri) {
-          $data['uri'] = bitcache_resolve_uri($uri, array('absolute' => TRUE));
-          $data['hash'] = file_get_hash($uri);
-          $data['description'] = file_mime_description_for($data['type']);
-          $formats[] = $data;
+          $formats[] = array_merge($data, array(
+            'uri' => $uri,
+            'hash' => file_get_hash($uri),
+            'href' => bitcache_resolve_uri($uri, array('absolute' => TRUE)),
+            'description' => file_mime_description_for($data['type']),
+          ));
         }
       }
       return theme('file_block_formats', array('formats' => $formats, 'nid' => $file_node->nid, 'vid' => $file_node->vid));

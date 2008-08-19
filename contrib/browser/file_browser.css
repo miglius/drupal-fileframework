@@ -51,6 +51,12 @@ div.file-folder div.file-cells div.file-icon {
   background: url(icons/folder.png) no-repeat left top;
 }
 
+div.file-folder div.file-cells div.file-spinner {
+  float: left;
+  width: 24px;
+  background: url(images/kittscanner.gif) no-repeat center;
+}
+
 div.file-folder div.file-node, div.file-folder div.file-folder {
   margin-left: 21px;
 }
@@ -76,8 +82,9 @@ div.file-node {
 div.file-node div.file-cells div.file-icon {
   //background: url(icons/file.png) no-repeat left top;
   background: none;
-  width: 21px;
-  margin-right: 5px;
+  /*width: 21px;*/
+  width: 5px;
+  /*margin-right: 5px;*/
 }
 
 /* FILE CELLS */

@@ -14,13 +14,25 @@
 function theme_file_embed_textarea_link($data) {
   extract($data, EXTR_SKIP);
 
+  static $initialized = FALSE;
+  if (!$initialized) { // once only
+    $initialized = TRUE;
+
+    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+    // Cluetip for metadata.
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+
+    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+  }
+
   $output = '<div class="file-embed-actions" id="file-embed-'. $id .'">';
   if (isset($url_attach)) {
     $output .= l($link != 'image' ? t('embed an attachment') : theme('image', drupal_get_path('module', 'file_embed') .'/images/add-image.jpg', t('embed an attachment'), t('Click here to add files from your attachments'), array('border' => 0)), $url_attach['url'], array('html' => TRUE, 'query' => $url_attach['query'], 'attributes' => array('class' => 'file-embed-upload')));
-
-    //$output .= '<a class="file-embed-upload id="file-embed-upload-'. $id .'" title="'. t('Click here to add files from your attachments') .'" href="' . $url_attach .'">';
-    //$output .= t('embed an attachment');
-    //$output .= '</a>';
     $output .= '&nbsp;&nbsp;&nbsp;';
   }
   $output .= l($link != 'image' ? t('embed an existing file') : theme('image', drupal_get_path('module', 'file_embed') .'/images/add-image.jpg', t('embed an existing file'), t('Click here to add files from the database'), array('border' => 0)), $url_gallery['url'], array('html' => TRUE, 'query' => $url_gallery['query'], 'attributes' => array('class' => 'file-embed-select')));

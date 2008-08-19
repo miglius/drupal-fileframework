@@ -10,9 +10,11 @@
 //////////////////////////////////////////////////////////////////////////////
 
 define('FILE_GALLERY_PER_PAGE',   variable_get('file_gallery_per_page', 12));
-define('FILE_GALLERY_EMBED_SIZE', variable_get('file_gallery_embed_size', '160x180'));
+define('FILE_GALLERY_EMBED_SIZE', variable_get('file_gallery_embed_size', '130x150'));
 define('FILE_GALLERY_POPUP_SIZE', variable_get('file_gallery_popup_size', '800x600'));
-define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
+//define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
+
+define('FILE_GALLERY_TITLE_LENGTH_SHORT',  18);
 
 //////////////////////////////////////////////////////////////////////////////
 // CODE API HOOKS
@@ -162,20 +164,10 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
     $output .= theme('pager', NULL, $pager, 0);
     $output .= '<ul class="file-gallery">';
 
-    db_query("CREATE TEMPORARY TABLE file_gallery (nid INT(10))");
-    $nodes = taxonomy_select_nodes($tids, 'and', 0, FALSE, 'n.sticky DESC, n.title ASC');
-    while ($node = db_fetch_object($nodes)) {
-      if (($node = node_load($node->nid)) && $node->type == 'file' && is_object($node->file)) {
-        if (!$filter || preg_match('/^'. $filter .'\//', $node->file->type)) {
-          $files++;
-          db_query("INSERT INTO file_gallery (nid) VALUES (%d)", $node->nid);
-        }
-      }
-    }
-    $result = pager_query('SELECT nid FROM file_gallery', $pager, 1, NULL);
+    $result = _file_gallery_taxonomy_select_nodes($tids, 'and', 0, array('limit' => $pager, 'element' => 1), 'n.sticky DESC, n.title ASC', $filter);
     while ($nid = db_result($result)) {
-      $node = node_load($nid);
-      $output .= _file_gallery_node($node, $embed_options, $module);
+      $output .= _file_gallery_node(node_load($nid), $embed_options, $module);
+      $files++;
     }
   }
 
@@ -272,13 +264,14 @@ function _file_gallery_term($term, $options = array(), $module = NULL) {
  */
 function _file_gallery_node($node, $options = array(), $module = NULL) {
   $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'thickbox';
-  $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : NULL;
+  $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid) : NULL;
+  $file_links = $module ? module_invoke($module, 'file_gallery', 'file_links', $node->nid) : array();
 
   $file = $node->file;
 
   // Find a thumbnail for the file.
   $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-  $thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
+  //$thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
 
   // Find a first enabled handler for the file.
   $preview = _file_gallery_preview($file);
@@ -289,13 +282,13 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : array('link' => 'node/'. $node->nid);
 
   $title = check_plain($node->title);
-  $title_short = drupal_strlen($title) > 20 ? drupal_substr($title, 0, 17) .'...' : $title;
+  $title_short = drupal_strlen($title) > FILE_GALLERY_TITLE_LENGTH_SHORT ? drupal_substr($title, 0, FILE_GALLERY_TITLE_LENGTH_SHORT - 3) .'...' : $title;
 
-  return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview'), $options);
+  return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview', 'file_links'), $options);
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// MISCELLANEOUS HELPERS
+// Miscellaneous helpers
 
 /*
  * Finds a file first preview handler with parameters.
@@ -356,22 +349,11 @@ function _file_gallery_embed_options() {
  */
 function _file_gallery_add_headers($module = NULL) {
   static $initialized = FALSE;
-  if (!$initialized) { // once only
+  if (!$initialized) {
     $initialized = TRUE;
 
-    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
-    drupal_add_css(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.css', 'module');
     drupal_add_css(drupal_get_path('module', 'file_gallery') .'/file_gallery.css', 'module');
-
-    drupal_add_js(drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/thickbox.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file_gallery') .'/file_gallery.js', 'module');
-
-    // Cluetip for metadata.
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-
-    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file_gallery') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
   }
 }
 
@@ -384,7 +366,59 @@ function _file_gallery_add_footers($module = NULL) {
     $initialized = TRUE;
 
     //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
+    //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
   }
+}
+
+/*
+ * Modified taxonomy_select_nodes() function.
+ */
+function _file_gallery_taxonomy_select_nodes($tids = array(), $operator = 'or', $depth = 0, $pager = array(), $order = 'n.sticky DESC, n.created DESC', $filter = NULL) {
+  if (count($tids) > 0) {
+    // For each term ID, generate an array of descendant term IDs to the right depth.
+    $descendant_tids = array();
+    if ($depth === 'all') {
+      $depth = NULL;
+    }
+    foreach ($tids as $index => $tid) {
+      $term = taxonomy_get_term($tid);
+      $tree = taxonomy_get_tree($term->vid, $tid, -1, $depth);
+      $descendant_tids[] = array_merge(array($tid), array_map('_taxonomy_get_tid_from_term', $tree));
+    }
+
+    $sql_filter = $filter ? " AND fn.type LIKE '%s%'" : '';
+
+    if ($operator == 'or') {
+      $args = call_user_func_array('array_merge', $descendant_tids);
+      $placeholders = db_placeholders($args, 'int');
+      $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {file_nodes} fn ON n.vid = fn.vid INNER JOIN {term_node} tn ON n.vid = tn.vid WHERE tn.tid IN ('. $placeholders .') AND n.status = 1'. $sql_filter .' ORDER BY '. $order;
+      $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n INNER JOIN {file_nodes} fn ON n.vid = fn.vid INNER JOIN {term_node} tn ON n.vid = tn.vid WHERE tn.tid IN ('. $placeholders .') AND n.status = 1'. $sql_filter;
+    }
+    else {
+      $joins = '';
+      $wheres = '';
+      $args = array();
+      foreach ($descendant_tids as $index => $tids) {
+        $joins .= ' INNER JOIN {term_node} tn'. $index .' ON n.vid = tn'. $index .'.vid';
+        $wheres .= ' AND tn'. $index .'.tid IN ('. db_placeholders($tids, 'int') .')';
+        $args = array_merge($args, $tids);
+      }
+      $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {file_nodes} fn ON n.vid = fn.vid '. $joins .' WHERE n.status = 1 '. $wheres . $sql_filter .' ORDER BY '. $order;
+      $sql_count = 'SELECT COUNT(DISTINCT(n.nid)) FROM {node} n INNER JOIN {file_nodes} fn ON n.vid = fn.vid '. $joins .' WHERE n.status = 1 '. $wheres . $sql_filter;
+    }
+    if ($filter) {
+      $args[] = $filter;
+    }
+    $sql = db_rewrite_sql($sql);
+    $sql_count = db_rewrite_sql($sql_count);
+    if (!empty($pager)) {
+      $result = pager_query($sql, $pager['limit'], $pager['element'], $sql_count, $args);
+    }
+    else {
+      $result = db_query($sql, $args);
+    }
+  }
+
+  return $result;
 }
 

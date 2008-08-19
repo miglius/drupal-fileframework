@@ -33,6 +33,7 @@ function theme_file_browser_term($data) {
   $output .= '<div class="file-toggle"></div>';
   $output .= '<div class="file-icon"></div>';
   $output .= '<div class="file-title">'. $name .'</div>';
+  $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
     //$output .= '<div class="file-date">'. ($is_vocab ? '&mdash;' : $count) .'</div>';
     $output .= '<div class="file-date">'. $count .'</div>';
@@ -52,21 +53,24 @@ function theme_file_browser_term($data) {
 function theme_file_browser_file($data) {
   extract($data, EXTR_SKIP);
 
-  $title_length = $columns ? 50 : 14;
+  $title_length = $columns ? FILE_BROWSER_TITLE_LENGTH : FILE_BROWSER_TITLE_LENGTH_SHORT;
   $title = drupal_strlen($title) > $title_length ? drupal_substr($title, 0, $title_length - 3) .'...' : $title;
-  //$link = l($title, $url, array('attributes' => array('title' => $title), 'onclick' => 'return Drupal.file_browserFileLinkClick(this);'));
-  $link = $url ? l($title, $url, array('attributes' => array('title' => $title))) : $title;
+  $file->name = $title;
 
   $output = '<div class="file-node" id="file-node-'. $id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
-  $output .= '<div class="file-icon">'. $icon .'</div>';
-  $output .= '<div class="file-title">'. $link .'</div>';
+  $output .= '<div class="file-icon"></div>';
+
+  $links['blockview'] = array('title' => t('Preview'), 'href' => '', 'attributes' => array('title' => t('Preview file.')));
+  $links['blockview']['attributes']['onclick'] = '$(\'#block-file_browser-preview\').show(); $(\'#file-preview-spinner\').show(); $.get($(\'#file-preview-url\').val() + \'/\' + \''. $file->nid .'\', function(result) { $(\'#file-preview-spinner\').hide(); $(\'#file-preview\').html(result).show(); if (typeof collapseAutoAttach != \'undefined\') collapseAutoAttach(); }); return false;';
+  $output .= '<div class="file-title">'. theme('file_render', $file, $links) .'</div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $date .'</div>';
     $output .= '<div class="file-size">'. $size .'</div>';
   }
   $output .= '</div>';
   $output .= '</div>';
+  $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
   return $output;
 }
 
@@ -82,14 +86,16 @@ function theme_file_browser_preview($data) {
 
   if (is_object($node)) {
     $file = $node->file;
+    $file->name = $file->name ? $file->name : $node->title;
+    $file->name = drupal_strlen($file->name) > FILE_BROWSER_TITLE_LENGTH_BLOCK ? drupal_substr($file->name, 0, FILE_BROWSER_TITLE_LENGTH_BLOCK - 3) .'...' : $file->name;
     $output .= '<div id="file-preview-info">';
     $output .= '<table>';
-    $output .= '<tr><th>'. t('Name:') .'</th><td>'. l($node->title, 'node/'. $file->nid) .'</td></tr>';
-    $output .= '<tr><th>'. t('Type:') .'</th><td>'. file_mime_icon_for($file->type) .'&nbsp;'. file_mime_description_for($file->type) .'</td></tr>';
-    $output .= '<tr><th>'. t('Size:') .'</th><td>'. format_size($file->size) .'</td></tr>';
+    $output .= '<tr><th>'. t('File:') .'</th><td>'. theme('file_render', $file) .'</td></tr>';
     $output .= '<tr><th>'. t('Author:') .'</th><td>'. theme('username', user_load($node->uid)) .'</td></tr>';
     $output .= '<tr><th>'. t('Created:') .'</th><td>'. format_date($node->created, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Modified:') .'</th><td>'. format_date($node->changed, 'small') .'</td></tr>';
+    $output .= '<tr><th>'. t('Type:') .'</th><td>'. file_mime_description_for($file->type) .'</td></tr>';
+    $output .= '<tr><th>'. t('Size:') .'</th><td>'. format_size($file->size) .'</td></tr>';
     $output .= '<tr><th>'. t('Views:') .'</th><td>'. $file->views .'</td></tr>';
     $output .= '<tr><th>'. t('Downloads:') .'</th><td>'. $file->downloads .'</td></tr>';
 
@@ -105,23 +111,22 @@ function theme_file_browser_preview($data) {
     }
     $output .= '</table>';
     $output .= '</div>';
-    $output .= $url_preview ? '<a'. drupal_attributes(array('href' => $url_preview, 'title' => check_plain($node->title), 'class' => $class, 'rel' => 'file-gallery')) .'>'. $thumbnail .'</a>' : $thumbnail;
-    $output .= '<div id="file-preview-links">'. (FILE_VIEW_LINK ? l(t('view'), 'file/'. $file->nid .'/view/'. $file->vid) .' | ' : '') . l(t('download'), 'file/'. $file->nid .'/download/'. $file->vid) .'</div>';
-    $output .= FILE_INFO_LINK ? '<script type=\'text/javascript\'>$(document).ready(function() { $(\'#file-preview-links\').append(\' | <a href="'. base_path() .'" class="file-metadata" rel="'. base_path() .'file_metadata/'. file_get_hash($file->uri) .'/'. $file->nid .'" title="'. t('Metadata') .'">'. t('info') .'</a>\'); }); $(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });</script>' : '';
-    $output .= $script ? $script : '';
-  }
+    $output .= '<script type=\'text/javascript\'>$(\'#file-preview-info\').find(\'span.file.with-menu\').click(function(event) { $(this).toggleClass(\'active\'); $(this).find(\'ul\').toggle(); });</script>';
+    $output .= $url_preview ? l($thumbnail, $url_preview, array('html' => TRUE, 'attributes' => array('title' => check_plain($node->title)))) : $thumbnail;
+    $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
 
-  // Backreferences
-  if (!empty($nodes)) {
-    $output .= '<div id="file-references">';
-    $output .= '<span>'. t('This file is attached to') .':</span>';
-    $output .= '<div class="item-list">';
-    $output .= '<ul>';
-    foreach ($nodes as $n) {
-      $output .= '<li>'. l($n->title, 'node/'. $n->nid, $n->cid ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
+    // Backreferences
+    if (!empty($nodes)) {
+      $output .= '<div id="file-references">';
+      $output .= '<span>'. t('This file is attached to') .':</span>';
+      $output .= '<div class="item-list">';
+      $output .= '<ul>';
+      foreach ($nodes as $n) {
+        $output .= '<li>'. l($n->title, 'node/'. $n->nid, $n->cid ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
+      }
+      $output .= '</ul>';
+      $output .= '</div>';
     }
-    $output .= '</ul>';
-    $output .= '</div>';
   }
   $output .= '</div>'; // id=file-preview
   return $output;
