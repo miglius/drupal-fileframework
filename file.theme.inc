@@ -94,8 +94,8 @@ function theme_file_render($file, $links_add = array()) {
   $links['download']['href'] = $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
   $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'download');
   if ($is_node)
-    $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info'));
-  $links['metadata'] = array('title' => t('Metadata'), 'href' => '', 'attributes' => array('title' => t('File\'s metadata.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid));
+    $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
+  $links['metadata'] = array('title' => t('Metadata'), 'href' => '', 'attributes' => array('title' => t('File\'s metadata.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'profile-links'));
   $output = '<span class="file with-menu"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="label">'. file_mime_icon_for($file->type) . check_plain($file->name ? ' '. $file->name : '') .'</span>'. $links .'</span>';
   if ($is_node)
