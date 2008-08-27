@@ -7,13 +7,13 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// DEPENDANCIES
+// Dependancies
 
 $views_path = drupal_get_path('module', 'views') .'/modules';
 require_once $views_path .'/node.views.inc';
 
 //////////////////////////////////////////////////////////////////////////////
-// VIEWS API HOOKS
+// Views API hooks
 
 /**
  * Implementation of hook_views_data().

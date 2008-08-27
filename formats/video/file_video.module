@@ -16,7 +16,13 @@ define('FILE_VIDEO_REALMEDIA_LINK',    'http://www.real.com');
 define('FILE_VIDEO_FLASH_LINK',        'http://www.adobe.com/products/flashplayer');
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
+
+/**
+ * Implementation of hook_init().
+ */
+function file_video_init() {
+}
 
 /**
  * Implementation of hook_theme().
@@ -92,7 +98,7 @@ function file_video_link($type, $node = NULL, $teaser = FALSE) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API HOOKS
+// File API hooks
 
 
 /**
@@ -435,7 +441,7 @@ function file_video_flash_image_render($uri, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// RDF API HOOKS
+// RDF API hooks
 
 /**
  * Implementation of hook_rdf_namespaces().
@@ -448,7 +454,7 @@ function file_video_rdf_namespaces() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Renders options for the video display.

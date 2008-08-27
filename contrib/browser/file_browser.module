@@ -8,7 +8,6 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_BROWSER_FILE_LINK',         variable_get('file_browser_file_link', 'nolink'));
 define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', FALSE));
 define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', TRUE));
 define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', TRUE));
@@ -16,6 +15,7 @@ define('FILE_BROWSER_OG_VOCABULARIES',   variable_get('file_browser_og_vocabular
 define('FILE_BROWSER_OG_UPLOAD',         variable_get('file_browser_og_upload', FALSE));
 define('FILE_BROWSER_OG_PREVIEW',        variable_get('file_browser_og_preview', FALSE));
 define('FILE_BROWSER_OG_UNFILED',        variable_get('file_browser_og_unfiled', ''));
+define('FILE_BROWSER_OG_CREATE',         variable_get('file_browser_og_create', ''));
 define('FILE_BROWSER_LOCATION_PREVIEW',  variable_get('file_browser_location_preview', FALSE));
 
 define('FILE_BROWSER_TITLE_LENGTH',        50);
@@ -23,7 +23,7 @@ define('FILE_BROWSER_TITLE_LENGTH_SHORT',  14);
 define('FILE_BROWSER_TITLE_LENGTH_BLOCK',  20);
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_theme().
@@ -118,7 +118,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
     case 'list':
       $block = array(
         'newterm' => array(
-          'info' => t('Create Term'),
+          'info' => t('Create Folder'),
           'status' => 1,
           'region' => 'right',
           'weight' => -3,
@@ -148,18 +148,19 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
     case 'configure':
       return '';
     case 'view':
+      $block_show = (arg(0) == 'file_browser' || (module_exists('og_vocab') && arg(0) == 'node' && arg(2) == 'browser' && ($node = menu_get_object()) && !empty($node->og_vocabularies))) ? TRUE : FALSE;
       switch ($delta) {
         case 'newterm':
-          $block['subject'] = check_plain(t('Create Term'));
-          $block['content'] = arg(0) == 'file_browser' ? _file_browser_newterm() : NULL;
+          $block['subject'] = check_plain(t('Create Folder'));
+          $block['content'] = $block_show ? _file_browser_newterm() : NULL;
           break;
         case 'upload':
           $block['subject'] = check_plain(t('File upload'));
-          $block['content'] = arg(0) == 'file_browser' ? _file_browser_upload() : NULL;
+          $block['content'] = $block_show ? _file_browser_upload($node->nid) : NULL;
           break;
         case 'preview':
           $block['subject'] = check_plain(t('File information'));
-          $block['content'] = arg(0) == 'file_browser' ? theme('file_browser_preview', array()) : NULL;
+          $block['content'] = $block_show ? theme('file_browser_preview', array()) : NULL;
           break;
         case 'my':
           $block['subject'] = check_plain(t('My files'));
@@ -178,7 +179,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// NODE API HOOKS
+// Node API hooks
 
 /**
  * Implementation of hook_nodeapi().
@@ -262,7 +263,7 @@ function _file_browser_enforce_unfiled(&$node) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// MENU CALLBACKS
+// Menu callbacks
 
 /**
  * Menu calback for rendering a file system.
@@ -274,15 +275,15 @@ function _file_browser_enforce_unfiled(&$node) {
  *
  * @return
  */
-function file_browser_page($vid, $tid = NULL) {
+function file_browser_page($vid, $tid = NULL, $script = NULL) {
   $vid = empty($vid) ? 'my' : $vid;
-  if ($vid != 'my' && !is_numeric($vid)) {
+  if ($vid != 'my' && !is_numeric($vid) && !is_array($vid)) {
     drupal_set_message('No vocabulary specified.', 'error');
     return '';
   }
 
   $tids = empty($tid) ? array() : array((integer)$tid);
-  print theme('page', _file_browser_page($vid, $tids));
+  print theme('page', _file_browser_page($vid, $tids) . $script);
   exit;
 }
 
@@ -319,7 +320,7 @@ function file_browser_ajax_term($tid, $block = 'page') {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FORM API
+// Form API
 
 /**
  * Creates a new term form.
@@ -335,7 +336,7 @@ function file_browser_newterm_form($form_state) {
   );
   $form['name'] = array(
     '#type' => 'textfield',
-    '#title' => t('Create Term'),
+    '#title' => t('Create Folder'),
     '#size' => 20,
     '#id' => 'newterm-name',
   );
@@ -358,7 +359,9 @@ function file_browser_newterm_form($form_state) {
 /**
  * Creats a file upload form.
  */
-function file_browser_upload_form($form_state) {
+function file_browser_upload_form($form_state, $gid) {
+  global $user;
+
   $form['tid'] = array(
     '#type' => 'hidden',
     '#value' => '0',
@@ -384,7 +387,46 @@ function file_browser_upload_form($form_state) {
         '#title' => t('Audience'),
         '#options' => $groups,
         '#attributes' => array(),
+        '#default_value' => array($gid),
+        '#description' => t('Show this post in these groups.'),
       );
+      if ($gid)
+        $form['og_groups']['#suffix'] = '<script type=\'text/javascript\'>$(document).ready(function() { $("#edit-og-groups-'. $gid .'").attr("disabled", true); });</script>';
+    }
+    if (module_exists('og_access')) {
+      // get the visibility for normal users
+      $vis = variable_get('og_visibility', 0);
+
+      // override visibility for og admins
+      if (user_access('administer organic groups')) {
+        if ($vis < 2) {
+          $vis = $vis == OG_VISIBLE_GROUPONLY ? OG_VISIBLE_CHOOSE_PRIVATE : OG_VISIBLE_CHOOSE_PUBLIC;
+        }
+      }
+      elseif (!og_get_subscriptions($user->uid)) {
+        // don't show checkbox if no memberships. must be public.
+        $vis = OG_VISIBLE_BOTH;
+      }
+
+      switch ($vis) {
+        case OG_VISIBLE_BOTH:
+          $form['og_public'] = array('#type' => 'value', '#value' => 1);
+          break;
+        case OG_VISIBLE_GROUPONLY:
+          $form['og_public'] = array('#type' => 'value', '#value' => 0);
+          break;
+
+        //user decides how public the post is.
+        case OG_VISIBLE_CHOOSE_PUBLIC:
+        case OG_VISIBLE_CHOOSE_PRIVATE:
+          $form['og_public'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Public'),
+            '#default_value' => $vis == OG_VISIBLE_CHOOSE_PUBLIC ? 1 : 0,
+            '#description' => t('Show this post to everyone, or only to members of the groups checked above.'),
+          );
+          break;
+      }
     }
   }
   $form['upload_submit'] = array(
@@ -400,7 +442,7 @@ function file_browser_upload_form($form_state) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// SUBMIT HANDLERS
+// Submit handlers
 
 /**
  * Handle submission of the term create form
@@ -420,13 +462,6 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   }
   // Check if the term is already created.
   $terms = taxonomy_get_term_by_name($form_state['values']['name']);
-  /*
-  if (in_array($form_state['values']['vid'], array_map(create_function('$t', 'return $t->vid;'), $terms))) {
-    $errmsg = t('The term %term is already created.', array('%term' => $form_state['values']['name']));
-    print "<script type='text/javascript'>parent.Drupal.file_browserErrorMsg('". $errmsg ."');</script>";
-    exit;
-  }
-  */
   $created = FALSE;
   foreach ($terms as $term) {
     if ($term->vid == $form_state['values']['vid']) {
@@ -451,7 +486,7 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   // checking to see if we allow the term to be created (if Unfiled or Group Files then we do not allow)
   if ($form_state['values']['parent'] != 0) {
     $term = taxonomy_get_term($form_state['values']['parent']);
-    if (!strcmp($term->name, "Unfiled")) {
+    if (!strcmp($term->name, FILE_BROWSER_OG_UNFILED)) {
       $errmsg = t('Permission denied, you cannot create a term below: '. $term->name);
       print "<script type='text/javascript'>parent.Drupal.file_browserErrorMsg('". $errmsg ."');</script>";
       exit;
@@ -480,7 +515,7 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   $term = clone($term);
   $childterms = taxonomy_get_tree($term->vid, $term->tid, -1, NULL);
   foreach ($childterms as $childterm) {
-    if ($childterm) {
+    if (is_object($childterm)) {
       $term = _file_browser_term_nodes($term, $childterm, NULL);
     }
   }
@@ -520,17 +555,23 @@ function file_browser_upload_form_submit($form, &$form_state) {
       }
     }
   }
+  $og_public = module_exists('og_access') && !$form_state['values']['og_public'] ? FALSE : TRUE;
 
   $i = 0;
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
-      $node_new = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups));
+      $node_new = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
 
       // theme the node so we can display it on the screen to the user
-      $output = _file_browser_node('page', $node_new, $visible = TRUE, $columns = TRUE);
+      $output = _file_browser_node('page', $node_new, TRUE, TRUE, TRUE);
+      preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $output, $matches);
+      $output = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $output);
+
       $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $node_new->title)) .'</div>';
       print "<script type='text/javascript'>";
       print "parent.Drupal.file_browserDisplayNode('page', '". $node_new->nid ."','". $tid ."','". $output ."','". $msg ."', '". check_plain($node_new->title) ."');";
+      print 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
+      print implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
       print "</script>";
 
     }
@@ -570,7 +611,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// BLOCKS
+// Blocks
 
 /**
  * Creates a file upload block.
@@ -578,12 +619,12 @@ function file_browser_upload_form_submit($form, &$form_state) {
  * @return
  *   A HTML section for the block.
  */
-function _file_browser_upload() {
+function _file_browser_upload($gid) {
   if (!user_access('upload files'))
     return '';
 
   _file_browser_add_headers();
-  $form = drupal_get_form('file_browser_upload_form');
+  $form = drupal_get_form('file_browser_upload_form', $gid);
   return theme('file_browser_upload', $form);
 }
 
@@ -613,12 +654,8 @@ function _file_browser_block($vid, $expanded_tids = array()) {
     return '';
 
   _file_browser_add_headers();
-  $popupdiv .= '<div id="file-dropdown-b'. $vid .'" class="file-dropdown">';
-  $popupdiv .= '<div id="file-dropdown-download-b'. $vid .'" class="file-dropdown-element">Download</div>';
-  $popupdiv .= '<div id="file-dropdown-nodeview-b'. $vid .'" class="file-dropdown-element">View Post</div>';
-  $popupdiv .= '</div>';
   $terms = _file_browser_build_terms($vid, $vid, $expanded_tids, FALSE);
-  return theme('file_browser_block', compact('vid', 'popupdiv', 'terms'));
+  return theme('file_browser_block', compact('vid', 'terms'));
 }
 
 /**
@@ -668,7 +705,7 @@ function file_browser_preview($node = NULL) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE BROWSER FUNCTIONS
+// File browser functions
 
 /**
  * Builds browser page.
@@ -684,16 +721,9 @@ function file_browser_preview($node = NULL) {
 function _file_browser_page($vid, $expanded_tids = array()) {
   _file_browser_add_headers();
 
-  $popupdiv = '<div id="file-dropdown-bpage" class="file-dropdown">';
-  $popupdiv .= '<div id="file-dropdown-download-bpage" class="file-dropdown-element">Download</div>';
-  $popupdiv .= '<div id="file-dropdown-preview-bpage" class="file-dropdown-element">Preview</div>';
-  $popupdiv .= '<div id="file-dropdown-nodeview-bpage" class="file-dropdown-element">View Post</div>';
-  $popupdiv .= '</div>';
-  $popupdiv .= '<form id="file-node-url-form"><input id="file-node-url" type="hidden" value="'. url('node/') .'" /><input id="file-download-url" type="hidden" value="'. url('file/') .'" /></form>';
-
   $terms = _file_browser_build_terms('page', $vid, $expanded_tids);
   $terms = !empty($terms) ? $terms : t('No vocabularies configured.');
-  return theme('file_browser_page', compact('vid', 'popupdiv', 'terms'));
+  return theme('file_browser_page', compact('vid', 'terms'));
 }
 
 /**
@@ -716,7 +746,9 @@ function _file_browser_ajax_voc($block, $vid, $columns) {
         $term = clone($term);
         $childterms = taxonomy_get_tree($vid, $term->tid, -1, NULL);
         foreach ($childterms as $childterm) {
-          $term = _file_browser_term_nodes($term, $childterm, NULL);
+          if (is_object($childterm)) {
+            $term = _file_browser_term_nodes($term, $childterm, NULL);
+          }
         }
         $term = _file_browser_term_nodes($term, $term, NULL);
         $output .= _file_browser_term($block, $term, FALSE, in_array($term->tid, array()), $columns);
@@ -747,7 +779,9 @@ function _file_browser_ajax_term($block, $t, $columns) {
       $term = clone($term);
       $childterms = taxonomy_get_tree($term->vid, $term->tid, -1, NULL);
       foreach ($childterms as $childterm) {
-        $term = _file_browser_term_nodes($term, $childterm, NULL);
+        if (is_object($childterm)) {
+          $term = _file_browser_term_nodes($term, $childterm, NULL);
+        }
       }
       $term = _file_browser_term_nodes($term, $term, NULL);
       $output .= _file_browser_term($block, $term, FALSE, in_array($term->tid, array()), $columns);
@@ -792,12 +826,13 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   $size = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? $node->file->size : 0;'), $term->nodes));
   $size = FILE_BROWSER_FOLDER_PROPERTIES ? format_size($size) : '&mdash;';
   $is_vocab = $term->tid ? FALSE : TRUE;
-  $count = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
+  $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
+  $count_terms = count(taxonomy_get_children($term->tid ? $term->tid : 0, $term->vid));
   $xhtml_id = empty($term->tid) ? 'file-folder-v'. $term->vid .'-b'. $block : 'file-folder-t'. $term->tid .'-b'. $block;
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
   $hierarchy = _file_browser_allow_hierarchy($term->vid, $term->tid) ? FALSE : TRUE;
 
-  return theme('file_browser_term', compact('size', 'count', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'name', 'visibile', 'expanded', 'columns'));
+  return theme('file_browser_term', compact('size', 'count_files', 'count_terms', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'name', 'visibile', 'expanded', 'columns'));
 }
 
 /**
@@ -815,27 +850,16 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
  * @return
  *   The HTML block for a requested node.
  */
-function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE) {
+function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE, $iframe = FALSE) {
   $title = check_plain($node->title);
   $file = $node->file;
   $file->name = $node->title;
   $id = 't'. $node->tid .'-n'. $file->nid .'-b'. $block;
-  switch (FILE_BROWSER_FILE_LINK) {
-    case 'file':
-      $url = 'file/'. $node->nid .'/download/'. $node->vid;
-      break;
-    case 'node':
-      $url = 'node/'. $node->nid;
-      break;
-    case 'nolink':
-      $url = NULL;
-      break;
-  }
   $icon = file_mime_icon_for($file->type, file_mime_description_for($file->type));
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);
 
-  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'url', 'date', 'size', 'visibile', 'columns'));
+  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'date', 'size', 'visibile', 'columns', 'iframe'));
 }
 
 /**
@@ -856,8 +880,14 @@ function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE) {
 function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $columns = TRUE) {
   global $user;
 
+  $vocabularies = taxonomy_get_vocabularies('file');
   $output = '';
-  if ($vid == 'my') {
+  if (is_array($vid)) {
+    foreach ($vid as $v) {
+      $terms[$v] = $vocabularies[$v];
+    }
+  }
+  else if ($vid == 'my') {
     $terms = array_filter(variable_get('file_browser_vocabularies', array()), 'is_string');
     if (module_exists('og_vocab') && FILE_BROWSER_OG_VOCABULARIES) {
       foreach (array_keys($user->og_groups) as $nid) {
@@ -869,20 +899,22 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
         }
       }
     }
-    $vocabularies = taxonomy_get_vocabularies('file');
     foreach ($terms as $i => $term) {
       $terms[$i] = $vocabularies[$term];
     }
   }
   else {
     $terms = taxonomy_get_tree($vid, 0, -1, 1);
+    if ($block == 'page' && ($vocabulary = $vocabularies[$vid])) {
+      drupal_set_title(check_plain($vocabulary->name));
+    }
   }
   if ($terms) {
     foreach ($terms as $term) {
       $term = clone($term);
       $childterms = taxonomy_get_tree($term->vid, $term->tid ? $term->tid : 0, -1, NULL);
       foreach ($childterms as $childterm) {
-        if ($childterm) {
+        if (is_object($childterm)) {
           $term = _file_browser_term_nodes($term, $childterm, NULL);
         }
       }
@@ -961,7 +993,7 @@ function _file_browser_select_nodes($tids = array(), $depth = 0, $order = 'n.sti
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Add relevant header files required by the system to function
@@ -984,7 +1016,7 @@ function _file_browser_add_headers() {
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
 
     // Translations to javascript.
-    drupal_add_js(array('file_browser' => array('no_file_selected' => t('No file selected.'))), 'setting');
+    drupal_add_js(array('file_browser' => array('no_file_selected' => t('No file selected. Please select a file to load the preview.'))), 'setting');
   }
 }
 
@@ -1002,7 +1034,7 @@ function _file_browser_allow_hierarchy($vid, $tid) {
   if ($tid > 0 && ($voc->tags == 1 || $voc->hierarchy == 0)) {
     return t('Permission denied. Vocabulary does not support hierarchies');
   }
-  if (preg_match('/Group Files/', $voc->name)) {
+  if (!$tid && !FILE_BROWSER_OG_CREATE) {
     return t('Permission denied. You may only create new folders under Home Folder');
   }
 }
@@ -1022,7 +1054,7 @@ function _file_browser_term_data($vid, $tid) {
   $t = (object)array();
   $childterms = taxonomy_get_tree($vid, $tid, -1, NULL);
   foreach ($childterms as $childterm) {
-    if ($childterm) {
+    if (is_object($childterm)) {
       $t = _file_browser_term_nodes($t, $childterm, NULL);
     }
   }

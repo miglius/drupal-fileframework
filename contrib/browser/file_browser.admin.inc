@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -34,13 +35,6 @@ function file_browser_admin_settings() {
 
   // Display settings
   $form['display'] = array('#type' => 'fieldset', '#title' => t('Display settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
-  $form['display']['file_browser_file_link'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Link file names to'),
-    '#default_value' => FILE_BROWSER_FILE_LINK,
-    '#options'       => array('nolink' => t('No link'), 'file' => t('File download'), 'node' => t('File node')),
-    '#description'   => t('Whether to link to the file download, or to the containing node.'),
-  );
   $form['display']['file_browser_hide_empty'] = array(
     '#type'          => 'select',
     '#title'         => t('Hide empty folders'),
@@ -97,6 +91,13 @@ function file_browser_admin_settings() {
         '#maxlength'     => 255,
         '#description'   => t('Input a folder name here if you wish to enforce that all unfiled file nodes are automatically associated with a category of that name in the og_vocab.module vocabularies for the groups the file belongs to. Leave empty to disable this functionality.'),
       );
+      $form['og']['file_browser_og_create'] = array(
+        '#type'          => 'select',
+        '#title'         => t('Allow new folders (terms) creation'),
+        '#default_value' => FILE_BROWSER_OG_CREATE,
+        '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
+        '#description'   => t('Whether the creation of new folders in the groups\' vocabularies root should be allowed.'),
+      );
     }
   }
 
@@ -130,7 +131,7 @@ function file_browser_admin_settings() {
 function file_browser_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       break;
   }
 }
@@ -140,23 +141,23 @@ function file_browser_admin_settings_validate($form, &$form_state) {
  */
 function file_browser_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_browser_vocabularies', $form_state['values']['file_browser_vocabularies']);
-      variable_set('file_browser_file_link', $form_state['values']['file_browser_file_link']);
-      variable_set('file_browser_hide_empty', $form_state['values']['file_browser_hide_empty']);
-      variable_set('file_browser_embed_previews', $form_state['values']['file_browser_embed_previews']);
-      variable_set('file_browser_folder_properties', $form_state['values']['file_browser_folder_properties']);
-      variable_set('file_browser_og_vocabularies', $form_state['values']['file_browser_og_vocabularies']);
-      variable_set('file_browser_og_upload', $form_state['values']['file_browser_og_upload']);
-      variable_set('file_browser_og_preview', $form_state['values']['file_browser_og_preview']);
-      variable_set('file_browser_og_unfiled', $form_state['values']['file_browser_og_unfiled']);
-      variable_set('file_browser_location_preview', $form_state['values']['file_browser_location_preview']);
+    case t('Save configuration'):
+      variable_set('file_browser_vocabularies', $values['file_browser_vocabularies']);
+      variable_set('file_browser_hide_empty', $values['file_browser_hide_empty']);
+      variable_set('file_browser_embed_previews', $values['file_browser_embed_previews']);
+      variable_set('file_browser_folder_properties', $values['file_browser_folder_properties']);
+      variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
+      variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
+      variable_set('file_browser_og_preview', $values['file_browser_og_preview']);
+      variable_set('file_browser_og_unfiled', $values['file_browser_og_unfiled']);
+      variable_set('file_browser_og_create', $values['file_browser_og_create']);
+      variable_set('file_browser_location_preview', $values['file_browser_location_preview']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_browser_vocabularies');
-      variable_del('file_browser_file_link');
       variable_del('file_browser_hide_empty');
       variable_del('file_browser_embed_previews');
       variable_del('file_browser_folder_properties');
@@ -164,6 +165,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_del('file_browser_og_upload');
       variable_del('file_browser_og_preview');
       variable_del('file_browser_og_unfiled');
+      variable_del('file_browser_og_create');
       variable_del('file_browser_location_preview');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;

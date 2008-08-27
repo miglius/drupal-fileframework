@@ -18,7 +18,7 @@ define('FILE_EMBED_POPUP_PER_PAGE', variable_get('file_embed_popup_per_page', '6
 define('FILE_EMBED_FILE_FILTER', 0);
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_help().
@@ -248,7 +248,7 @@ function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TY
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE FILTER IMPLEMENTATION
+// File filter implementation
 
 /**
  * Implements file filter.
@@ -315,7 +315,7 @@ function file_embed_file_filter_process($matches) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// MISCELLANEOUS HELPERS
+// Miscellaneous helpers
 
 /**
  * Loads a page headders.

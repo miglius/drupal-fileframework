@@ -5,6 +5,7 @@
  * @file_browser
  * Themes for file browser.
  */
+
 //////////////////////////////////////////////////////////////////////////////
 // Theme callbacks
 
@@ -17,7 +18,7 @@ function theme_file_browser_page($data) {
   $output = '<div class="file-system" id="file-system-'. $vid .'">';
   $output .= $terms;
   $output .= '</div>';
-  $output .= '<script type="text/javascript">$(document).ready(function() { Drupal.file_browserInit(\'page\'); $(document).find("body").append(\''. $popupdiv .'\'); });</script>';
+  $output .= '<script type="text/javascript">$(document).ready(function() { Drupal.file_browserInit(\'page\'); });</script>';
   $output .= '<form id="file_browser-ajax-urlholder-form"><input id="file-ajax-url" type="hidden" value="'. url('file_browser/ajax') .'" /></form>';
   return $output;
 }
@@ -28,16 +29,15 @@ function theme_file_browser_page($data) {
 function theme_file_browser_term($data) {
   extract($data, EXTR_SKIP);
 
-  $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
+  $count = $count_terms + $count_files;
+  $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
   $output .= '<div class="file-icon"></div>';
   $output .= '<div class="file-title">'. $name .'</div>';
   $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
-    //$output .= '<div class="file-date">'. ($is_vocab ? '&mdash;' : $count) .'</div>';
-    $output .= '<div class="file-date">'. $count .'</div>';
-    //$output .= '<div class="file-size">'. ($is_vocab ? '&mdash;' : $size) .'</div>';
+    $output .= '<div class="file-date">'. $count_files .'</div>';
     $output .= '<div class="file-size">'. $size .'</div>';
   }
   $output .= '</div></div>';
@@ -61,9 +61,7 @@ function theme_file_browser_file($data) {
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
   $output .= '<div class="file-icon"></div>';
 
-  $links['blockview'] = array('title' => t('Preview'), 'href' => '', 'attributes' => array('title' => t('Preview file.')));
-  $links['blockview']['attributes']['onclick'] = '$(\'#block-file_browser-preview\').show(); $(\'#file-preview-spinner\').show(); $.get($(\'#file-preview-url\').val() + \'/\' + \''. $file->nid .'\', function(result) { $(\'#file-preview-spinner\').hide(); $(\'#file-preview\').html(result).show(); if (typeof collapseAutoAttach != \'undefined\') collapseAutoAttach(); }); return false;';
-  $output .= '<div class="file-title">'. theme('file_render', $file, $links) .'</div>';
+  $output .= '<div class="file-title">'. theme('file_render', $file, array('info' => array()), $iframe) .'</div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $date .'</div>';
     $output .= '<div class="file-size">'. $size .'</div>';
@@ -90,13 +88,14 @@ function theme_file_browser_preview($data) {
     $file->name = drupal_strlen($file->name) > FILE_BROWSER_TITLE_LENGTH_BLOCK ? drupal_substr($file->name, 0, FILE_BROWSER_TITLE_LENGTH_BLOCK - 3) .'...' : $file->name;
     $output .= '<div id="file-preview-info">';
     $output .= '<table>';
-    $output .= '<tr><th>'. t('File:') .'</th><td>'. theme('file_render', $file) .'</td></tr>';
+    $output .= '<tr><th>'. t('File:') .'</th><td>'. theme('file_render', $file, array('info' => array())) .'</td></tr>';
     $output .= '<tr><th>'. t('Author:') .'</th><td>'. theme('username', user_load($node->uid)) .'</td></tr>';
     $output .= '<tr><th>'. t('Created:') .'</th><td>'. format_date($node->created, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Modified:') .'</th><td>'. format_date($node->changed, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Type:') .'</th><td>'. file_mime_description_for($file->type) .'</td></tr>';
     $output .= '<tr><th>'. t('Size:') .'</th><td>'. format_size($file->size) .'</td></tr>';
-    $output .= '<tr><th>'. t('Views:') .'</th><td>'. $file->views .'</td></tr>';
+    if (FILE_VIEW_LINK)
+      $output .= '<tr><th>'. t('Views:') .'</th><td>'. $file->views .'</td></tr>';
     $output .= '<tr><th>'. t('Downloads:') .'</th><td>'. $file->downloads .'</td></tr>';
 
     // Integration with og.module
@@ -141,7 +140,6 @@ function theme_file_browser_block($data) {
   $output = '<div class="file-system" id="file-system-'. $vid .'">';
   $output .= $terms;
   $output .= '</div>';
-  $output .= $popupdiv;
   $output .= '<div class="more-link">'. l(t('more'), 'file_browser/'. $vid, array('title' => t('View file browser'))) .'</div>';
   $output .= '<script type="text/javascript">Drupal.file_browserInit(\''. $vid .'\');</script>';
   $output .= '<form id="file-node-url-form"><input id="file-node-url" type="hidden" value="'. url('node/') .'" /></form>';

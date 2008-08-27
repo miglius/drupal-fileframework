@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -62,7 +63,7 @@ function file_slideshow_admin_settings() {
 function file_slideshow_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       break;
   }
 }
@@ -72,18 +73,19 @@ function file_slideshow_admin_settings_validate($form, &$form_state) {
  */
 function file_slideshow_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_slideshow_pdf', $form_state['values']['file_slideshow_pdf']);
+    case t('Save configuration'):
+      variable_set('file_slideshow_pdf', $values['file_slideshow_pdf']);
       $pdf = _file_slideshow_pdf();
       $pdf_data = array();
       foreach ($pdf as $name => $data) {
-        $pdf_data[$name] = $form_state['values']['file_slideshow_pdf_'. $name];
+        $pdf_data[$name] = $values['file_slideshow_pdf_'. $name];
       }
       variable_set('file_slideshow_pdf_data', $pdf_data);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_slideshow_pdf');
       variable_del('file_slideshow_pdf_data');
       drupal_set_message(t('The configuration options have been reset to their default values.'));

@@ -37,9 +37,6 @@ Drupal.behaviors.file_browser = function(context) {
 Drupal.file_browserInit = function(block) {
   var ratio = block == 'page' ? 0.75 : 0.3;
   $('div.file-system').height('' + (Drupal.file_browserGetWindowHeight() * ratio) + 'px');
-  //if (block != 'page') {
-  //  $('div.file-system').width('300' + 'px');
-  //}
 }
 
 /**
@@ -82,9 +79,6 @@ Drupal.file_browserUploadCheck = function(id) {
  */
 Drupal.file_browserToggleUpload = function() {
   var button = $('input#edit-upload-submit');
-  var isOg = $('div.file-folder[@class*=og_vocab] div#' + Drupal.file_browserVars.selected).size() > 0;
-  // if vocabulary is not selected and an OG is selected then allow uploads
-  //!Drupal.file_browserVars.isVocabulary && (anySelected || isOg) ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
   Drupal.file_browserVars.currentItem == 't' ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
 }
 
@@ -141,6 +135,10 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, node, msg, node
     else
       $('#' + folder + ' div.file-folder:last').after(node);
   };
+  // remove empty class
+  if ($('#' + folder).hasClass('empty')) {
+    $('#' + folder).removeClass('empty')
+  }
   // remove the term if the folder is not expanded
   if (!$('#' + folder).is('.expanded')) {
     $('#file-folder-t' + tid + '-b' + block).remove();
@@ -164,9 +162,9 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, node, msg, nodename)
   var check = 0;
   $('#' + folder).children().each(function() {
     if (this.id.match(/file-node-/)) {
-      var name = $(this).find('.file-title').text();
+      var name = $(this).find('.title').text();
       if (name > nodename && check == 0) {
-        check = 1;
+	check = 1;
         $(node).insertBefore($(this));
       };
     };
@@ -175,6 +173,10 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, node, msg, nodename)
   if (check == 0) {
       $('#' + folder).append(node);
   };
+  // remove empty class
+  if ($('#' + folder).hasClass('empty')) {
+    $('#' + folder).removeClass('empty')
+  }
   // hide the term if the folder is not expanded
   if (!$('#' + folder).is('.expanded')) {
     $('#file-node-t-n' + nid + '-b' + block).remove();
@@ -272,7 +274,9 @@ Drupal.file_browserFolderClick = function(obj) {
   // if the shelf currently is closed then open the shelf
   // the class 'expanded' is already toggled in SelectRow.
   if ($(parent).hasClass('expanded')) {
-    $('#' + id + '-spinner').show();
+    if (!$(parent).hasClass('empty')) {
+      $('#' + id + '-spinner').show();
+    }
     $.get($('#file-ajax-url').val() + '/' + tid + '/' + block, function(result) {
       $(obj).parent().addClass('expanded');
       // to stop duplicate info from double clicks
@@ -309,80 +313,19 @@ Drupal.file_browserFileClick = function(obj) {
   var block = id.match(/-b([^-]+)/)[1];
   // highlighting the row that was selected
   Drupal.file_browserSelectRow(obj, id, false, false);
-  // set the download click action to point to the file url
-  /*
-  $('#file-dropdown-download-b' + block).unbind('click').click(function() {
-    window.location.href = $('#file-download-url').val() + nid + '/download';
-    $('.file-dropdown').hide();
-  });
-  */
-  // allow the user to go directly to the node from the action menu
-  /*
-  $('#file-dropdown-nodeview-b' + block).unbind('click').click(function() {
-    window.location.href = $('#file-node-url').val() + nid;
-    $('.file-dropdown').hide();
-  });
-  */
   // hide the create term block since they have clicked on a file
-  //$('#block-file_browser-newterm').hide();
   Drupal.file_browserToggleNewterm(id);
   Drupal.file_browserToggleUpload();
-  // bind the AJAX request to the Preview option in the action div
-  /*
-  $('#file-dropdown-preview-b' + block).unbind('click').click(function() {
-    $('#file-preview').hide(); // hide any previous file preview information
-    $('#block-file_browser-preview').show();
-    $('#file-preview-spinner').show();
-    $.get($('#file-preview-url').val() + '/' + nid, function(result) {
-      $('#file-preview-spinner').hide();
-      $('#file-preview').html(result).show();
-      if (typeof collapseAutoAttach != 'undefined')
-        collapseAutoAttach();
-    });
-    $('#file-dropdown-b' + block).hide(); // hiding the action div
+  // show preview
+  $('#file-preview').hide();
+  $('#file-preview-spinner').show();
+  $.get($('#file-preview-url').val() + '/' + nid, function(result) {
+    $('#file-preview-spinner').hide();
+    $('#file-preview').html(result).show();
+    if (typeof collapseAutoAttach != 'undefined') {
+      collapseAutoAttach();
+    };
   });
-  // display the action div
-  var x = Drupal.file_browserVars.pageX;
-  var y = Drupal.file_browserVars.pageY;
-  if (block != 'page') {
-    x = x - $('#' + id).offset().left + obj.parentNode.offsetLeft;
-    y = y - $('#' + id).offset().top + obj.parentNode.offsetTop - $('#file-system-' + block).scrollTop();
-  }
-  $('#file-dropdown-b' + block).css({ top: y + 'px', left: x + 'px' }).show();
-  Drupal.file_browserVars.ftDropDownTimeout = setTimeout(function() { $('#file-dropdown-b' + block).hide(); }, 2000); // hide action div
-  */
-  return false;
-}
-
-/**
- * Handle operations when one of the file links is clicked
- * @param {Object} obj File Link Object <a> tag
- */
-Drupal.file_browserFileLinkClick = function(obj) {
-  var id = obj.parentNode.parentNode.parentNode.id;
-  var nid = id.match(/-n([\d]+)/)[1];
-  var block = id.match(/-b([^-]+)/)[1];
-  // highlighting the row that was selected
-  Drupal.file_browserSelectRow(obj, id, false, true);
-  // hide create term since working on a file
-  //$('#block-file_browser-newterm').hide();
-
-  // bind the AJAX request to the Preview option in the action div
-  $('#file-dropdown-preview-b' + block).unbind('click').click(function() {
-    $('#file-preview').hide();
-    $('#file-preview-spinner').show();
-    $.get($('#file-preview-url').val() + '/' + nid, function(result) {
-      $('#file-preview-spinner').hide();
-      $('#file-preview').html(result).show();
-      if (typeof collapseAutoAttach != 'undefined') {
-        collapseAutoAttach();
-      };
-    });
-    $('.file-dropdown').hide(); // hiding the action div
-  });
-  // display the action div
-  $('.file-dropdown').css("top", Drupal.file_browserVars.pageY + "px").css("left", Drupal.file_browserVars.pageX + "px").show();
-  Drupal.file_browserVars.ftDropDownTimeout = setTimeout(function() { $('.file-dropdown').hide(); }, 2000); // hide action div
   return false;
 }
 
@@ -429,7 +372,7 @@ Drupal.file_browserUpdateTerm = function(id, size, files) {
       $(this).find('.file-size').text(size);
       $(this).find('.file-date').text(files);
     }
-  });
+  })
 }
 
 /**

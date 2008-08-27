@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -63,7 +64,7 @@ function file_text_admin_settings() {
 function file_text_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $preview_lines = $form_state['values']['file_text_preview_lines'];
       if (!ctype_digit($preview_lines)) {
         form_set_error('file_text_preview_lines', t('Invalid value %value specified for the number of lines.', array('%value' => $preview_lines)));
@@ -82,14 +83,15 @@ function file_text_admin_settings_validate($form, &$form_state) {
  */
 function file_text_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_text_preview_lines', $form_state['values']['file_text_preview_lines']);
-      variable_set('file_text_preview_string', $form_state['values']['file_text_preview_string']);
-      variable_set('file_text_code', $form_state['values']['file_text_code']);
+    case t('Save configuration'):
+      variable_set('file_text_preview_lines', $values['file_text_preview_lines']);
+      variable_set('file_text_preview_string', $values['file_text_preview_string']);
+      variable_set('file_text_code', $values['file_text_code']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_text_preview_lines');
       variable_del('file_text_preview_string');
       variable_del('file_text_code');

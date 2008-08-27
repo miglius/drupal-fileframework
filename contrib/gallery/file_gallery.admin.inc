@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -43,14 +44,14 @@ function file_gallery_admin_settings() {
     '#maxlength'     => 255,
     '#description'   => t('The default size is 800x600.'),
   );
-  /*
-  $form['display']['file_gallery_show_type'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Show file type'),
-    '#default_value' => FILE_GALLERY_SHOW_TYPE,
-    '#description'   => t('If checked a file type will be displayed bellow the thumbnail.'),
+  $form['display']['file_gallery_hide_empty'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Hide empty folders'),
+    '#default_value' => FILE_GALLERY_HIDE_EMPTY,
+    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
+    '#description'   => t('Whether taxonomy terms that have no sub-terms or file nodes associated with them should be hidden. This can be useful to reduce load time in situations where the vocabulary is very large (e.g. for free-tagging vocabularies).'),
   );
-  */
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -69,7 +70,7 @@ function file_gallery_admin_settings() {
 function file_gallery_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $size = $form_state['values']['file_gallery_embed_size'];
       if (empty($size) || !preg_match('/^[0-9]+x[0-9]+$/', $size)) {
         form_set_error('file_gallery_embed_size', t('Invalid value %value specified for embedded preview size.', array('%value' => $size)));
@@ -87,19 +88,20 @@ function file_gallery_admin_settings_validate($form, &$form_state) {
  */
 function file_gallery_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_gallery_per_page', $form_state['values']['file_gallery_per_page']);
-      variable_set('file_gallery_embed_size', $form_state['values']['file_gallery_embed_size']);
-      variable_set('file_gallery_popup_size', $form_state['values']['file_gallery_popup_size']);
-      //variable_set('file_gallery_show_type', $form_state['values']['file_gallery_show_type']);
+    case t('Save configuration'):
+      variable_set('file_gallery_per_page', $values['file_gallery_per_page']);
+      variable_set('file_gallery_embed_size', $values['file_gallery_embed_size']);
+      variable_set('file_gallery_popup_size', $values['file_gallery_popup_size']);
+      variable_set('file_gallery_hide_empty', $values['file_gallery_hide_empty']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_gallery_per_page');
       variable_del('file_gallery_embed_size');
       variable_del('file_gallery_popup_size');
-      //variable_del('file_gallery_show_type');
+      variable_del('file_gallery_hide_empty');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

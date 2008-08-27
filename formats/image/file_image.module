@@ -15,7 +15,7 @@ define('FILE_IMAGE_EXIF',                 variable_get('file_image_exif', 1));
 define('FILE_IMAGE_GEO',                  variable_get('file_image_geo', 1));
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_init().
@@ -91,7 +91,7 @@ function file_image_link($type, $node = NULL, $teaser = FALSE) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API HOOKS
+// File API hooks
 
 /**
  * Implementation of hook_mime_handlers().
@@ -398,7 +398,7 @@ function file_image_thumbnail_render($uri, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// RDF API HOOKS
+// RDF API hooks
 
 /**
  * Implementation of hook_rdf_namespaces().
@@ -411,7 +411,7 @@ function file_image_rdf_namespaces() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Converts geo data.
@@ -472,7 +472,7 @@ function _file_image_render_options($uri, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// EXIF SETTINGS
+// EXIF settings
 
 /**
  * Exif to RDF mapping.

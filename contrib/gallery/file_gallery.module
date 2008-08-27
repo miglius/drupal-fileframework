@@ -12,12 +12,12 @@
 define('FILE_GALLERY_PER_PAGE',   variable_get('file_gallery_per_page', 12));
 define('FILE_GALLERY_EMBED_SIZE', variable_get('file_gallery_embed_size', '130x150'));
 define('FILE_GALLERY_POPUP_SIZE', variable_get('file_gallery_popup_size', '800x600'));
-//define('FILE_GALLERY_SHOW_TYPE',  variable_get('file_gallery_show_type', 1));
+define('FILE_GALLERY_HIDE_EMPTY', variable_get('file_gallery_hide_empty', FALSE));
 
 define('FILE_GALLERY_TITLE_LENGTH_SHORT',  18);
 
 //////////////////////////////////////////////////////////////////////////////
-// CODE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_help().
@@ -82,24 +82,22 @@ function file_gallery_menu() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// MENU CALLBACKS
+// Menu callbacks
 
 /**
  * Menu callback for rendering a file gallery page.
  */
-function file_gallery_page($vid = 'my', $tid = NULL, $filter = NULL) {
-  if ($vid != 'my' && !is_numeric($vid)) {
+function file_gallery_page($vid = 'my', $tid = NULL, $filter = NULL, $module = NULL) {
+  if ($vid != 'my' && !is_numeric($vid) && !is_array($vid)) {
     drupal_set_message('No vocabulary specified.', 'error');
     return '';
   }
 
   $layout = empty($_GET['layout']) || $_GET['layout'] == 'on';
-  $module = !empty($_GET['module']) ? $_GET['module'] : NULL;
+  $module = !$module && !empty($_GET['module']) ? $_GET['module'] : $module;
   $tids = empty($tid) ? array() : array((integer)$tid);
   print theme(($layout ? 'page' : 'file_gallery_page'), file_gallery_content($vid, $tids, $filter, array('module' => $module, 'layout' => $layout)), array('breadcrumb' => TRUE));
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 /*
  * Builds a gallery content.
@@ -108,9 +106,9 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   $module = empty($options['module']) ? NULL : $options['module'];
   _file_gallery_add_headers($module);
 
-  $pager = $module ? module_invoke($module, 'file_gallery', 'pager') : FILE_GALLERY_PER_PAGE;
-  $vocabularies = taxonomy_get_vocabularies();
-  $vocabulary = ($vid != 'my') ? $vocabularies[$vid] : NULL;
+  $pager = $module && ($p = module_invoke($module, 'file_gallery', 'pager')) && $p > 0 ? $p : FILE_GALLERY_PER_PAGE;
+  $vocabularies = taxonomy_get_vocabularies('file');
+  $vocabulary = (!is_array($vid) && $vid != 'my') ? $vocabularies[$vid] : NULL;
   $term = taxonomy_get_term(reset($tids));
   drupal_set_title($term ? $term->name : ($vocabulary ? $vocabulary->name : NULL));
 
@@ -121,7 +119,14 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   $output .= '<ul class="file-gallery">';
 
   $folders = $files = 0;
-  if ($vid == 'my') {
+  if (is_array($vid)) {
+    foreach ($vid as $v) {
+      //$terms[$v] = $vocabularies[$v];
+      $folders++;
+      $output .= _file_gallery_term($vocabularies[$v], $embed_options, $module);
+    }
+  }
+  else if ($vid == 'my') {
     // For the vocabulary view, get the list of file_browser.module
     // vocabularies, if available, and the user's og_vocab.module
     // subscriptions:
@@ -143,7 +148,6 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
       }
     }
 
-    $vocabularies = taxonomy_get_vocabularies('file');
     foreach ($terms as $term) {
       $folders++;
       $output .= _file_gallery_term($vocabularies[$term], $embed_options, $module);
@@ -151,13 +155,17 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   }
   else {
     if (!$filter || $filter == 'folder') {
-      //if ($terms = taxonomy_get_children(!empty($tids) ? reset($tids) : 0, $vid)) {
-      //  foreach ($terms as $term) {
-      $result = pager_query(db_rewrite_sql('SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name', 't', 'tid'), $pager, 0, NULL, $vid, !empty($tids) ? reset($tids) : 0);
+      if (!FILE_GALLERY_HIDE_EMPTY) {
+        $sql = 'SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name';
+      }
+      else {
+        $sql = 'SELECT DISTINCT(t.tid), t.vid, t.name, t.description, t.weight FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY weight, name';
+        $sql_count = 'SELECT COUNT(DISTINCT(t.tid)) FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY weight, name';
+      }
+      $result = pager_query(db_rewrite_sql($sql, 't', 'tid'), $pager, 0, $sql_count ? db_rewrite_sql($sql_count) : NULL, $vid, !empty($tids) ? reset($tids) : 0);
       while ($term = db_fetch_object($result)) {
         $folders++;
         $output .= _file_gallery_term($term, $embed_options, $module);
-      //  }
       }
     }
     $output .= '</ul>';
@@ -201,25 +209,32 @@ function _file_gallery_breadcrumb($data) {
   $breadcrumb = array();
 
   $query = $data['module'] ? module_invoke($data['module'], 'file_gallery', 'query') : NULL;
+  $breadcrumb_link = $data['module'] && ($b = module_invoke($data['module'], 'file_gallery', 'breadcrumb_link')) && !empty($b) ? $b : 'file_gallery';
+  $breadcrumb_root = $data['module'] ? module_invoke($data['module'], 'file_gallery', 'breadcrumb_root') : array('file_gallery' => t('File gallery'));
 
   // If the gallery is being embedded by some other module, we'll make the
   // Home link point to the "My Galleries" view instead of the home page,
   // so as not to break any IFRAMEs that we may be embedded in.
-  $breadcrumb[] = !$data['module'] ? l(t('Home'), '') : l(t('Home'), 'file_gallery/my', array('query' => $query));
+  $breadcrumb[] = !$data['module'] || module_invoke($data['module'], 'file_gallery', 'breadcrumb_home') ? l(t('Home'), '') : l(t('Home'), $breadcrumb_link, array('query' => $query));
+  if (!empty($breadcrumb_root)) {
+    foreach ($breadcrumb_root as $l => $n) {
+      $breadcrumb[] = l($n, $l);
+    }
+  }
 
-  if ($data['vid'] != 'my') {
+  if (!is_array($data['vid']) && $data['vid'] != 'my') {
     $vocabularies = taxonomy_get_vocabularies();
     $vocabulary = $vocabularies[$data['vid']];
-    $breadcrumb[] = l($vocabulary->name, 'file_gallery/'. $data['vid'], array('query' => $query));
+    $breadcrumb[] = l($vocabulary->name, $breadcrumb_link .'/'. $data['vid'], array('query' => $query));
   }
 
   if ($data['tid']) {
     foreach (taxonomy_get_parents($data['tid']) as $parent) {
-      $breadcrumb[] = l($parent->name, 'file_gallery/'. $data['vid'] .'/'. $parent->tid, array('query' => $query));
+      $breadcrumb[] = l($parent->name, $breadcrumb_link .'/'. $data['vid'] .'/'. $parent->tid, array('query' => $query));
     }
 
     $term = taxonomy_get_term($data['tid']);
-    $breadcrumb[] = l($term->name, 'file_gallery/'. $data['vid'] .'/'. $data['tid'], array('query' => $query));
+    $breadcrumb[] = l($term->name, $breadcrumb_link .'/'. $data['vid'] .'/'. $data['tid'], array('query' => $query));
   }
 
   drupal_set_breadcrumb($breadcrumb);
@@ -252,11 +267,19 @@ function _file_gallery_filter($data) {
  * Builds an idividual taxonomy term block.
  */
 function _file_gallery_term($term, $options = array(), $module = NULL) {
+  $childterms = taxonomy_get_tree($term->vid, $term->tid ? $term->tid : 0, -1, NULL);
+  foreach ($childterms as $childterm) {
+    if ($childterm) {
+      $term = _file_browser_term_nodes($term, $childterm, NULL);
+    }
+  }
+  $term = _file_browser_term_nodes($term, $term, NULL);
+  $count_files = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes));
   $query = $module ? module_invoke($module, 'file_gallery', 'query') : NULL;
-  $url = $module ? module_invoke($module, 'file_gallery', 'term_link', $term->tid) : NULL;
+  $url = $module ? module_invoke($module, 'file_gallery', 'term_link', $term) : NULL;
   $url = $url ? $url : 'file_gallery/'. $term->vid . (!empty($term->tid) ? '/'. $term->tid : '');
 
-  return theme('file_gallery_term', compact('term', 'query', 'url'), $options);
+  return theme('file_gallery_term', compact('term', 'query', 'url', 'count_files'), $options);
 }
 
 /*
@@ -265,7 +288,7 @@ function _file_gallery_term($term, $options = array(), $module = NULL) {
 function _file_gallery_node($node, $options = array(), $module = NULL) {
   $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'file-thickbox';
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid) : NULL;
-  $file_links = $module ? module_invoke($module, 'file_gallery', 'file_links', $node->nid) : array();
+  $file_links = $module && ($l = module_invoke($module, 'file_gallery', 'file_links', $node->nid)) && is_array($l) ? $l : array();
 
   $file = $node->file;
 

@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -105,7 +106,7 @@ function file_image_admin_settings() {
 function file_image_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $preview_resolution = $form_state['values']['file_image_preview_resolution'];
       if (empty($preview_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $preview_resolution)) {
         form_set_error('file_image_preview_resolution', t('Invalid value %value specified for embedded image preview resolution.', array('%value' => $preview_resolution)));
@@ -142,23 +143,24 @@ function file_image_admin_settings_validate($form, &$form_state) {
  */
 function file_image_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_image_preview_resolution', $form_state['values']['file_image_preview_resolution']);
-      variable_set('file_image_medium_resolution', $form_state['values']['file_image_medium_resolution']);
-      variable_set('file_image_thumbnail_resolution', $form_state['values']['file_image_thumbnail_resolution']);
-      variable_set('file_image_custom_previews', $form_state['values']['file_image_custom_previews']);
-      variable_set('file_image_exif', $form_state['values']['file_image_exif']);
+    case t('Save configuration'):
+      variable_set('file_image_preview_resolution', $values['file_image_preview_resolution']);
+      variable_set('file_image_medium_resolution', $values['file_image_medium_resolution']);
+      variable_set('file_image_thumbnail_resolution', $values['file_image_thumbnail_resolution']);
+      variable_set('file_image_custom_previews', $values['file_image_custom_previews']);
+      variable_set('file_image_exif', $values['file_image_exif']);
       $exif = _file_image_exif();
       $exif_data = array();
       foreach ($exif as $name => $data) {
-        $exif_data[$name] = $form_state['values']['file_image_exif_'. $name];
+        $exif_data[$name] = $values['file_image_exif_'. $name];
       }
       variable_set('file_image_exif_data', $exif_data);
-      variable_set('file_image_geo', $form_state['values']['file_image_geo']);
+      variable_set('file_image_geo', $values['file_image_geo']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_image_preview_resolution');
       variable_del('file_image_medium_resolution');
       variable_del('file_image_thumbnail_resolution');

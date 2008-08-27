@@ -18,7 +18,7 @@ define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_al
 define('FILE_ATTACH_TITLE_LENGTH', 50);
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_theme().
@@ -597,7 +597,7 @@ function file_attach_autocomplete($string = '') {
   $matches = array();
 
   if (drupal_strlen($string) > 2) {
-    $result = db_query(db_rewrite_sql("SELECT n.nid, fn.type, fn.size FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid WHERE n.type = 'file' AND LOWER(n.title) LIKE LOWER('%%%s%%')", 'n', 'nid'), $string);
+    $result = db_query(db_rewrite_sql("SELECT n.nid, fn.type, fn.size FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid WHERE n.type = 'file' AND LOWER(n.title) LIKE LOWER('%%%s%%')"), $string);
     $i = 0;
     while (($row = db_fetch_object($result)) && $i < 10) {
       $node = node_load($row->nid);
@@ -619,7 +619,7 @@ function file_attach_autocomplete($string = '') {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// NODE API HOOKS
+// Node API hooks
 
 /**
  * Implementation of hook_nodeapi().
@@ -702,7 +702,7 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// COMMENT API HOOKS
+// Comment API hooks
 
 /**
  * Implementation of hook_comment().
@@ -763,7 +763,7 @@ function file_attach_comment(&$a1, $op) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// NODE API CALLBACKS
+// Node API callbacks
 
 /**
  * Loads files which are attached to the nodes or comments.
@@ -964,7 +964,7 @@ function _file_attach_load_backreferences() {
   if (arg(0) == 'node' && preg_match('/(\d+)/', arg(1), $matches)) {
     $file_node = node_load($matches[1]);
     if (is_object($file_node) && $file_node->type == 'file' && !empty($file_node->file)) {
-      $result = db_query('SELECT fa.cid, n.* FROM {file_attachments} fa LEFT JOIN {node} n ON fa.nid = n.nid WHERE fa.fnid = %d', $file_node->nid);
+      $result = db_query(db_rewrite_sql("SELECT n.* FROM {node} n INNER JOIN {file_attachments} fa  ON n.nid = fa.nid WHERE n.vid = fa.vid AND fa.list = '1' AND fa.fnid = %d"), $file_node->nid);
       while ($node = db_fetch_object($result)) {
         if (node_access('view', $node)) {
           $nodes[] = $node;

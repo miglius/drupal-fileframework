@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Implements an extended procedural File API for file management.
@@ -1049,7 +1050,7 @@ function file_bitcache_access($id, $vid) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE UPLOAD VALIDATORS
+// File upload validators
 
 /**
  * Gets all file upload validators.
@@ -1069,7 +1070,7 @@ function file_get_validators() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE QUOTAS
+// File quotas
 
 /**
  * Calculates total size of all user's files.
@@ -1098,7 +1099,7 @@ function file_get_files_size($uid, $converted = 1) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Compares data with the template array and gets the matching entry.

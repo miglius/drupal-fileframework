@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -95,7 +96,7 @@ function file_attach_admin_settings() {
 function file_attach_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       break;
   }
 }
@@ -105,18 +106,19 @@ function file_attach_admin_settings_validate($form, &$form_state) {
  */
 function file_attach_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_attach_method', $form_state['values']['file_attach_method']);
-      variable_set('file_attach_max_files', $form_state['values']['file_attach_max_files']);
-      variable_set('file_attach_show_attachments', $form_state['values']['file_attach_show_attachments']);
-      variable_set('file_attach_show_previews', $form_state['values']['file_attach_show_previews']);
-      variable_set('file_attach_show_generated', $form_state['values']['file_attach_show_generated']);
-      variable_set('file_attach_vocabularies_all', $form_state['values']['file_attach_vocabularies_all']);
-      variable_set('file_attach_vocabularies', $form_state['values']['file_attach_vocabularies']);
+    case t('Save configuration'):
+      variable_set('file_attach_method', $values['file_attach_method']);
+      variable_set('file_attach_max_files', $values['file_attach_max_files']);
+      variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
+      variable_set('file_attach_show_previews', $values['file_attach_show_previews']);
+      variable_set('file_attach_show_generated', $values['file_attach_show_generated']);
+      variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
+      variable_set('file_attach_vocabularies', $values['file_attach_vocabularies']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_attach_method');
       variable_del('file_attach_max_files');
       variable_del('file_attach_show_attachments');

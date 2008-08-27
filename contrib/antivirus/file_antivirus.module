@@ -16,7 +16,7 @@ define('FILE_ANTIVIRUS_CLAMAV_PORT',   variable_get('file_antivirus_clamav_port'
 define('FILE_ANTIVIRUS_CLAMAV_PATH',   variable_get('file_antivirus_clamav_path', ''));
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_menu().
@@ -34,7 +34,7 @@ function file_antivirus_menu() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API EXTENSIONS
+// File API extensions
 
 /**
  * Implementation of the hook_file_validate().
@@ -52,7 +52,7 @@ function file_antivirus_file_validate($file) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// SCANER FUNCTIONS
+// Scanner functions
 
 /**
  * Clamav file scan.
@@ -119,7 +119,7 @@ function file_antivirus_scan_clamav($file) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Clamav scanner check.

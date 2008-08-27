@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// MODULE INSTALLATION/UNINSTALLATION
+// Module installation/uninstallation
 
 /**
  * Implementation of hook_enable().
@@ -32,7 +32,4 @@ function file_embed_uninstall() {
   variable_del('file_embed_popup_size');
   variable_del('file_embed_popup_per_page');
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// MODULE UPGRADE MIGRATIONS
 

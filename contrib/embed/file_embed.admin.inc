@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -85,7 +86,7 @@ function file_embed_admin_settings() {
 function file_embed_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $size = $form_state['values']['file_embed_popup_size'];
       if (empty($size) || !preg_match('/^[0-9]+x[0-9]+$/', $size)) {
         form_set_error('file_embed_popup_size', t('Invalid value %value specified for popup size.', array('%value' => $size)));
@@ -99,17 +100,18 @@ function file_embed_admin_settings_validate($form, &$form_state) {
  */
 function file_embed_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_embed_button_option', $form_state['values']['file_embed_button_option']);
-      variable_set('file_embed_button_pages', $form_state['values']['file_embed_button_pages']);
-      variable_set('file_embed_button_fields', $form_state['values']['file_embed_button_fields']);
-      variable_set('file_embed_button_type', $form_state['values']['file_embed_button_type']);
-      variable_set('file_embed_popup_size', $form_state['values']['file_embed_popup_size']);
-      variable_set('file_embed_popup_per_page', $form_state['values']['file_embed_popup_per_page']);
+    case t('Save configuration'):
+      variable_set('file_embed_button_option', $values['file_embed_button_option']);
+      variable_set('file_embed_button_pages', $values['file_embed_button_pages']);
+      variable_set('file_embed_button_fields', $values['file_embed_button_fields']);
+      variable_set('file_embed_button_type', $values['file_embed_button_type']);
+      variable_set('file_embed_popup_size', $values['file_embed_popup_size']);
+      variable_set('file_embed_popup_per_page', $values['file_embed_popup_per_page']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_embed_button_option');
       variable_del('file_embed_button_pages');
       variable_del('file_embed_button_fields');

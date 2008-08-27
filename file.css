@@ -5,6 +5,8 @@
   position: relative; }
   .file.with-menu .label {
     position: relative; }
+     .file.with-menu .label .name { 
+     position: relative; } 
   .file.with-menu .highlight {
     display: none;
     position: absolute;
@@ -16,8 +18,8 @@
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
     border-radius: 5px;
-    border: 1px solid #CAD8F3;
-    background: #DEE7F8 url(images/file-arrow.png) no-repeat 98% 50%; }
+    border: 2px solid #CAD8F3;
+    background: url(images/file-arrow.png) no-repeat 97% 50%; }
   .file.with-menu ul {
     display: none;
     z-index: 10;
@@ -48,12 +50,12 @@
         white-space: nowrap; }
       .file.with-menu ul li a:hover {
         background: #DEE7F8; }
-.file.with-menu:hover {}
-  .file.with-menu:hover .highlight {
+.file.with-menu span.label:hover {}
+  .file.with-menu span.label:hover .highlight {
     display: block; }
-.file.with-menu.active {}
-  .file.with-menu.active .highlight {
+.file.with-menu .label.active {}
+  .file.with-menu .label.active .highlight {
     display: block;
-    border: 1px solid #6D95E0;
-    background-color: #BBCEF1; }
+    border: 2px solid #6D95E0;
+    background-color: #DEE7F8; }
 

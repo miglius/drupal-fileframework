@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// MODULE INSTALLATION/UNINSTALLATION
+// Module installation/uninstallation
 
 /**
  * Implementation of hook_enable().
@@ -25,7 +25,4 @@ function file_spreadsheet_install() {}
 function file_spreadsheet_uninstall() {
   variable_del('file_spreadsheet_convert_pipelines');
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// MODULE UPGRADE MIGRATIONS
 

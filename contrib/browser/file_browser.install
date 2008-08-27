@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// MODULE INSTALLATION/UNINSTALLATION
+// Module installation/uninstallation
 
 /**
  * Implementation of hook_enable().
@@ -26,7 +26,6 @@ function file_browser_install() {}
  */
 function file_browser_uninstall() {
   variable_del('file_browser_vocabularies');
-  variable_del('file_browser_file_link');
   variable_del('file_browser_hide_empty');
   variable_del('file_browser_embed_previews');
   variable_del('file_browser_folder_properties');
@@ -34,9 +33,7 @@ function file_browser_uninstall() {
   variable_del('file_browser_og_upload');
   variable_del('file_browser_og_preview');
   variable_del('file_browser_og_unfiled');
+  variable_del('file_browser_og_create');
   variable_del('file_browser_location_preview');
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// MODULE UPGRADE MIGRATIONS
 

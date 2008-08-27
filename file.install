@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * File module installation and upgrade code.
@@ -33,7 +34,6 @@ function file_uninstall() {
   variable_del('file_handler_autoload');
   variable_del('file_show_generated');
   variable_del('file_view_link');
-  //variable_del('file_info_link');
   variable_del('file_properties_tab');
   variable_del('file_cron');
   variable_del('file_cron_limit_size');
@@ -41,8 +41,52 @@ function file_uninstall() {
   variable_del('file_mime_autodetection_conditions');
   variable_del('file_mime_registry_path');
   variable_del('file_handlers');
+  variable_del('file_og_browser_tab');
+  variable_del('file_og_gallery_tab');
 
   rdf_db_delete_repository('file');
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function file_requirements($phase) {
+  $status = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3';
+    if (file_exists($getid3_path .'/getid3/getid3.php'))
+      include_once $getid3_path .'/getid3/getid3.php';
+
+    $getid3 = class_exists('getID3');
+    $status['getid3'] = array(
+      'title' => $t('getID3 library'),
+      'value' => $getid3 ? $t('@version', array('@version' => GETID3_VERSION)) : $t('Not installed'),
+      'description' => $getid3 ? '' : $t('<a href="@getid3">getID3</a> is not available. It is recommended that you install this library in order to enable metadata extraction from the audio and video files. To install, <a href="@download">download</a> the latest version of the library and unzip it to %path under the Drupal directory.', array('@getid3' => 'http://getid3.sourceforge.net/', '@download' => 'http://sourceforge.net/project/showfiles.php?group_id=55859', '%path' => $getid3_path .'/')),
+      'severity' => $getid3 ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    );
+
+    $flowplayer_path = drupal_get_path('module', 'file') .'/vendor/flowplayer';
+    $flowplayer = file_exists($flowplayer_path .'/FlowPlayerClassic.swf') ? TRUE : FALSE;
+    $status['flowplayer'] = array(
+      'title' => $t('Flowplayer'),
+      'value' => $flowplayer ? $t('Installed') : $t('Not installed'),
+      'description' => $flowplayer ? '' : $t('<a href="@flowplayer">Flowplayer</a> is not available. It is recommended that you install this player in order to play video files in the browser. To install, <a href="@download">download</a> the latest version of the player and unzip it to %path under the Drupal directory.', array('@flowplayer' => 'http://flowplayer.org/', '@download' => 'http://flowplayer.org/download.html', '%path' => $flowplayer_path .'/')),
+      'severity' => $flowplayer ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    );
+
+    $xspf_player_path = drupal_get_path('module', 'file') .'/vendor/xspf_player';
+    $xspf_player = file_exists($xspf_player_path .'/xspf_player_slim.swf') ? TRUE : FALSE;
+    $status['xspf_player'] = array(
+      'title' => $t('XSPF player'),
+      'value' => $xspf_player ? $t('Installed') : $t('Not installed'),
+      'description' => $xspf_player ? '' : $t('<a href="@xspf_player">XSPF player</a> is not available. It is recommended that you install this player in order to play audio files in the browser. To install, <a href="@download">download</a> the latest version of the player and unzip it to %path under the Drupal directory.', array('@xspf_player' => 'http://musicplayer.sourceforge.net/', '@download' => 'http://musicplayer.sourceforge.net/#download', '%path' => $xspf_player_path .'/')),
+      'severity' => $xspf_player ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    );
+  }
+
+  return $status;
 }
 
 //////////////////////////////////////////////////////////////////////////////

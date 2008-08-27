@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -41,14 +42,6 @@ function file_admin_settings() {
     '#description'   => t('Show a "view" link next to "download" link. Clicking the view link will bring the file with a headder content-disposition set to inline.'),
     '#default_value' => FILE_VIEW_LINK,
   );
-  /*
-  $form['visibility']['file_info_link'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Info link'),
-    '#description'   => t('Show an "info" link next to "download" link. Clicking the info link will show file\'s metadata.'),
-    '#default_value' => FILE_INFO_LINK,
-  );
-  */
   $form['visibility']['file_properties_tab'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Properties tab'),
@@ -96,6 +89,23 @@ function file_admin_settings() {
     '#description'   => t('The module will try to locate the MIME type definitions in the default locations, however if your web server is installed in the custom location, you should give a path to the \'mime.types\' file without a trailing slash.'),
   );
 
+  // OG integration.
+  if (module_exists('og_vocab')) {
+    $form['og'] = array('#type' => 'fieldset', '#title' => t('OG integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    $form['og']['file_og_browser_tab'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Enable browser tab on the group\'s homepage'),
+      '#description'   => t('If enabled, the tab will be shown on the group\'s homepage. Otherwise this functionality will be available from the menu.'),
+      '#default_value' => FILE_OG_BROWSER_TAB,
+    );
+    $form['og']['file_og_gallery_tab'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Enable gallery tab on the group\'s homepage'),
+      '#description'   => t('If enabled, the tab will be shown on the group\'s homepage. Otherwise this functionality will be available from the menu.'),
+      '#default_value' => FILE_OG_GALLERY_TAB,
+    );
+  }
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -114,7 +124,7 @@ function file_admin_settings() {
 function file_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $mime_path = $form_state['values']['file_mime_registry_path'];
       $mime_file = $mime_path .'/mime.types';
       if (!empty($mime_path) && (!file_exists($mime_file) || !is_readable($mime_file))) {
@@ -129,36 +139,42 @@ function file_admin_settings_validate($form, &$form_state) {
  */
 function file_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_show_previews', $form_state['values']['file_show_previews']);
-      variable_set('file_handler_autoload', $form_state['values']['file_handler_autoload']);
-      variable_set('file_show_generated', $form_state['values']['file_show_generated']);
-      variable_set('file_view_link', $form_state['values']['file_view_link']);
-      //variable_set('file_info_link', $form_state['values']['file_info_link']);
-      variable_set('file_properties_tab', $form_state['values']['file_properties_tab']);
-      variable_set('file_cron', $form_state['values']['file_cron']);
-      variable_set('file_cron_limit_size', $form_state['values']['file_cron_limit_size']);
-      variable_set('file_mime_autodetection', $form_state['values']['file_mime_autodetection']);
-      variable_set('file_mime_autodetection_conditions', $form_state['values']['file_mime_autodetection_conditions']);
-      variable_set('file_mime_registry_path', $form_state['values']['file_mime_registry_path']);
+    case t('Save configuration'):
+      variable_set('file_show_previews', $values['file_show_previews']);
+      variable_set('file_handler_autoload', $values['file_handler_autoload']);
+      variable_set('file_show_generated', $values['file_show_generated']);
+      variable_set('file_view_link', $values['file_view_link']);
+      variable_set('file_properties_tab', $values['file_properties_tab']);
+      variable_set('file_cron', $values['file_cron']);
+      variable_set('file_cron_limit_size', $values['file_cron_limit_size']);
+      variable_set('file_mime_autodetection', $values['file_mime_autodetection']);
+      variable_set('file_mime_autodetection_conditions', $values['file_mime_autodetection_conditions']);
+      variable_set('file_mime_registry_path', $values['file_mime_registry_path']);
+      variable_set('file_og_browser_tab', $values['file_og_browser_tab']);
+      variable_set('file_og_gallery_tab', $values['file_og_gallery_tab']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_show_previews');
       variable_del('file_handler_autoload');
       variable_del('file_show_generated');
       variable_del('file_view_link');
-      //variable_del('file_info_link');
       variable_del('file_properties_tab');
       variable_del('file_cron');
       variable_del('file_cron_limit_size');
       variable_del('file_mime_autodetection');
       variable_del('file_mime_autodetection_conditions');
       variable_del('file_mime_registry_path');
+      variable_del('file_og_browser_tab');
+      variable_del('file_og_gallery_tab');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }
+
+  // Rebuild the menu router.
+  menu_rebuild();
 }
 
 /**
@@ -236,7 +252,7 @@ function file_admin_handler_settings() {
 function file_admin_handler_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $handlers = array();
       foreach ($form_state['clicked_button']['#post'] as $name => $val) {
         if (preg_match('/^handler_.*_weight/', $name)) {
@@ -248,7 +264,7 @@ function file_admin_handler_settings_submit($form, &$form_state) {
       variable_set('file_handlers', $handlers);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_handlers');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;

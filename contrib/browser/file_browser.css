@@ -37,6 +37,14 @@ div.file-folder > div.file-cells > div.file-toggle {
   background: url(images/collapsed.png) no-repeat left 2px !important;
 }
 
+div.file-folder.empty > div.file-cells > div.file-toggle {
+  background-image: none !important;
+}
+
+div.file-folder.empty.expanded > div.file-cells > div.file-toggle {
+  background-image: none !important;
+}
+
 div.file-folder.expanded > div.file-cells > div.file-toggle {
   background: url(images/expanded.png) no-repeat left 2px !important;
 }

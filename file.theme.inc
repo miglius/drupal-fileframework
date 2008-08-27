@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Themes for file formats.
@@ -54,7 +55,7 @@ function theme_file_admin_handler_settings($form) {
 /**
  * Theme for showing a file with a links.
  */
-function theme_file_render($file, $links_add = array()) {
+function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   static $initialized = FALSE;
   $is_node = $file->nid && !$file->derived;
   // If the same file is displayed several times, the js bindes incorrectly.
@@ -96,10 +97,11 @@ function theme_file_render($file, $links_add = array()) {
   if ($is_node)
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
   $links['metadata'] = array('title' => t('Metadata'), 'href' => '', 'attributes' => array('title' => t('File\'s metadata.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
-  $links = theme('links', array_merge($links, $links_add), array('class' => 'profile-links'));
-  $output = '<span class="file with-menu"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="label">'. file_mime_icon_for($file->type) . check_plain($file->name ? ' '. $file->name : '') .'</span>'. $links .'</span>';
+  $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
+  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) . ($file->name ? ' <span class="title">'. check_plain($file->name) .'</span>': '') .'</span>'. $links .'</span></span>';
   if ($is_node)
-    $output .= '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
+    $output .= '<script type=\'text/javascript\'>'. ($iframe ? 'parent.' : '') .'tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
+  $output = preg_replace("/\n/", '', $output);
   return $output;
 }
 
@@ -192,9 +194,10 @@ function theme_file_info($node) {
     array('name' => t('Modified'), 'data' => array(format_date($node->changed, 'small'))),
     array('name' => t('Type'), 'data' => array(file_mime_description_for($node->file->type))),
     array('name' => t('Size'), 'data' => array(format_size($node->file->size))),
-    array('name' => t('Views'), 'data' => array($node->file->views)),
-    array('name' => t('Downloads'), 'data' => array($node->file->downloads)),
   );
+  if (FILE_VIEW_LINK)
+    $data[] = array('name' => t('Views'), 'data' => array($node->file->views));
+  $data[] = array('name' => t('Downloads'), 'data' => array($node->file->downloads));
 
   // Integration with og.module
   if (module_exists('og') && ($groups = og_get_node_groups($node)) && !empty($groups)) {

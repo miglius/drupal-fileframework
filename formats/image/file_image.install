@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// MODULE INSTALLATION/UNINSTALLATION
+// Module installation/uninstallation
 
 /**
  * Implementation of hook_enable().
@@ -34,7 +34,4 @@ function file_image_uninstall() {
   variable_del('file_image_geo');
   variable_del('file_image_convert_pipelines');
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// MODULE UPGRADE MIGRATIONS
 

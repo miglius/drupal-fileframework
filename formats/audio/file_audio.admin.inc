@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -62,7 +63,7 @@ function file_audio_admin_settings() {
 function file_audio_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       break;
   }
 }
@@ -71,22 +72,20 @@ function file_audio_admin_settings_validate($form, &$form_state) {
  * Submit hook for the settings form.
  */
 function file_audio_admin_settings_submit($form, &$form_state) {
-print_r($form);
-print_r($form_state);
-
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_audio_getid3', $form_state['values']['file_audio_getid3']);
+    case t('Save configuration'):
+      variable_set('file_audio_getid3', $values['file_audio_getid3']);
       $getid3 = _file_audio_getid3();
       $getid3_data = array();
       foreach ($getid3 as $name => $data) {
-        $getid3_data[$name] = $form_state['values']['file_audio_getid3_'. $name];
+        $getid3_data[$name] = $values['file_audio_getid3_'. $name];
       }
       variable_set('file_audio_getid3_data', $getid3_data);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_audio_getid3');
       variable_del('file_audio_getid3_data');
       drupal_set_message(t('The configuration options have been reset to their default values.'));

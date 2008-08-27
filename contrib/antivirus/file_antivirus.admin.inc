@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -90,7 +91,7 @@ function file_antivirus_admin_settings() {
 function file_antivirus_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $clamav_path = $form_state['values']['file_antivirus_clamav_path'];
       if ($form_state['values']['file_antivirus_clamav_method'] && !empty($clamav_path)) {
         if (!preg_match('/clamscan$/', $clamav_path)) {
@@ -123,17 +124,18 @@ function file_antivirus_admin_settings_validate($form, &$form_state) {
  */
 function file_antivirus_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_antivirus_clamav', $form_state['values']['file_antivirus_clamav']);
-      variable_set('file_antivirus_clamav_method', $form_state['values']['file_antivirus_clamav_method']);
-      variable_set('file_antivirus_clamav_allow', $form_state['values']['file_antivirus_clamav_allow']);
-      variable_set('file_antivirus_clamav_host', $form_state['values']['file_antivirus_clamav_host']);
-      variable_set('file_antivirus_clamav_port', $form_state['values']['file_antivirus_clamav_port']);
-      variable_set('file_antivirus_clamav_path', $form_state['values']['file_antivirus_clamav_path']);
+    case t('Save configuration'):
+      variable_set('file_antivirus_clamav', $values['file_antivirus_clamav']);
+      variable_set('file_antivirus_clamav_method', $values['file_antivirus_clamav_method']);
+      variable_set('file_antivirus_clamav_allow', $values['file_antivirus_clamav_allow']);
+      variable_set('file_antivirus_clamav_host', $values['file_antivirus_clamav_host']);
+      variable_set('file_antivirus_clamav_port', $values['file_antivirus_clamav_port']);
+      variable_set('file_antivirus_clamav_path', $values['file_antivirus_clamav_path']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_antivirus_clamav');
       variable_del('file_antivirus_clamav_method');
       variable_del('file_antivirus_clamav_allow');

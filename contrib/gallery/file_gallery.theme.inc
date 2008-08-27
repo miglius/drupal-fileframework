@@ -5,6 +5,7 @@
  * @file_gallery
  * Themes for file gallery.
  */
+
 //////////////////////////////////////////////////////////////////////////////
 // Theme callbacks
 
@@ -43,7 +44,8 @@ function theme_file_gallery_term($data, $options) {
   $image = theme('image', drupal_get_path('module', 'file_gallery') .'/images/folder.gif', NULL, NULL, array('width' => 96, 'height' => 96), FALSE);
   $output = '<li class="file-gallery" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
   $output .= l($image, $url, array('html' => TRUE, 'query' => $query, 'attributes' => array('class' => 'folder', 'title' => check_plain($term->name))));
-  $output .= '<br /><span>'. l($term->name, $url, array('query' => $query, 'attributes' => array('title' => check_plain($term->description)))) .'</span>';
+  $title_short = drupal_strlen($term->name) > FILE_GALLERY_TITLE_LENGTH_SHORT ? drupal_substr($term->name, 0, FILE_GALLERY_TITLE_LENGTH_SHORT - 3) .'...' : $term->name;
+  $output .= '<br /><span class="term">'. l($title_short, $url, array('query' => $query, 'attributes' => array('title' => check_plain($term->name)))) .'</span> <span class="term-files">('. $count_files .')</span>';
   $output .= '</li>';
   return $output;
 }

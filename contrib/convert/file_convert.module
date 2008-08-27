@@ -11,7 +11,7 @@
 define('FILE_CONVERT_LIMIT_SIZE', (int)variable_get('file_convert_limit_size', 10));
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_help().
@@ -64,7 +64,7 @@ function file_convert_menu() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API EXTENSIONS
+// File API extensions
 
 /**
  * This function executes all hook_mime_converters() hooks in the format modules
@@ -174,7 +174,7 @@ function file_convert($file, $pipeline, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Checks availability of the particullar command.

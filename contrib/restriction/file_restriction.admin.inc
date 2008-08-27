@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -110,7 +111,7 @@ function file_restriction_admin_settings() {
 function file_restriction_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       $exceed_max_msg = t('Your PHP settings limit the maximum file size per upload to %size.', array('%size' => format_size(file_upload_max_size())));
       if (!is_numeric($form_state['values']['file_restriction_size']) || $form_state['values']['file_restriction_size'] < 0) {
         form_set_error('file_restriction_size', t('A file size should be a positive inumber.'));
@@ -148,21 +149,22 @@ function file_restriction_admin_settings_validate($form, &$form_state) {
  */
 function file_restriction_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
-    case "Save configuration":
-      variable_set('file_restriction_extension_allowed', trim($form_state['values']['file_restriction_extension_allowed']));
-      variable_set('file_restriction_size', $form_state['values']['file_restriction_size']);
-      variable_set('file_restriction_quota', $form_state['values']['file_restriction_quota']);
-      variable_set('file_restriction_quota_generated', $form_state['values']['file_restriction_quota_generated']);
+    case t('Save configuration'):
+      variable_set('file_restriction_extension_allowed', trim($values['file_restriction_extension_allowed']));
+      variable_set('file_restriction_size', $values['file_restriction_size']);
+      variable_set('file_restriction_quota', $values['file_restriction_quota']);
+      variable_set('file_restriction_quota_generated', $values['file_restriction_quota_generated']);
       $roles_extension_allowed = array();
       $roles_size = array();
       $roles_quota = array();
       $roles_quota_generated = array();
-      foreach ($form_state['values']['roles'] as $rid => $role) {
-        $roles_extension_allowed[$rid] = trim($form_state['values']['file_restriction_extension_allowed_'. $rid]);
-        $roles_size[$rid] = $form_state['values']['file_restriction_size_'. $rid];
-        $roles_quota[$rid] = $form_state['values']['file_restriction_quota_'. $rid];
-        $roles_quota_generated[$rid] = $form_state['values']['file_restriction_quota_generated_'. $rid];
+      foreach ($values['roles'] as $rid => $role) {
+        $roles_extension_allowed[$rid] = trim($values['file_restriction_extension_allowed_'. $rid]);
+        $roles_size[$rid] = $values['file_restriction_size_'. $rid];
+        $roles_quota[$rid] = $values['file_restriction_quota_'. $rid];
+        $roles_quota_generated[$rid] = $values['file_restriction_quota_generated_'. $rid];
       }
       variable_set('file_restriction_roles_extension_allowed', $roles_extension_allowed);
       variable_set('file_restriction_roles_size', $roles_size);
@@ -170,7 +172,7 @@ function file_restriction_admin_settings_submit($form, &$form_state) {
       variable_set('file_restriction_roles_quota_generated', $roles_quota_generated);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_restriction_extension_allowed');
       variable_del('file_restriction_size');
       variable_del('file_restriction_quota');

@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Module admin page callbacks.
@@ -43,7 +44,7 @@ function file_convert_admin_settings() {
 function file_convert_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       if (!ctype_digit($form_state['values']['file_convert_limit_size'])) {
         form_set_error('file_convert_limit_size', t('A file size should be an integer value.'));
       }
@@ -57,11 +58,11 @@ function file_convert_admin_settings_validate($form, &$form_state) {
 function file_convert_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       variable_set('file_convert_limit_size', $form_state['values']['file_convert_limit_size']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       variable_del('file_convert_limit_size');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
@@ -120,7 +121,7 @@ function file_convert_admin_converter_settings() {
 function file_convert_admin_converter_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       break;
   }
 }
@@ -142,13 +143,13 @@ function file_convert_admin_converter_settings_submit($form, &$form_state) {
   }
 
   switch ($op) {
-    case "Save configuration":
+    case t('Save configuration'):
       foreach ($pipelines as $module => $module_pipelines) {
         variable_set($module .'_convert_pipelines', $module_pipelines);
       }
       drupal_set_message(t('The configuration options have been saved.'));
       break;
-    case "Reset to defaults":
+    case t('Reset to defaults'):
       foreach ($pipelines as $module => $module_pipelines) {
         variable_del($module .'_convert_pipelines');
       }

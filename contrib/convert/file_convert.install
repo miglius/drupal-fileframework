@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// MODULE INSTALLATION/UNINSTALLATION
+// Module installation/uninstallation
 
 /**
  * Implementation of hook_enable().
@@ -27,7 +27,4 @@ function file_convert_install() {}
 function file_convert_uninstall() {
   variable_del('file_convert_limit_size');
 }
-
-//////////////////////////////////////////////////////////////////////////////
-// MODULE UPGRADE MIGRATIONS
 

@@ -12,7 +12,7 @@ define('FILE_AUDIO_GETID3',     variable_get('file_audio_getid3', 1));
 define('FILE_AUDIO_FLASH_LINK', 'http://www.adobe.com/products/flashplayer');
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_theme().
@@ -55,7 +55,7 @@ function file_audio_menu() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API HOOKS
+// File API hooks
 
 /**
  * Implementation of hook_mime_handlers().
@@ -272,7 +272,7 @@ function file_audio_mp3_render($uri, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// RDF API HOOKS
+// RDF API hooks
 
 /**
  * Implementation of hook_rdf_namespaces().
@@ -286,7 +286,7 @@ function file_audio_rdf_namespaces() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Renders options for the audio display.
@@ -301,7 +301,7 @@ function _file_audio_render_options($uri, $options = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// GetID3 SETTINGS
+// GetID3 settings
 
 /**
  * getID3 to RDF mapping.

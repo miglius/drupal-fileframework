@@ -14,7 +14,7 @@ define('FILE_RESTRICTION_QUOTA',             variable_get('file_restriction_quot
 define('FILE_RESTRICTION_QUOTA_GENERATED',   variable_get('file_restriction_quota_generated', 1));
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_help().
@@ -22,7 +22,7 @@ define('FILE_RESTRICTION_QUOTA_GENERATED',   variable_get('file_restriction_quot
 function file_restriction_help($path, $arg) {
   switch ($path) {
     case 'admin/settings/file/restriction':
-      return '<p>'. t('The restrictions are applied to all users except administration account with ID=\'1\'.') .'</p>';
+      return '<p>'. t('The restrictions are applied to all users except administration account with ID=\'1\'. If a user belongs to several roles, then the less restrictive rules are applied.') .'</p>';
   }
 }
 
@@ -65,7 +65,7 @@ function file_restriction_form_alter(&$form, $form_state, $form_id) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API EXTENSIONS
+// File API extensions
 
 /**
  * Implementation of the hook_file_validate().
@@ -106,7 +106,7 @@ function file_restriction_description() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE VALIDATORS
+// File validators
 
 /**
  * Validates if the user does not exceed the quota.
@@ -133,7 +133,7 @@ function _file_restriction_validate_quota($file) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Returns an array of the restrictions for particular user.

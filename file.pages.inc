@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * User page callbacks.
@@ -161,5 +162,63 @@ function file_metadata($uri, $nid) {
 
   drupal_access_denied();
   exit;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// OG integration
+
+/**
+ * Prints og file browser.
+ *
+ * @param $node
+ *   A group node object.
+ *
+ * @return
+ *   Browser html page
+ */
+function file_og_browser($node, $vid) {
+  if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
+    if ($vid && is_object($vocabs[$vid])) {
+      return file_browser_page($vid);
+    }
+    else {
+      foreach ($vocabs as $vid => $v) {
+        $vids[] = $vid;
+      }
+      drupal_set_title(check_plain($node->title) .' '. t('files'));
+      $script = count($vids) == 1 ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-bpage > div.file-cells").click(); });</script>' : '';
+      return file_browser_page($vids, NULL, $script);
+    }
+  }
+  else {
+    return t('No group vocabularies defined.');
+  }
+}
+
+/**
+ * Prints og file gallery.
+ *
+ * @param $node
+ *   A group node object.
+ *
+ * @return
+ *   Browser html page
+ */
+function file_og_gallery($node, $vid, $tid, $filter) {
+  if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
+    if ($vid && is_object($vocabs[$vid])) {
+      return file_gallery_page($vid, $tid, $filter, 'file');
+    }
+    else {
+      foreach ($vocabs as $vid => $v) {
+        $vids[] = $vid;
+      }
+      drupal_set_title(check_plain($node->title) .' '. t('files'));
+      return file_gallery_page($vids, NULL, NULL, 'file');
+    }
+  }
+  else {
+    return t('No group vocabularies defined.');
+  }
 }
 

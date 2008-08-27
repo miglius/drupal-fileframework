@@ -7,7 +7,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// CORE API HOOKS
+// Core API hooks
 
 /**
  * Implementation of hook_theme().
@@ -108,7 +108,7 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// CCK API HOOKS
+// CCK API hooks
 
 /**
  * Implementation of hook_field_info().
@@ -384,7 +384,7 @@ function file_cck_widget_settings($op, $widget) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FAPI HOOKS
+// FAPI hooks
 
 /**
  * Implementation of FAPI hook_elements().
@@ -425,7 +425,7 @@ function file_cck_file_process($element, $edit, $form_state, $form) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Since hook_field() does not allow changing of the field value and

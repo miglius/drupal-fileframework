@@ -247,7 +247,7 @@ function file_text_rdf_namespaces() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// AUXILIARY FUNCTIONS
+// Auxiliary functions
 
 /**
  * Renders options for the text display.

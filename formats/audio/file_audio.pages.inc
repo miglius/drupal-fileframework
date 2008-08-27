@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * User page callbacks.

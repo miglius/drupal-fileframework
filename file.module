@@ -1,5 +1,6 @@
 <?php
 // $Id$
+
 /**
  * @file
  * Provides files as a standalone content type and includes an extended file
@@ -12,13 +13,14 @@ define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
-//define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
 define('FILE_PROPERTIES_TAB',                variable_get('file_properties_tab', 1));
 define('FILE_CRON',                          variable_get('file_cron', 1));
 define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_size', 512));
 define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetection', 0));
 define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetection_conditions', 'application/octet-stream'));
 define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_path', ''));
+define('FILE_OG_BROWSER_TAB',                variable_get('file_og_browser_tab', 1));
+define('FILE_OG_GALLERY_TAB',                variable_get('file_og_gallery_tab', 1));
 
 define('FILE_HASH_SIZE',                     variable_get('file_hash_size', 40));
 define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 86400)); // 24x60x60s
@@ -147,7 +149,7 @@ function file_menu() {
       'weight' => 1,
       'page callback' => 'file_page_metadata',
       'page arguments' => array(1),
-      'access callback' => 'file_metadata_show',
+      'access callback' => 'file_page_metadata_access',
       'access arguments' => array(1),
       'file' => 'file.pages.inc',
     ),
@@ -210,14 +212,48 @@ function file_menu() {
       'access callback' => 'node_access',
       'access arguments' => array('view', 1),
     ),
+    'node/%node/browser' => array(
+      'title' => 'Browser',
+      'page callback' => 'file_og_browser',
+      'page arguments' => array(1, 3),
+      'access callback' => 'file_og_browser_access',
+      'access arguments' => array(1),
+      'type' => variable_get('file_og_broser_tab', 1) ? MENU_LOCAL_TASK : MENU_CALLBACK,
+      'weight' => 9,
+      'file' => 'file.pages.inc',
+    ),
+    'node/%node/gallery' => array(
+      'title' => 'Gallery',
+      'page callback' => 'file_og_gallery',
+      'page arguments' => array(1, 3, 4, 5),
+      'access callback' => 'file_og_gallery_access',
+      'access arguments' => array(1),
+      'type' => variable_get('file_og_gallery_tab', 1) ? MENU_LOCAL_TASK : MENU_CALLBACK,
+      'weight' => 9,
+      'file' => 'file.pages.inc',
+    ),
   );
 }
 
 /**
  * Check if a properties tab should be printed..
  */
-function file_metadata_show($node) {
+function file_page_metadata_access($node) {
   return FILE_PROPERTIES_TAB ? node_access('view', $node) : FALSE;
+}
+
+/**
+ * Check groups browser access.
+ */
+function file_og_browser_access($node) {
+  return module_exists('file_browser') && module_exists('og_vocab') ? user_access('browse files') && og_is_group_member($node, FALSE) : FALSE;
+}
+
+/**
+ * Check groups gallery access.
+ */
+function file_og_gallery_access($node) {
+  return module_exists('file_gallery') && module_exists('og_vocab') ? user_access('view files') && og_is_group_member($node, FALSE) : FALSE;
 }
 
 /**
@@ -638,7 +674,7 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// FILE API EXTENSIONS
+// File API extensions
 
 /**
  * Implementation of the hook_file_validate().
@@ -652,7 +688,7 @@ function file_file_validate($file) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// BLOCKS
+// Blocks
 
 /**
  * Gets the file's metadata from the RDF.
@@ -704,6 +740,26 @@ function _file_block_formats() {
       }
       return theme('file_block_formats', array('formats' => $formats, 'nid' => $file_node->nid, 'vid' => $file_node->vid));
     }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// File gallery integration
+
+/**
+ * Implementation of hook_file_gallery().
+ */
+function file_file_gallery($op) {
+  $args = array_slice(func_get_args(), 1); // skip $op
+  $gid = arg(1);
+  switch ($op) {
+    case 'term_link':
+      $term = array_shift($args);
+      return 'node/'. $gid .'/gallery/'. $term->vid . (!empty($term->tid) ? '/'. $term->tid : '');
+    case 'breadcrumb_home':
+      return TRUE;
+    case 'breadcrumb_link':
+      return 'node/'. $gid .'/gallery';
   }
 }
 
