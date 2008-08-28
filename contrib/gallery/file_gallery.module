@@ -289,12 +289,12 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $class = $module ? module_invoke($module, 'file_gallery', 'node_class') : 'file-thickbox';
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid) : NULL;
   $file_links = $module && ($l = module_invoke($module, 'file_gallery', 'file_links', $node->nid)) && is_array($l) ? $l : array();
+  $thickbox = $module && module_invoke($module, 'file_gallery', 'thickbox') === FALSE ? FALSE : TRUE;
 
   $file = $node->file;
 
   // Find a thumbnail for the file.
   $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-  //$thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
 
   // Find a first enabled handler for the file.
   $preview = _file_gallery_preview($file);
@@ -307,7 +307,7 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $title = check_plain($node->title);
   $title_short = drupal_strlen($title) > FILE_GALLERY_TITLE_LENGTH_SHORT ? drupal_substr($title, 0, FILE_GALLERY_TITLE_LENGTH_SHORT - 3) .'...' : $title;
 
-  return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview', 'file_links'), $options);
+  return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'class', 'url_preview', 'url_open', 'width_preview', 'height_preview', 'file_links', 'thickbox'), $options);
 }
 
 //////////////////////////////////////////////////////////////////////////////

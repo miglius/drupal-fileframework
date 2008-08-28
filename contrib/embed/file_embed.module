@@ -165,6 +165,7 @@ function file_embed_file_gallery($op) {
     case 'node_link':  return array('link' => 'file_embed/options', 'query' => array('nid' => array_shift($args), 'textarea' => check_plain($_GET['textarea'])));
     case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options', 'query' => array('nid' => array_shift($args), 'textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
     case 'pager':      return FILE_EMBED_POPUP_PER_PAGE;
+    case 'thickbox':   return FALSE;
   }
 }
 
