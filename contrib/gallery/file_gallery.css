@@ -53,3 +53,15 @@ ul.file-gallery li span div.no-thumbnail {
   font-size: small;
 }
 
+#wrapper.gallery {
+  background: none;
+}
+
+#wrapper #container .breadcrumb.gallery {
+  position: static;
+}
+
+div.file-gallery-nav, div.file-gallery-nav a {
+  color: #529AD6;
+}
+

@@ -51,6 +51,12 @@ function file_gallery_admin_settings() {
     '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#description'   => t('Whether taxonomy terms that have no sub-terms or file nodes associated with them should be hidden. This can be useful to reduce load time in situations where the vocabulary is very large (e.g. for free-tagging vocabularies).'),
   );
+  $form['display']['file_gallery_navigation'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Show navigation'),
+    '#default_value' => FILE_GALLERY_NAVIGATION,
+    '#description'   => t('The navigation inside the gallery is displayed as a site breadcrumb. However when the theme does not display a breadcrumb, this option allows displaying the navigation on the top of the gallery page.'),
+  );
 
   $form['submit'] = array(
     '#type'  => 'submit',
@@ -95,6 +101,7 @@ function file_gallery_admin_settings_submit($form, &$form_state) {
       variable_set('file_gallery_embed_size', $values['file_gallery_embed_size']);
       variable_set('file_gallery_popup_size', $values['file_gallery_popup_size']);
       variable_set('file_gallery_hide_empty', $values['file_gallery_hide_empty']);
+      variable_set('file_gallery_navigation', $values['file_gallery_navigation']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
@@ -102,6 +109,7 @@ function file_gallery_admin_settings_submit($form, &$form_state) {
       variable_del('file_gallery_embed_size');
       variable_del('file_gallery_popup_size');
       variable_del('file_gallery_hide_empty');
+      variable_del('file_gallery_navigation');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

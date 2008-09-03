@@ -29,5 +29,6 @@ function file_gallery_uninstall() {
   variable_del('file_gallery_embed_size');
   variable_del('file_gallery_popup_size');
   variable_del('file_gallery_hide_empty');
+  variable_del('file_gallery_navigation');
 }
 

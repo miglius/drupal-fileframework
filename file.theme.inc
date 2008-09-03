@@ -96,7 +96,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'download');
   if ($is_node)
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
-  $links['metadata'] = array('title' => t('Metadata'), 'href' => '', 'attributes' => array('title' => t('File\'s metadata.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
+  $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
   $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) . ($file->name ? ' <span class="title">'. check_plain($file->name) .'</span>': '') .'</span>'. $links .'</span></span>';
   if ($is_node)

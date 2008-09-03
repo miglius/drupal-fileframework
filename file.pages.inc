@@ -177,6 +177,7 @@ function file_metadata($uri, $nid) {
  *   Browser html page
  */
 function file_og_browser($node, $vid) {
+  drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File browser') .')');
   if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
     if ($vid && is_object($vocabs[$vid])) {
       return file_browser_page($vid);
@@ -185,7 +186,6 @@ function file_og_browser($node, $vid) {
       foreach ($vocabs as $vid => $v) {
         $vids[] = $vid;
       }
-      drupal_set_title(check_plain($node->title) .' '. t('files'));
       $script = count($vids) == 1 ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-bpage > div.file-cells").click(); });</script>' : '';
       return file_browser_page($vids, NULL, $script);
     }
@@ -205,6 +205,7 @@ function file_og_browser($node, $vid) {
  *   Browser html page
  */
 function file_og_gallery($node, $vid, $tid, $filter) {
+  drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File gallery') .')');
   if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
     if ($vid && is_object($vocabs[$vid])) {
       return file_gallery_page($vid, $tid, $filter, 'file');
@@ -213,8 +214,7 @@ function file_og_gallery($node, $vid, $tid, $filter) {
       foreach ($vocabs as $vid => $v) {
         $vids[] = $vid;
       }
-      drupal_set_title(check_plain($node->title) .' '. t('files'));
-      return file_gallery_page($vids, NULL, NULL, 'file');
+      return count($vids) == 1 ? file_gallery_page(reset($vids), NULL, NULL, 'file') : file_gallery_page($vids, NULL, NULL, 'file');
     }
   }
   else {

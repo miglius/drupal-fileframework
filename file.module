@@ -756,10 +756,8 @@ function file_file_gallery($op) {
     case 'term_link':
       $term = array_shift($args);
       return 'node/'. $gid .'/gallery/'. $term->vid . (!empty($term->tid) ? '/'. $term->tid : '');
-    case 'breadcrumb_home':
-      return TRUE;
-    case 'breadcrumb_link':
-      return 'node/'. $gid .'/gallery';
+    case 'breadcrumb_home': return TRUE;
+    case 'breadcrumb_link': return 'node/'. $gid .'/gallery';
   }
 }
 

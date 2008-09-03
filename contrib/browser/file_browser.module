@@ -118,7 +118,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
     case 'list':
       $block = array(
         'newterm' => array(
-          'info' => t('Create Folder'),
+          'info' => t('Create folder'),
           'status' => 1,
           'region' => 'right',
           'weight' => -3,
@@ -151,7 +151,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
       $block_show = (arg(0) == 'file_browser' || (module_exists('og_vocab') && arg(0) == 'node' && arg(2) == 'browser' && ($node = menu_get_object()) && !empty($node->og_vocabularies))) ? TRUE : FALSE;
       switch ($delta) {
         case 'newterm':
-          $block['subject'] = check_plain(t('Create Folder'));
+          $block['subject'] = check_plain(t('Create folder'));
           $block['content'] = $block_show ? _file_browser_newterm() : NULL;
           break;
         case 'upload':

@@ -25,7 +25,7 @@ function theme_file_gallery_page($content, $options = array()) {
   $output .= '</head>';
   $output .= '<body style="background-color: #fff; color: #000; margin: 10px;">';
   if ($breadcrumb) {
-    $output .= '<div id="wrapper"><div id="container"><div class="breadcrumb">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
+    $output .= '<div id="wrapper" class="gallery"><div id="container"><div class="breadcrumb gallery">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
   }
   $output .= "\n<!-- begin content -->\n";
   $output .= $content;
@@ -64,7 +64,7 @@ function theme_file_gallery_node($data, $options) {
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
   $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'id' => 'file-'. $file->nid .'-'. $id))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
-  $output .= '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
+  $output .= $thickbox ? '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>' : '';
   $file->name = $title_short;
   $output .= '<br />'. theme('file_render', $file, $file_links);
   $output .= '</li>';
@@ -74,11 +74,30 @@ function theme_file_gallery_node($data, $options) {
 /*
  * Theme for the empty page.
  */
-function theme_file_gallery_empty($filter = NULL) {
-  $texts = array('folder' => t('subfolders'), 'image' => t('images'), 'audio' => t('audio files'), 'video' => t('video files'));
+function theme_file_gallery_empty() {
   $output = '<span class="file-gallery-empty">';
-  $output .= $filter ? t('There are no %files in this folder.', array('%files' => $texts[$filter])) : t('There are no subfolders or files in this folder.');
+  $output .= t('The folder is empty.');
   $output .= '</span>';
   return $output;
 }
 
+/**
+ * Outputs a gallery filter block.
+ */
+function theme_file_gallery_filter($form) {
+  $output = '<div id="file_gallery-filter">';
+  $output .= $form;
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Outputs a gallery navigation.
+ */
+function theme_file_gallery_navigation($navigation) {
+  $output = '<div class="file-gallery-nav">';
+  $output .= implode(' > ', $navigation);
+  $output .= '</div>';
+  return $output;
+}
+;
