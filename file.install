@@ -175,7 +175,7 @@ function file_schema() {
           'default' => 0,
         ),
       ),
-      'indexes' => array('file_nodes_tmp_created' => array('created')),
+      'indexes' => array('file_tmp_created' => array('created')),
     ),
   );
 }

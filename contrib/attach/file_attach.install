@@ -98,6 +98,7 @@ function file_attach_schema() {
           'description' => t('Weight of this file in relation to other files attached to this node.'),
         ),
       ),
+      'indexes' => array('file_attachments_fnid' => array('fnid')),
     ),
   );
 }
