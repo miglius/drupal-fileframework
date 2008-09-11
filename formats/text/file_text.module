@@ -142,9 +142,9 @@ function file_text_mime_converters() {
  */
 function file_text_metadata_info() {
   $info = array(
-    'wordnet:characters' => t('Characters'),
-    'wordnet:words'      => t('Words'),
-    'wordnet:lines'      => t('Lines'),
+    'wordnet:characters' => array('name' => t('Characters')),
+    'wordnet:words' => array('name' => t('Words')),
+    'wordnet:lines' => array('name' => t('Lines')),
   );
   return $info;
 }
@@ -192,16 +192,11 @@ function file_text_text_generate($file) {
   else if (FILE_TEXT_CODE) {
     if (module_exists('file_convert') && !$file->noconvert) {
       // Convert the file.
-      if (!$converted = file_convert($file, "{code2html} --fallback ruby [in_file] [out_file]")) {
-        watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
-      }
+      if ($converted = file_convert($file, array('file_text_code'), "{code2html} --fallback ruby [in_file] [out_file]")) {
+        $file->filepath = $converted;
 
-      // Extract metadata.
-      $metadata = file_metadata_extract($converted, $file->filemime);
-
-      $file->filepath = $converted;
-
-      if ($converted) {
+        // Extract metadata.
+        $metadata = file_metadata_extract($converted, $file->filemime);
         $file->metadata = array_merge(array(
           'dc:creator' => array('file_text_code'),
         ), $metadata);
@@ -212,6 +207,9 @@ function file_text_text_generate($file) {
         }
 
         watchdog('file_text', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => 'file_text_code', '%uri' => $file->uri));
+      }
+      else {
+        watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       }
     }
   }
@@ -232,18 +230,6 @@ function file_text_text_render($uri, $options = array()) {
 function file_text_code_render($uri, $options = array()) {
   $options = array_merge($options, _file_text_render_options($uri, $options));
   return theme('file_text_code_render', $options);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// RDF API HOOKS
-
-/**
- * Implementation of hook_rdf_namespaces().
- */
-function file_text_rdf_namespaces() {
-  return array(
-    'wordnet' => 'http://xmlns.com/wordnet/1.6/',
-  );
 }
 
 //////////////////////////////////////////////////////////////////////////////

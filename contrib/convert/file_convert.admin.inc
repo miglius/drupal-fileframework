@@ -26,6 +26,18 @@ function file_convert_admin_settings() {
     '#description'   => t('The size is in MB. If uploaded file is bigger than this value, then the conversion will be performed on cron run instead. This should allow avoiding page timeouts on the file uploads. Zero means that all files will be converted on the upload.'),
   );
 
+  $form['clear'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Clear data about failed conversions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('When a file conversion fails, it is marked as such to make sure that this conversion is not performed on the same file again from the cron. Click "Clear" to delete all data about failed conversions. This is usefull if a conversion utility is fixed, then the files will be converted from the cron.'),
+  );
+  $form['clear']['clear'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Clear'),
+  );
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -65,6 +77,12 @@ function file_convert_admin_settings_submit($form, &$form_state) {
     case t('Reset to defaults'):
       variable_del('file_convert_limit_size');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
+      break;
+    case t('Clear'):
+      if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => 'file'))) {
+        watchdog('file_convert', 'The RDF data about failed conversions was not deleted.', WATCHDOG_ERROR);
+      }
+      drupal_set_message(t('The data about failed conversions have been cleared.'));
       break;
   }
 }

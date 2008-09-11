@@ -204,13 +204,15 @@ function file_image_mime_detect($filename) {
  */
 function file_image_metadata_info() {
   $info = array(
-    'exif:width'  => t('Width'),
-    'exif:height' => t('Height'),
-    'geo:lat' => t('Latitude'),
-    'geo:long' => t('Longitude'),
+    'exif:width'  => array('name' => t('Width')),
+    'exif:height' => array('name' => t('Height')),
+    'geo:lat' => array('name' => t('Latitude')),
+    'geo:long' => array('name' => t('Longitude')),
   );
   foreach (_file_image_exif() as $name => $data) {
-    $info[$data['rdf']] = t($data['name']);
+    $info[$data['rdf']] = array('name' => t($data['name']));
+    if ($data['theme'])
+      $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
 }
@@ -338,32 +340,27 @@ function file_image_preview_generate($file) {
       list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
 
       // Convert the file.
-      if (!$converted = file_convert($file, "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
+      if ($converted = file_convert($file, array($data['handler']), "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", array('resize' => 'resize', 'width' => $width, 'height' => $height))) {
+        $file->filepath = $converted;
+        $file->converted = TRUE;
+        $files[] = $converted;
+
+        // Extract metadata.
+        $metadata = file_metadata_extract($converted, $file->filemime);
+        $file->metadata = array_merge(array(
+          'dc:creator' => array($data['handler']),
+        ), $metadata);
+
+        // Save preview to the bitcache and RDF.
+        if (!file_data_save($file)) {
+          return FALSE;
+        }
+
+        watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%uri' => $file->uri));
+      }
+      else {
         watchdog('file_image', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
       }
-
-      // Extract metadata.
-      $metadata = file_metadata_extract($converted, $file->filemime);
-
-      $file->filepath = $converted;
-      $file->converted = TRUE;
-      $files[] = $converted;
-    }
-
-    if ($converted) {
-      $file->metadata = array_merge(array(
-        'dc:creator' => array($data['handler']),
-      ), $metadata);
-
-      // Save preview to the bitcache and RDF.
-      if (!file_data_save($file)) {
-        return FALSE;
-      }
-
-      $file->converted = TRUE;
-      unset($converted);
-
-      watchdog('file_image', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%uri' => $file->uri));
     }
   }
 

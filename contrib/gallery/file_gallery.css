@@ -59,9 +59,14 @@ ul.file-gallery li span div.no-thumbnail {
 
 #wrapper #container .breadcrumb.gallery {
   position: static;
+  display: none;
 }
 
 div.file-gallery-nav, div.file-gallery-nav a {
   color: #529AD6;
+}
+
+#tabs-wrapper.file-gallery{
+  margin: 0px;
 }
 

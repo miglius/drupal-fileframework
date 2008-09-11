@@ -108,19 +108,58 @@ function file_get_mime_converters() {
 
 /**
  * Converts a file to different MIME format.
+ * If earlier conversion failed, the file is not converted.
  *
- * @param
+ * @param $file
  *   A file object. If $file->converted defined, we already have a temporal file.
- * @param
+ * @param $handlers
+ *   An array of the handlers to be used with the converted file.
+ * @param $pipeline
  *   An array with a pipelines.
- * @param
+ * @param $options
+ *   Additional options used in file conversion.
+ *
+ * @return
+ *   A converted file's filename or NULL.
+ */
+function file_convert($file, $handlers, $pipeline, $options = array()) {
+  $status = TRUE;
+  foreach ($handlers as $handler) {
+    $status = $status && !_file_convert_is_needed($file, $handler);
+  }
+  if (!$status)
+    return NULL;
+
+  $status = _file_convert($file, $pipeline, $options);
+  if (!$status) {
+    foreach ($handlers as $handler) {
+      _file_convert_failure_log($file, $handler);
+    }
+  }
+
+  return $status;
+}
+
+/**
+ * Converts a file to different MIME format.
+ *
+ * @param $file
+ *   A file object. If $file->converted defined, we already have a temporal file.
+ * @param $pipeline
+ *   An array with a pipelines.
+ * @param $options
  *   Additional options used in file conversion.
  *
  * @return
  *   A converted file's filename or NULL. Calling function
  *   should delete the tomporal file.
  */
-function file_convert($file, $pipeline, $options = array()) {
+function _file_convert($file, $pipeline, $options) {
+  //if ($file->uri == 'bitcache://29630611d6c76e4d75807508e3fc100371ffbbfe')
+  //  return;
+  //if ($file->uri == 'bitcache://a2e482b05e6a5da7aa8f283d133401ab09fdc2ac')
+  //  return;
+
   $options['filename'] = $file->filename;
   $tmpdir  = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '/tmp';
   $options['tmpdir'] = $tmpdir;
@@ -290,5 +329,49 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
     }
   }
   return $result;
+}
+
+/**
+ * Saves to the RDF that a conversion perfomed by the handler failed.
+ * This will avoid continuous conversion of the failing file.
+ *
+ * @param $file
+ *   A file object.
+ * @param $handler
+ *   A handler name.
+ *
+ * @return
+ *   TRUE if save was successfull.
+ */
+function _file_convert_failure_log($file, $handler) {
+  if (!rdf_exists($file->uri, 'wordnet:failed', $handler))
+    return rdf_insert($file->uri, 'wordnet:failed', $handler, array('repository' => 'file'));
+
+  return TRUE;
+}
+
+/**
+ * Checks the RDF if the conversion was already made or had failed.
+ *
+ * @param $file
+ *   A file object.
+ * @param $handler
+ *   A handler name.
+ *
+ * @return
+ *   TRUE if failure is logged.
+ */
+function _file_convert_is_needed($file, $handler) {
+  if (rdf_exists($file->uri, 'wordnet:failed', $handler))
+    return TRUE;
+
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+    foreach ($generated as $uri => $data) {
+      if (rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler))
+        return TRUE;
+    }
+  }
+
+  return FALSE;;
 }
 

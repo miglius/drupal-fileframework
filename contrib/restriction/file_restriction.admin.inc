@@ -18,7 +18,7 @@
 function file_restriction_admin_settings() {
   $form = array();
 
-  $form['general'] = array('#type' => 'fieldset', '#title' => t('General settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['general'] = array('#type' => 'fieldset', '#title' => t('All users'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['general']['file_restriction_extension_allowed'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Allowed file extensions'),

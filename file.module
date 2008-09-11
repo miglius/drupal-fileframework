@@ -83,6 +83,10 @@ function file_theme() {
       'arguments' => array('data' => NULL),
       'file' => 'file.theme.inc'
     ),
+    'file_metadata_size' => array(
+      'arguments' => array('data' => NULL),
+      'file' => 'file.theme.inc'
+    ),
   );
 }
 
@@ -688,6 +692,18 @@ function file_file_validate($file) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// RDF API HOOKS
+
+/**
+ * Implementation of hook_rdf_namespaces().
+ */
+function file_rdf_namespaces() {
+  return array(
+    'wordnet' => 'http://xmlns.com/wordnet/1.6/',
+  );
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Blocks
 
 /**
@@ -707,7 +723,10 @@ function _file_block_properties() {
       foreach ($data as $subject => $predicates) {
         foreach ($predicates as $predicate => $objects) {
           foreach ($objects as $object) {
-            $metadata[] = array('name' => $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], 'value' => is_object($object) ? $object->value : $object);
+            $rdf = @rdf_uri_to_qname($predicate, $namespaces, FALSE);
+            if ($name = $info[$rdf]['name']) {
+              $metadata[] = array($name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
+            }
           }
         }
       }
@@ -757,7 +776,7 @@ function file_file_gallery($op) {
       $term = array_shift($args);
       return 'node/'. $gid .'/gallery/'. $term->vid . (!empty($term->tid) ? '/'. $term->tid : '');
     case 'breadcrumb_home': return TRUE;
-    case 'breadcrumb_link': return 'node/'. $gid .'/gallery';
+    case 'root_link': return 'node/'. $gid .'/gallery';
   }
 }
 

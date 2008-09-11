@@ -39,10 +39,6 @@ function file_embed_theme() {
       'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
     ),
-    'file_embed_attachments' => array(
-      'arguments' => array('data' => NULL),
-      'file' => 'file_embed.theme.inc'
-    ),
     'file_embed_options' => array(
       'arguments' => array('data' => NULL),
       'file' => 'file_embed.theme.inc'
@@ -52,6 +48,13 @@ function file_embed_theme() {
       'file' => 'file_embed.theme.inc'
     ),
   );
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function file_embed_perm() {
+  return array('embed files');
 }
 
 /**
@@ -66,15 +69,10 @@ function file_embed_menu() {
       'access arguments' => array('administer site configuration'),
       'file' => 'file_embed.admin.inc',
     ),
-    'file_embed/attachments/%node' => array(
-      'page callback' => 'file_embed_attachments',
-      'page arguments' => array(2),
-      'access arguments' => array('attach files'),
-      'type' => MENU_CALLBACK,
-    ),
-    'file_embed/options' => array(
+    'file_embed/options/%node' => array(
       'page callback' => 'file_embed_options',
-      'access arguments' => array('attach files'),
+      'page arguments' => array(2),
+      'access arguments' => array('embed files'),
       'type' => MENU_CALLBACK,
     ),
   );
@@ -157,16 +155,24 @@ function file_embed_elements() {
  * Implementation of hook_file_gallery().
  */
 function file_embed_file_gallery($op) {
-  $args = array_slice(func_get_args(), 1); // skip $op
+  $args = array_slice(func_get_args(), 1); // skip $op.
   switch ($op) {
-    case 'query':        return array('module' => 'file_embed', 'layout' => 'off', 'textarea' => $_GET['textarea']);
-    case 'node_class':   return '';
-    case 'node_link':    return array('link' => 'file_embed/options', 'query' => array('nid' => array_shift($args), 'textarea' => check_plain($_GET['textarea'])));
-    case 'file_links':   return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options', 'query' => array('nid' => array_shift($args), 'textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
-    case 'pager':        return FILE_EMBED_POPUP_PER_PAGE;
-    case 'thickbox':     return FALSE;
-    case 'filter':       return TRUE;
-    case 'nonavigation': return TRUE;
+    case 'query':
+      $query = $_GET;
+      unset($query['q']);
+      unset($query['page']);
+      return $query;
+    case 'node_link': return array('link' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])));
+    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
+    case 'pager': return FILE_EMBED_POPUP_PER_PAGE;
+    case 'thickbox': return FALSE;
+    case 'filter': return TRUE;
+    case 'navigation': return TRUE;
+    case 'show_tabs': return TRUE;
+    case 'tabs': return ($nodes = _file_embed_attachments()) && !empty($nodes) ? array('attach' => t('Attachments')) : NULL;
+    case 'nodes': return ($action = array_shift($args)) && $action == 'attach' ? _file_embed_attachments() : NULL;
+    case 'breadcrumb_home': return FALSE;
+    case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
   }
 }
 
@@ -223,28 +229,17 @@ function file_embed_textarea_process($element) {
  */
 function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TYPE) {
   _file_embed_add_headers();
-
   $_GET['textarea'] = $element['#id'];
   $id = $element['#id'];
   list($width, $height) = explode('x', FILE_EMBED_POPUP_SIZE);
-  $query = array('textarea' => $id, 'TB_iframe' => 'true', 'height' => $height, 'width' => $width);
 
-  $url_attach = NULL;
-  if (module_exists('file_attach') && $type) {
-    if ($type['element'] == 'node' && variable_get('file_attach_node_'. $type['type'], 1)) {
-      if (is_numeric($type['nid']) && ($node = node_load($type['nid'])) && !empty($node->files)) {
-        $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'], 'query' => $query);
-      }
-    }
-    if ($type['element'] == 'comment' && variable_get('file_attach_comment_'. $type['type'], 1)) {
-      if (is_numeric($type['cid']) && ($node = node_load($type['nid'])) && ($files = _file_attach_load($type['nid'], $node->vid, $type['cid'])) && !empty($files)) {
-        $url_attach = array('url' => 'file_embed/attachments/'. $type['nid'] .'/'. $type['cid'], 'query' => $query);
-      }
-    }
-  }
-  $url_gallery = array('url' => 'file_gallery', 'query' => array_merge(file_embed_file_gallery('query'), $query));
+  $query = array('module' => 'file_embed', 'layout' => 'off', 'nid' => $type['nid'], 'textarea' => $id);
+  $query += is_numeric($type['cid']) ? array('cid' => $type['cid']) : array();
+  $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
 
-  $output = theme('file_embed_textarea_link', compact('id', 'url_attach', 'url_gallery', 'link'));
+  $url = array('url' => 'file_gallery', 'query' => array_merge(file_embed_file_gallery('query'), $query));
+
+  $output = theme('file_embed_textarea_link', compact('id', 'url', 'link'));
 
   return $output;
 }
@@ -357,15 +352,9 @@ function _file_embed_page_match($path) {
 /**
  * Creates an options form.
  */
-function file_embed_options_form($form_state) {
-  if (isset($_GET['nid']) && is_numeric($_GET['nid'])) {
-    $nid = $_GET['nid'];
-    $node = node_load($nid);
-    $file = $node->file;
-    if (!node_access('view', $node) || !is_object($file)) {
-      return '';
-    }
-  }
+function file_embed_options_form($form_state, $node) {
+  $file = $node->file;
+  if (!node_access('view', $node) || !is_object($file))
 
   $options = array();
   $file_handlers = file_handlers_for($file);
@@ -375,7 +364,8 @@ function file_embed_options_form($form_state) {
     }
   }
 
-  $form['caption'] = array(
+  $form['embed'] = array('#type' => 'fieldset', '#title' => t('Embed options'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['embed']['caption'] = array(
     '#type'          => 'textarea',
     '#title'         => t('Caption (optional)'),
     '#default_value' => $node->body,
@@ -383,20 +373,20 @@ function file_embed_options_form($form_state) {
     '#rows'          => 3,
     '#maxlength'     => 255,
   );
-  $form['handler'] = array(
+  $form['embed']['handler'] = array(
     '#type'          => 'select',
     '#title'         => t('Handler'),
     '#default_value' => '',
     '#options'       => $options,
   );
-  $form['align'] = array(
+  $form['embed']['align'] = array(
     '#type'          => 'select',
     '#title'         => t('Alignment'),
     '#default_value' => '',
     '#options'       => array('' => t('No float'), 'left' => t('Float left'), 'right' => t('Float right')),
   );
   /*
-  $form['padding'] = array(
+  $form['embed']['padding'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Padding'),
     '#default_value' => 0,
@@ -404,24 +394,24 @@ function file_embed_options_form($form_state) {
     '#maxlength'     => 3,
   );
   */
-  $form['link'] = array(
+  $form['embed']['link'] = array(
     '#type'          => 'checkbox',
     '#title'         => 'Link embedded file to the file\'s node',
     '#default_value' => 1,
   );
-  $form['insert'] = array(
+  $form['embed']['insert'] = array(
     '#type'          => 'button',
     '#value'         => t('Insert'),
     '#name'          => 'file-embed-insert',
     '#submit'        => FALSE,
   );
-  $form['cancel'] = array(
+  $form['embed']['cancel'] = array(
     '#type'          => 'button',
     '#value'         => t('Cancel'),
     '#name'          => 'file-embed-cancel',
     '#submit'        => FALSE,
   );
-  $form['nid'] = array('#type' => 'hidden', '#value' => $_GET['nid']);
+  $form['nid'] = array('#type' => 'hidden', '#value' => $node->nid);
   $form['textarea'] = array('#type' => 'hidden', '#value' => $_GET['textarea']);
   $form['#prefix'] = '<div id="file-embed-options" style="width: 250px;">';
   $form['#sufix'] = '</div>"';
@@ -433,40 +423,9 @@ function file_embed_options_form($form_state) {
 // Menu callbacks
 
 /**
- * Creates an embed attachment page.
- *
- * @param $node
- *   A node object.
- */
-function file_embed_attachments($node) {
-  _file_gallery_add_headers('file_embed');
-
-  $embed_options = _file_gallery_embed_options();
-
-  $cid = arg(3);
-  if (module_exists('comment') && $cid && is_numeric($cid) && $comment = _comment_load($cid)) {
-    if ($node->nid == $comment->nid) {
-      $files = _file_attach_load($node->nid, $node->vid, $comment->cid);
-    }
-  }
-  else if (!empty($node->files)) {
-    $files = $node->files;
-  }
-
-  $list = '';
-  foreach ($files as $file) {
-    if ($file_node = node_load($file->nid)) {
-      $list .= _file_gallery_node($file_node, $embed_options, 'file_embed');
-    }
-  }
-
-  print theme('file_gallery_page', theme('file_embed_attachments', compact('list')));
-}
-
-/**
  * Creates an embed option page.
  */
-function file_embed_options() {
+function file_embed_options($node) {
   // This would ideally be in file_embed.js, but IE6 gives us grief by not
   // loading the external JS file in successive Thickbox openings, so we'll
   // just do this the old-fashioned ugly way:
@@ -495,11 +454,45 @@ function file_embed_options() {
   });';
   $script .= '</script>';
 
-  $node = node_load($_GET['nid']);
   $title = check_plain($node->title);
   $preview = file_get_image($node->file, 'file_image_medium', explode('x', FILE_IMAGE_MEDIUM_RESOLUTION));
-  $form = drupal_get_form('file_embed_options_form');
+  $form = drupal_get_form('file_embed_options_form', $node);
 
   print theme('file_gallery_page', theme('file_embed_options', compact('script', 'title', 'preview', 'form')));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Auxiliary functions
+
+/**
+ * Gets node or comment attachments.
+ *
+ * @return
+ *   An array of the attachment nids.
+ */
+function _file_embed_attachments() {
+  $nid = $_GET['nid'];
+  $cid = $_GET['cid'];
+  if (!is_numeric($nid) || !user_access('view attached files'))
+    return;
+
+  $node = node_load($nid);
+  if (!node_access('view', $node))
+    return;
+
+  $nids = array();
+  if (module_exists('file_attach')) {
+    if (is_numeric($cid) && variable_get('file_attach_comment_'. $node->type, 1) && ($files = _file_attach_load($nid, $node->vid, $cid)) && !empty($files)) {
+      foreach ($files as $file) {
+        $nids[] = $file->nid;
+      }
+    }
+    else if (variable_get('file_attach_node_'. $node->type, 1) && !empty($node->files)) {
+      foreach ($node->files as $file) {
+        $nids[] = $file->nid;
+      }
+    }
+  }
+  return $nids;
 }
 

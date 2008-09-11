@@ -228,13 +228,15 @@ function file_video_mime_converters() {
  */
 function file_video_metadata_info() {
   $info = array(
-    'wordnet:width' => t('Width'),
-    'wordnet:height' => t('Height'),
-    'exif:width' => t('Width'),
-    'exif:height' => t('Height'),
+    'wordnet:width' => array('name' => t('Width')),
+    'wordnet:height' => array('name' => t('Height')),
+    'exif:width' => array('name' => t('Width')),
+    'exif:height' => array('name' => t('Height')),
   );
   foreach (_file_video_getid3() as $name => $data) {
-    $info[$data['rdf']] = t($data['name']);
+    $info[$data['rdf']] = array('name' => t($data['name']));
+    if ($data['theme'])
+      $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
 }

@@ -107,7 +107,7 @@ function file_archive_mime_converters() {
  */
 function filearchive_metadata_info() {
   $info = array(
-    'wordnet:lines' => t('Lines'),
+    'wordnet:lines' => array('name' => t('Lines')),
   );
   return $info;
 }

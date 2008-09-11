@@ -220,7 +220,7 @@ function theme_file_info($node) {
 function theme_file_block_properties($metadata) {
   if (!empty($metadata)) {
     foreach ($metadata as $data) {
-      $fields[] = '<span class="metadata-name"><strong>'. $data['name'] .':</strong></span><br />&nbsp;&nbsp;<span class="metadata-value">'. $data['value'] .'</span>';
+      $fields[] = '<span class="metadata-name"><strong>'. $data[0] .':</strong></span><br />&nbsp;&nbsp;<span class="metadata-value">'. $data[1] .'</span>';
     }
     if (!empty($fields)) {
       return '<div id="file-block-properties">'. implode('<br />', $fields) .'</div>';
@@ -246,5 +246,12 @@ function theme_file_block_formats($data) {
     $output .= '</div>';
     return $output;
   }
+}
+
+/**
+ * Renders a metadata size.
+ */
+function theme_file_metadata_size($data) {
+  return format_size($data);
 }
 

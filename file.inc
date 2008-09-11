@@ -117,6 +117,7 @@ function file_data_save(&$file) {
   // Save metadata information to the RDF.
   if (!rdf_exists($file->uri)) {
     $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
+    watchdog('miglius', print_r($metadata, true));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => 'file'))) {
       watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
       return FALSE;
@@ -525,8 +526,8 @@ function file_get_mime_handlers() {
 function file_get_metadata_info() {
   static $result = array();
   if (!$result) {
-    $result['dc:format'] = t('MIME type');
-    $result['dc:extent'] = t('Size in Bytes');
+    $result['dc:format'] = array('name' => t('MIME type'));
+    $result['dc:extent'] = array('name' => t('Size'), 'theme' => 'file_metadata_size');
     foreach (module_implements('metadata_info') as $module) {
       $info = module_invoke($module, 'metadata_info');
       if (is_array($info)) {
@@ -666,24 +667,26 @@ function file_generate_previews($file, $cron = NULL) {
           // Need to generate a preview if there is no converted
           // file of the targer MIME or if we have not used MIME
           // handler of the target MIME.
-          if ((!empty($converter['handlers']) || !is_array($previews[$to])) && $converted = file_convert($file, $converter['pipeline'])) {
-            $file_converted = (object)array('uri' => $file->uri, 'filepath' => $converted, 'filename' => $file->filename, 'filemime' => $to, 'uri' => $file->uri, 'converted' => TRUE);
-            if (!empty($converter['handlers'])) {
-              // Apply generate handlers.
-              foreach ($converter['handlers'] as $handler) {
-                if (function_exists($full_handler = $handler .'_generate')) {
-                  $result = $full_handler($file_converted) && $result;
+          if ((!empty($converter['handlers']) || !is_array($previews[$to]))) {
+            if ($converted = file_convert($file, $converter['handlers'], $converter['pipeline'])) {
+              $file_converted = (object)array('uri' => $file->uri, 'filepath' => $converted, 'filename' => $file->filename, 'filemime' => $to, 'uri' => $file->uri, 'converted' => TRUE);
+              if (!empty($converter['handlers'])) {
+                // Apply generate handlers.
+                foreach ($converter['handlers'] as $handler) {
+                  if (function_exists($full_handler = $handler .'_generate')) {
+                    $result = $full_handler($file_converted) && $result;
+                  }
                 }
               }
+              else {
+                // Save the file to the bitcache and RDF.
+                $result = file_data_save($file_converted) && $result;
+              }
+              file_delete($converted);
+              // Flag the wile that conversion took place.
+              // Needed for a cron to calculate conversions.
+              $file->convert = $file->convert ? $file->convert + 1 : 1;
             }
-            else {
-              // Save the file to the bitcache and RDF.
-              $result = file_data_save($file_converted) && $result;
-            }
-            file_delete($converted);
-            // Flag the wile that conversion took place.
-            // Needed for a cron to calculate conversions.
-            $file->convert = $file->convert ? $file->convert + 1 : 1;
           }
         }
       }
@@ -713,10 +716,7 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
     if (is_array($converter)) {
       if ($converter['enabled'] && in_array($handler, $converter['handlers'])) {
         // Convert the file.
-        if (!$converted = file_convert($file, $converter['pipeline'])) {
-          watchdog($module, 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
-        }
-        else {
+        if ($converted = file_convert($file, array($handler), $converter['pipeline'])) {
           $file->filepath = $converted;
           $file->filemime = $mime_to;
 
@@ -726,6 +726,9 @@ function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
 
           // Remove temporal file
           file_delete($converted);
+        }
+        else {
+          watchdog($module, 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
         }
       }
     }

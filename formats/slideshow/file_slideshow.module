@@ -141,7 +141,9 @@ function file_slideshow_mime_converters() {
 function file_slideshow_metadata_info() {
   $info = array();
   foreach (_file_slideshow_pdf() as $name => $data) {
-    $info[$data['rdf']] = t($data['name']);
+    $info[$data['rdf']] = array('name' => t($data['name']));
+    if ($data['theme'])
+      $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
 }

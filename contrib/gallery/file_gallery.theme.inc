@@ -63,7 +63,7 @@ function theme_file_gallery_node($data, $options) {
     $id .= mt_rand(0, 9);
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'class' => $class, 'id' => 'file-'. $file->nid .'-'. $id))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
+  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'id' => 'file-'. $file->nid .'-'. $id))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
   $output .= $thickbox ? '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>' : '';
   $file->name = $title_short;
   $output .= '<br />'. theme('file_render', $file, $file_links);
@@ -100,4 +100,15 @@ function theme_file_gallery_navigation($navigation) {
   $output .= '</div>';
   return $output;
 }
-;
+
+/**
+ * Outputs a gallery tabs.
+ */
+function theme_file_gallery_tabs($tabs) {
+  $tabs = array_map(create_function('$a', 'return \'<li\'. ($a[\'active\'] ? \' class="active"\' : \' class="ff"\') .\'>\'. l($a[\'title\'], $a[\'link\'], array(\'query\' => $a[\'query\'], \'attributes\' => $a[\'active\'] ? array(\'class\' => \'active\') : array())) .\'</li>\';'), $tabs);
+  $output = '<div id="tabs-wrapper" class="clear-block file-gallery"><ul class="tabs primary">';
+  $output .= implode('', $tabs);
+  $output .= '</ul></div>';
+  return $output;
+}
+

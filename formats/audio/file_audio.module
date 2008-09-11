@@ -183,7 +183,9 @@ function file_audio_mime_converters() {
 function file_audio_metadata_info() {
   $info = array();
   foreach (_file_audio_getid3() as $name => $data) {
-    $info[$data['rdf']] = t($data['name']);
+    $info[$data['rdf']] = array('name' => t($data['name']));
+    if ($data['theme'])
+      $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
 }

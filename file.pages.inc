@@ -32,7 +32,10 @@ function file_page_metadata($node) {
   foreach ($data as $subject => $predicates) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
-        db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)], theme('rdf_value', $object));
+        $rdf = @rdf_uri_to_qname($predicate, $namespaces, FALSE);
+        if ($name = $info[$rdf]['name']) {
+          db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
+        }
       }
     }
   }
@@ -151,8 +154,9 @@ function file_metadata($uri, $nid) {
     foreach ($rdf as $subject => $predicates) {
       foreach ($predicates as $predicate => $objects) {
         foreach ($objects as $object) {
-          if ($name = $info[@rdf_uri_to_qname($predicate, $namespaces, FALSE)]) {
-            $data[] = array($name, theme('rdf_value', $object));
+          $rdf = @rdf_uri_to_qname($predicate, $namespaces, FALSE);
+          if ($name = $info[$rdf]['name']) {
+            $data[] = array($name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
           }
         }
       }
