@@ -70,6 +70,24 @@ function file_image_menu() {
 }
 
 /**
+ * Implementation of hook_nodeapi().
+ */
+function file_image_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'insert':
+      if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && is_array($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
+        $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL));
+        $namespaces = rdf_get_namespaces();
+        if ($data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0] && $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0]) {
+          $node->locations[0]['locpick']['user_latitude'] = $data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0];
+          $node->locations[0]['locpick']['user_longitude'] = $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0];
+        }
+      }
+      break;
+  }
+}
+
+/**
  * Implementation of hook_link().
  */
 function file_image_link($type, $node = NULL, $teaser = FALSE) {

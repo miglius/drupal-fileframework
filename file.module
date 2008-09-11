@@ -382,7 +382,7 @@ function file_cron() {
     // occurred. Note that if any problems were encountered, file_repair()
     // will have already logged them on its part.
     if ($total > 0) {
-      watchdog('cron', 'Inspected %total file(s), %converted conversion(s) were performed on %files file(s) (%size) with %errors errors.', array('%total' => $total, '%converted' => $converted, '%files' => $files, '%errors' => $errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+      watchdog('file', 'On a cron run inspected %total file(s), %converted conversion(s) were performed on %files file(s) (%size) with %errors errors.', array('%total' => $total, '%converted' => $converted, '%files' => $files, '%errors' => $errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
     }
   }
 
@@ -723,7 +723,7 @@ function _file_block_properties() {
       foreach ($data as $subject => $predicates) {
         foreach ($predicates as $predicate => $objects) {
           foreach ($objects as $object) {
-            $rdf = @rdf_uri_to_qname($predicate, $namespaces, FALSE);
+            $rdf = rdf_uri_to_qname($predicate, $namespaces, FALSE);
             if ($name = $info[$rdf]['name']) {
               $metadata[] = array($name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
             }
