@@ -57,7 +57,7 @@ function theme_file_admin_handler_settings($form) {
  */
 function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   static $initialized = FALSE;
-  bitcache_use_repository('file');
+  //bitcache_use_repository('file');
   $is_node = $file->nid && !$file->derived;
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
