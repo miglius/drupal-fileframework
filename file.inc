@@ -107,6 +107,7 @@ function file_data_save(&$file) {
   ) : array();
 
   // Move the file to permanent storage, deleting the temporary file.
+  //bitcache_use_repository('file');
   $hash = bitcache_put_file(NULL, $file->filepath, $file->converted ? FALSE : TRUE);
   if (!$hash) {
     watchdog('file', 'The bitcache_put_file() function failed for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
@@ -117,7 +118,6 @@ function file_data_save(&$file) {
   // Save metadata information to the RDF.
   if (!rdf_exists($file->uri)) {
     $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
-    watchdog('miglius', print_r($metadata, true));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => 'file'))) {
       watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
       return FALSE;
@@ -171,6 +171,7 @@ function file_node_create($node = array()) {
  */
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
+    //bitcache_use_repository('file');
     $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
 
     // File object passed from cron has a created property.
@@ -486,6 +487,7 @@ function file_get_mime_handlers() {
         $handlers = array_merge_recursive($handlers, $types);
       }
     }
+    $handlers_sort = array();
     foreach ($handlers as $handler => $data) {
       $handlers_sort[$handler] = $data['weight'];
     }
@@ -574,6 +576,7 @@ function file_metadata_extract($filename, $mimetype) {
  *   Structured array pointing to the structored array of metadata information.
  */
 function file_get_metadata($file) {
+  //bitcache_use_repository('file');
   $metadata = file_metadata_extract(bitcache_get(file_get_hash($file))->path, $file->filemime);
   return array($file->uri => $metadata);
 }
@@ -593,6 +596,7 @@ function file_generate_previews($file, $cron = NULL) {
   $result = TRUE;
 
   $previews = array();
+  //bitcache_use_repository('file');
 
   if (!empty($file->uri)) {
     // Check if file exists in the bitcache.
@@ -667,15 +671,14 @@ function file_generate_previews($file, $cron = NULL) {
           // Need to generate a preview if there is no converted
           // file of the targer MIME or if we have not used MIME
           // handler of the target MIME.
-          if ((!empty($converter['handlers']) || !is_array($previews[$to]))) {
+          if (!empty($converter['handlers']) || !is_array($previews[$to])) {
             if ($converted = file_convert($file, $converter['handlers'], $converter['pipeline'])) {
               $file_converted = (object)array('uri' => $file->uri, 'filepath' => $converted, 'filename' => $file->filename, 'filemime' => $to, 'uri' => $file->uri, 'converted' => TRUE);
               if (!empty($converter['handlers'])) {
                 // Apply generate handlers.
                 foreach ($converter['handlers'] as $handler) {
-                  if (function_exists($full_handler = $handler .'_generate')) {
+                  if (function_exists($full_handler = $handler .'_generate'))
                     $result = $full_handler($file_converted) && $result;
-                  }
                 }
               }
               else {
@@ -949,6 +952,7 @@ function file_wrapper_html($node, $handler, $options = array()) {
  */
 function file_wrapper_ahah($handler, $hash, $vid) {
   // Access control is not done at menu layer.
+  //bitcache_use_repository('file');
   if ($node = file_bitcache_access($hash, $vid)) {
     $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
     if (empty($handlers[$handler])) {
@@ -958,6 +962,53 @@ function file_wrapper_ahah($handler, $hash, $vid) {
   }
   //header("HTTP/1.1 403 Forbidden");
   drupal_access_denied();
+}
+
+/*
+ * Finds a file first preview handler with parameters.
+ *
+ * @param $file
+ *   A file object.
+ *
+ * @return
+ *   An array with a preview parameters.
+ */
+function file_first_preview($file) {
+  $previews = array();
+  $file_handlers = file_handlers_for($file);
+  foreach (file_get_mime_handlers() as $handler => $data) {
+    if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render')) {
+      $previews[] = $handler;
+    }
+  }
+  $handler = !empty($previews) ? reset($previews) : NULL;
+  if (!$handler)
+    return;
+
+  $width = $height = 0;
+  $handlers = file_get_mime_handlers();
+  list($width, $height) = explode('x', $handlers[$handler]['dimensions']);
+  $generated_found = FALSE;
+  $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri));
+  foreach ($generated as $uri => $data) {
+    if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
+      $generated_found = TRUE;
+      break;
+    }
+  }
+  if (!$generated_found) {
+    // We're displaying the file itself.
+    $uri = $file->uri;
+  }
+  foreach (array('exif', 'wordnet') as $name) {
+    $width += rdf_value($uri, rdf_qname_to_uri($name .':width'))->value;
+    $height += rdf_value($uri, rdf_qname_to_uri($name .':height'))->value;
+  }
+  list($width_max, $height_max) = explode('x', FILE_GALLERY_POPUP_SIZE);
+  $width = min($width, $width_max);
+  $height = min($height, $height_max);
+
+  return array('handler' => $handler, 'width' => $width, 'height' => $height);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -971,7 +1022,7 @@ function file_bitcache($op, $id, $stream = NULL) {
 
   switch ($op) {
     case 'access':
-      return is_object($node) ? TRUE : FALSE;
+      return is_object($node) ? TRUE : $node;
     case 'download':
       // Determine additional HTTP headers for the bitstream download
       $disposition = $_GET['disposition'] ? $_GET['disposition'] : 'attachment';
@@ -1020,7 +1071,8 @@ function file_get_hash(&$file) {
  *   A node version ID.
  *
  * @return
- *   A node object or FALSE if access is not granted.
+ *   A node object or FALSE if access is not granted. NULL means that file framework
+ *     does not make the access decision and passes it back to the bitcache.
  */
 function file_bitcache_access($id, $vid) {
   $uri = 'bitcache://'. $id;
@@ -1049,7 +1101,7 @@ function file_bitcache_access($id, $vid) {
     }
   }
 
-  return FALSE;
+  return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////

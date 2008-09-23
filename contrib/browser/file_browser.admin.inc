@@ -19,15 +19,22 @@ function file_browser_admin_settings() {
   $form = array();
 
   // Vocabulary settings
-  $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $options = array();
   foreach (taxonomy_get_vocabularies('file') as $vid => $vocabulary) {
     $options[$vid] = $vocabulary->name;
   }
+  $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['vocabs']['file_browser_vocabularies_all'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Vocabularies to be shown in the browser'),
+    '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
+    '#description'   => t('Select the vocabularies which will be shown in the file browser.'),
+    '#default_value' => FILE_BROWSER_VOCABULARIES_ALL,
+  );
   $form['vocabs']['file_browser_vocabularies'] = array(
     '#type'          => 'select',
     '#title'         => t('Include cross-cutting vocabularies'),
-    '#default_value' => array_filter(variable_get('file_browser_vocabularies', array()), 'is_string'),
+    '#default_value' => unserialize(FILE_BROWSER_VOCABULARIES),
     '#options'       => $options,
     '#multiple'      => TRUE,
     '#description'   => t('Only the selected vocabularies will be shown in the file browser.'),
@@ -36,24 +43,21 @@ function file_browser_admin_settings() {
   // Display settings
   $form['display'] = array('#type' => 'fieldset', '#title' => t('Display settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['display']['file_browser_hide_empty'] = array(
-    '#type'          => 'select',
+    '#type'          => 'checkbox',
     '#title'         => t('Hide empty folders'),
     '#default_value' => FILE_BROWSER_HIDE_EMPTY,
-    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#description'   => t('Whether taxonomy terms that have no sub-terms or file nodes associated with them should be hidden. This can be useful to reduce load time in situations where the vocabulary is very large (e.g. for free-tagging vocabularies).'),
   );
   $form['display']['file_browser_embed_previews'] = array(
-    '#type'          => 'select',
+    '#type'          => 'checkbox',
     '#title'         => t('Embed thumbnail in file preview block'),
     '#default_value' => FILE_BROWSER_EMBED_PREVIEWS,
-    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#description'   => t('Whether the file preview block should include an embedded thumbnail of the file\'s content, for those file formats which provide thumbnail capabilities.'),
   );
   $form['display']['file_browser_folder_properties'] = array(
-    '#type'          => 'select',
+    '#type'          => 'checkbox',
     '#title'         => t('Show term\'s files count and size'),
     '#default_value' => FILE_BROWSER_FOLDER_PROPERTIES,
-    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#description'   => t('Whether the number and the total count of the size of all files below the term should be displayed along with the term name in the browser.'),
   );
 
@@ -69,17 +73,15 @@ function file_browser_admin_settings() {
       );
     }
     $form['og']['file_browser_og_upload'] = array(
-      '#type'          => 'select',
+      '#type'          => 'checkbox',
       '#title'         => t('Enable selection of audience on file upload'),
       '#default_value' => FILE_BROWSER_OG_UPLOAD,
-      '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
       '#description'   => t('Whether the file upload block should allow selection of the audience/groups for the files to be uploaded.'),
     );
     $form['og']['file_browser_og_preview'] = array(
-      '#type'          => 'select',
+      '#type'          => 'checkbox',
       '#title'         => t('Show groups in file preview block'),
       '#default_value' => FILE_BROWSER_OG_PREVIEW,
-      '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
       '#description'   => t('Whether the file preview block should include information about the audience/groups the currently selected file is targeted at.'),
     );
     if (module_exists('og_vocab')) {
@@ -92,10 +94,9 @@ function file_browser_admin_settings() {
         '#description'   => t('Input a folder name here if you wish to enforce that all unfiled file nodes are automatically associated with a category of that name in the og_vocab.module vocabularies for the groups the file belongs to. Leave empty to disable this functionality.'),
       );
       $form['og']['file_browser_og_create'] = array(
-        '#type'          => 'select',
+        '#type'          => 'checkbox',
         '#title'         => t('Allow new folders (terms) creation'),
         '#default_value' => FILE_BROWSER_OG_CREATE,
-        '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
         '#description'   => t('Whether the creation of new folders in the groups\' vocabularies root should be allowed.'),
       );
     }
@@ -105,10 +106,9 @@ function file_browser_admin_settings() {
   if (module_exists('location')) {
     $form['location'] = array('#type' => 'fieldset', '#title' => t('Location module integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
     $form['location']['file_browser_location_preview'] = array(
-      '#type'          => 'select',
+      '#type'          => 'checkbox',
       '#title'         => t('Show geolocation information in file preview block'),
       '#default_value' => FILE_BROWSER_LOCATION_PREVIEW,
-      '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
       '#description'   => t('Whether to display latitude and longitude information for spatially-enabled nodes. <em>Requires location.module.</em>'),
     );
   }
@@ -148,6 +148,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_set('file_browser_hide_empty', $values['file_browser_hide_empty']);
       variable_set('file_browser_embed_previews', $values['file_browser_embed_previews']);
       variable_set('file_browser_folder_properties', $values['file_browser_folder_properties']);
+      variable_set('file_browser_og_vocabularies_all', $values['file_browser_og_vocabularies_all']);
       variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
       variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
       variable_set('file_browser_og_preview', $values['file_browser_og_preview']);
@@ -161,6 +162,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_del('file_browser_hide_empty');
       variable_del('file_browser_embed_previews');
       variable_del('file_browser_folder_properties');
+      variable_del('file_browser_og_vocabularies_all');
       variable_del('file_browser_og_vocabularies');
       variable_del('file_browser_og_upload');
       variable_del('file_browser_og_preview');

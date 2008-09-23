@@ -45,10 +45,9 @@ function file_gallery_admin_settings() {
     '#description'   => t('The default size is 800x600.'),
   );
   $form['display']['file_gallery_hide_empty'] = array(
-    '#type'          => 'select',
+    '#type'          => 'checkbox',
     '#title'         => t('Hide empty folders'),
     '#default_value' => FILE_GALLERY_HIDE_EMPTY,
-    '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#description'   => t('Whether taxonomy terms that have no sub-terms or file nodes associated with them should be hidden. This can be useful to reduce load time in situations where the vocabulary is very large (e.g. for free-tagging vocabularies).'),
   );
   $form['display']['file_gallery_navigation'] = array(

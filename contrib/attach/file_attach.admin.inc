@@ -18,47 +18,47 @@
 function file_attach_admin_settings() {
   $form = array();
 
-  // Attachments settings
+  // Attachments settings.
   $form['attachments'] = array('#type' => 'fieldset', '#title' => t('Attachments settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['attachments']['file_attach_method'] = array(
     '#type'          => 'radios',
     '#title'         => t('File upload method'),
     '#options'       => array(TRUE => t('Javascript AHAH based upload'), FALSE => t('Upload on the node save')),
-    '#default_value' => FILE_ATTACH_METHOD,
     '#description'   => t('Select the method to upload attachments.'),
+    '#default_value' => FILE_ATTACH_METHOD,
   );
   $form['attachments']['file_attach_max_files'] = array(
     '#type'          => 'select',
     '#title'         => t('Attachments on page submit'),
-    '#default_value' => FILE_ATTACH_MAX_FILES,
     '#options'       => drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
     '#description'   => t('If uploads are performed on node submit, select a number of files allowed to attach to the form. This setting does not restrict the total number of attachments. More attachments can be added on the preview page.'),
+    '#default_value' => FILE_ATTACH_MAX_FILES,
   );
 
-  // Visibility settings
+  // Visibility settings.
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['visibility']['file_attach_show_attachments'] = array(
     '#type'          => 'checkbox',
-    '#title'         => 'Attachments',
-    '#description'   => 'Show the attached files.',
+    '#title'         => t('Attachments'),
+    '#description'   => t('Show the attached files.'),
     '#default_value' => FILE_ATTACH_SHOW_ATTACHMENTS,
   );
   $form['visibility']['file_attach_show_previews'] = array(
     '#type'          => 'checkbox',
-    '#title'         => 'Previews',
-    '#description'   => 'Show the available generated previews for the attached files.',
+    '#title'         => t('Previews'),
+    '#description'   => t('Show the available generated previews for the attached files.'),
     '#default_value' => FILE_ATTACH_SHOW_PREVIEWS,
   );
   $form['visibility']['file_attach_show_generated'] = array(
     '#type'          => 'checkbox',
-    '#title'         => 'Generated (converted) files',
-    '#description'   => 'Show a list of the avialable converted attachments in other MIME types. The list is also available as a block.',
+    '#title'         => t('Generated (converted) files'),
+    '#description'   => t('Show a list of the avialable converted attachments in other MIME types. The list is also available as a block.'),
     '#default_value' => FILE_ATTACH_SHOW_GENERATED,
   );
 
-  // Vocabulary settings
+  // Vocabulary settings.
   $options = array();
-  foreach (taxonomy_get_vocabularies() as $vid => $vocab) {
+  foreach (taxonomy_get_vocabularies('file') as $vid => $vocab) {
     $options[$vid] = $vocab->name;
   }
   $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -66,17 +66,36 @@ function file_attach_admin_settings() {
     '#type'          => 'radios',
     '#title'         => t('Vocabularies to inherit terms from'),
     '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
+    '#description'   => t('Select the vocabularies from which file attachments will inherit the taxonomy terms of the parent node on the creation of the attachment.'),
     '#default_value' => FILE_ATTACH_VOCABULARIES_ALL,
-    '#description'   => t('Select the vocabularies from which file attachments will inherit the taxonomy terms of the parent node.'),
   );
   $form['vocabs']['file_attach_vocabularies'] = array(
     '#type'          => 'select',
     '#title'         => t('Choose vocabularies to inherit terms from'),
-    '#default_value' => variable_get('file_attach_vocabularies', array()),
     '#options'       => $options,
     '#multiple'      => TRUE,
     '#description'   => t('If "Only bellow selected vocabularies" are selected, then choose the vocabularies.'),
+    '#default_value' => unserialize(FILE_ATTACH_VOCABULARIES),
   );
+
+  // Organic groups integration.
+  if (module_exists('og')) {
+    $form['og'] = array('#type' => 'fieldset', '#title' => t('Organic groups integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    $form['og']['file_attach_og_inheritance'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('OG membership inheritance'),
+      '#description'   => t('Should attachments be put in the same groups as the parent node on the creation of the attachment.'),
+      '#default_value' => FILE_ATTACH_OG_INHERITANCE,
+    );
+    if (module_exists('og_vocab')) {
+      $form['og']['file_attach_og_vocabularies'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t('Inherit from group vocabularies'),
+        '#default_value' => FILE_ATTACH_OG_VOCABULARIES,
+        '#description'   => t('Taxonomy terms will be inherited from vocabularies defined in the group\'s scope by og_vocab module automatically even if they are not explicitly selected in "Choose vocabularies to inherit terms from".'),
+      );
+    }
+  }
 
   $form['submit'] = array(
     '#type'  => 'submit',
@@ -116,6 +135,8 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_set('file_attach_show_generated', $values['file_attach_show_generated']);
       variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
       variable_set('file_attach_vocabularies', $values['file_attach_vocabularies']);
+      variable_set('file_attach_og_inheritance', $values['file_attach_og_inheritance']);
+      variable_set('file_attach_og_vocabularies', $values['file_attach_og_vocabularies']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
@@ -124,8 +145,10 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
       variable_del('file_attach_show_generated');
-      variable_del('file_attach_vocabularies');
       variable_del('file_attach_vocabularies_all');
+      variable_del('file_attach_vocabularies');
+      variable_del('file_attach_og_inheritance');
+      variable_del('file_attach_og_vocabularies');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

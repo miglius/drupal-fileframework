@@ -7,13 +7,44 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
-// Dependancies
-
-$views_path = drupal_get_path('module', 'views') .'/modules';
-require_once $views_path .'/node.views.inc';
-
-//////////////////////////////////////////////////////////////////////////////
 // Views API hooks
+
+/**
+ * Implementation of hook_views_handlers().
+ */
+function file_views_views_handlers() {
+  return array(
+    'info' => array(
+      'path' => drupal_get_path('module', 'file_views') .'/includes',
+    ),
+    'handlers' => array(
+      'file_views_handler_field_file_nodes_numeric' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_nodes_size' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_nodes_type' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_nodes_download' => array(
+        'parent' => 'views_handler_field_node_link',
+      ),
+      'file_views_handler_field_file_nodes_view' => array(
+        'parent' => 'views_handler_field_node_link',
+      ),
+      'file_views_handler_field_file_nodes_uri' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_attachments_fnid' => array(
+        'parent' => 'views_handler_field_prerender_list',
+      ),
+      'file_views_handler_field_file_attachments_nid' => array(
+        'parent' => 'views_handler_field_prerender_list',
+      ),
+    ),
+  );
+}
 
 /**
  * Implementation of hook_views_data().
@@ -41,7 +72,7 @@ function file_views_views_data() {
     'title' => t('Size'),
     'help' => t('The size of the file.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_nodes_size',
+      'handler' => 'file_views_handler_field_file_nodes_size',
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -56,7 +87,7 @@ function file_views_views_data() {
     'title' => t('Type'),
     'help' => t('The MIME type of the file.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_nodes_type',
+      'handler' => 'file_views_handler_field_file_nodes_type',
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -71,7 +102,7 @@ function file_views_views_data() {
     'title' => t('Viewed'),
     'help' => t('Display the number of times the file has been viewed.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_nodes_numeric',
+      'handler' => 'file_views_handler_field_file_nodes_numeric',
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -86,7 +117,7 @@ function file_views_views_data() {
     'title' => t('Downloaded'),
     'help' => t('Display the number of times the file has been downloaded.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_nodes_numeric',
+      'handler' => 'file_views_handler_field_file_nodes_numeric',
       'click sortable' => TRUE,
     ),
     'sort' => array(
@@ -101,7 +132,7 @@ function file_views_views_data() {
     'field' => array(
       'title' => t('Download link'),
       'help' => t('Provide a simple link to download file.'),
-      'handler' => 'views_handler_field_file_nodes_download',
+      'handler' => 'file_views_handler_field_file_nodes_download',
     ),
   );
 
@@ -109,7 +140,7 @@ function file_views_views_data() {
     'field' => array(
       'title' => t('View link'),
       'help' => t('Provide a simple link to view file.'),
-      'handler' => 'views_handler_field_file_nodes_view',
+      'handler' => 'file_views_handler_field_file_nodes_view',
     ),
   );
 
@@ -119,7 +150,7 @@ function file_views_views_data() {
       'title' => t('File'),
       //'help' => t('Provide a thumbnail of the file.'),
       'help' => t('Provide a file.'),
-      'handler' => 'views_handler_field_file_nodes_uri',
+      'handler' => 'file_views_handler_field_file_nodes_uri',
     ),
   );
 
@@ -144,15 +175,15 @@ function file_views_views_data() {
     'title' => t('Attached files'),
     'help' => t('All files attached to a node.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_attachments_fnid',
+      'handler' => 'file_views_handler_field_file_attachments_fnid',
     ),
     'relationship' => array(
-      'title' => t('Attached files'),
+      'title' => t('Node has attached files'),
       'help' => t('Add a relationship to show only nodes which have attachments.'),
       'base' => 'node',
       'field' => 'nid',
       'handler' => 'views_handler_relationship',
-      'label' => t('Attachments'),
+      'label' => t('Node has attachments'),
     ),
   );
 
@@ -174,215 +205,10 @@ function file_views_views_data() {
     'title' => t('Attached to'),
     'help' => t('All nodes the file is attached to.'),
     'field' => array(
-      'handler' => 'views_handler_field_file_attachments_nid',
+      'handler' => 'file_views_handler_field_file_attachments_nid',
     ),
   );
 
   return $data;
-}
-
-/**
- * Field handler to present a numeric field.
- */
-class views_handler_field_file_nodes_numeric extends views_handler_field {
-  function render($values) {
-    $num = $values->{$this->field_alias};
-    return isset($num) ? $num : '';
-  }
-}
-
-/**
- * Field handler to present a file size.
- */
-class views_handler_field_file_nodes_size extends views_handler_field {
-  function render($values) {
-    $size = $values->{$this->field_alias};
-    return isset($size) ? format_size($size) : '';
-  }
-}
-
-/**
- * Field handler to present a file type.
- */
-class views_handler_field_file_nodes_type extends views_handler_field {
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-    $form['show_name'] = array(
-      '#title' => t('Use type name'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['show_name']),
-    );
-    $form['show_icon'] = array(
-      '#title' => t('Show type icon'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['show_icon']),
-    );
-  }
-
-  function render($values) {
-    $type = $values->{$this->field_alias};
-    return (!empty($this->options['show_icon']) ? file_mime_icon_for($type) .'&nbsp;': '') . (!empty($this->options['show_name']) ? file_mime_description_for($type) : $type);
-  }
-}
-
-/**
- * Field handler to present a file download link.
- */
-class views_handler_field_file_nodes_download extends views_handler_field_node_link {
-  function construct() {
-    parent::construct();
-    $this->additional_fields['vid'] = 'vid';
-    $this->additional_fields['type'] = array('table' => 'node', 'field' => 'type');
-  }
-
-  function render($values) {
-    $nid = $values->{$this->aliases['nid']};
-    $vid = $values->{$this->aliases['vid']};
-    $type = $values->{$this->aliases['type']};
-    $text = !empty($this->options['text']) ? $this->options['text'] : t('download');
-    return $type == 'file' ? l($text, 'file/'. $nid .'/download/'. $vid) : '';
-  }
-}
-
-/**
- * Field handler to present a file view link.
- */
-class views_handler_field_file_nodes_view extends views_handler_field_node_link {
-  function construct() {
-    parent::construct();
-    $this->additional_fields['vid'] = 'vid';
-    $this->additional_fields['type'] = array('table' => 'node', 'field' => 'type');
-  }
-
-  function render($values) {
-    $nid = $values->{$this->aliases['nid']};
-    $vid = $values->{$this->aliases['vid']};
-    $type = $values->{$this->aliases['type']};
-    $text = !empty($this->options['text']) ? $this->options['text'] : t('view');
-    return $type == 'file' ? l($text, 'file/'. $nid .'/view/'. $vid) : '';
-  }
-}
-
-/**
- * Field handler to present a file thumbnail.
- */
-class views_handler_field_file_nodes_uri extends views_handler_field {
-  function construct() {
-    parent::construct();
-    $this->additional_fields['nid'] = 'nid';
-    $this->additional_fields['vid'] = 'vid';
-  }
-
-  function render($values) {
-    $nid = $values->{$this->aliases['nid']};
-    $vid = $values->{$this->aliases['vid']};
-    $node = node_load(array('nid' => $nid, 'vid' => $vid));
-    $file = $node->file;
-    if (is_object($file)) {
-      $file->name = drupal_strlen($node->title) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($node->title, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $node->title;
-      return theme('file_render', $file) .'<script type=\'text/javascript\'>$(\'a.file-metadata\').cluetip();</script>';
-    }
-    return '';
-  }
-}
-
-/**
- * Field handler to present a node attachments.
- */
-class views_handler_field_file_attachments_fnid extends views_handler_field_prerender_list {
-  function construct() {
-    parent::construct();
-    $this->additional_fields['nid'] = array('table' => 'node', 'field' => 'nid');
-  }
-
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-    $form['only_listed'] = array(
-      '#title' => t('Only show "listed" file attachments'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['only_listed']),
-    );
-  }
-
-  function query() {
-    $this->add_additional_fields();
-    $this->field_alias = $this->aliases['nid'];
-  }
-
-  function pre_render($values) {
-    $nids = array();
-    $this->items = array();
-
-    $data = array();
-    foreach ($values as $result) {
-      $nids[] = $result->{$this->aliases['nid']};
-    }
-    if ($nids) {
-      // Support "only listed files" option.
-      $where = '';
-      if (!empty($this->options['only_listed'])) {
-        $where = " AND fa.list <> 0";
-      }
-      $result = db_query("SELECT fa.nid AS pnid, fn.*, n.title AS name FROM {file_attachments} fa LEFT JOIN {file_nodes} fn ON fa.fnid = fn.nid LEFT JOIN {node} n ON fa.fnid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
-      while ($file = db_fetch_object($result)) {
-        $file->name = drupal_strlen($file->name) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($file->name, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $file->name;
-        $this->items[$file->pnid][$file->nid] = theme('file_render', $file);
-      }
-    }
-  }
-}
-
-/**
- * Field handler to present a nodes the file is attached to.
- */
-class views_handler_field_file_attachments_nid extends views_handler_field_prerender_list {
-  function construct() {
-    parent::construct();
-    $this->additional_fields['nid'] = array('table' => 'node', 'field' => 'nid');
-  }
-
-  function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
-    $form['only_listed'] = array(
-      '#title' => t('Only show "listed" file attachments'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['only_listed']),
-    );
-  }
-
-  function query() {
-    $this->add_additional_fields();
-    $this->field_alias = $this->aliases['nid'];
-  }
-
-  function pre_render($values) {
-    $nids = array();
-    $this->items = array();
-
-    $data = array();
-    foreach ($values as $result) {
-      $nids[] = $result->{$this->aliases['nid']};
-    }
-    if ($nids) {
-      // Support "only listed files" option.
-      $where = '';
-      if (!empty($this->options['only_listed'])) {
-        $where = " AND fa.list <> 0";
-      }
-      $result = db_query("SELECT fa.fnid, fa.nid, n.title FROM {file_attachments} fa LEFT JOIN {node} n ON fa.nid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
-      while ($row = db_fetch_object($result)) {
-        $this->items[$row->fnid][$row->nid] = $this->render_link(check_plain($row->title), $row->nid);
-      }
-    }
-  }
-
-  /**
-   * Render title as a link to the node or file.
-   *
-   * Data should be made XSS safe prior to calling this function.
-   */
-  function render_link($title, $nid) {
-    return l($title, 'node/'. $nid);
-  }
 }
 

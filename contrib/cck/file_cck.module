@@ -7,6 +7,13 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
+
+define('FILE_CCK_VOCABULARIES_ALL', variable_get('file_cck_vocabularies_all', 1));
+define('FILE_CCK_VOCABULARIES',     serialize(variable_get('file_cck_vocabularies', array())));
+define('FILE_CCK_OG_INHERITANCE',   variable_get('file_cck_og_inheritance', 0));
+define('FILE_CCK_OG_VOCABULARIES',  variable_get('file_cck_og_vocabularies', 0));
+
+//////////////////////////////////////////////////////////////////////////////
 // Core API hooks
 
 /**
@@ -26,6 +33,21 @@ function file_cck_theme() {
     'file_cck_formatter_thumbnail' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function file_cck_menu() {
+  return array(
+    'admin/settings/file/cck' => array(
+      'title' => 'CCK',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_cck_admin_settings'),
+      'access arguments' => array('administer site configuration'),
+      'file' => 'file_cck.admin.inc',
+    ),
   );
 }
 
@@ -55,10 +77,10 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
           foreach ($node->$field as $delta => $data) {
             $file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta];
             if (is_object($file)) {
-              $node->content[$field]['items'][$delta]['#item']['value'] = 's_'. $field .'_'. $delta;
+              $node->content[$field]['field']['items'][$delta]['#item']['value'] = 's_'. $field .'_'. $delta;
             }
             else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), $node->vid))) {
-              $node->content[$field]['items'][$delta]['#item']['value'] = $nid;
+              $node->content[$field]['field']['items'][$delta]['#item']['value'] = $nid;
             }
           }
         }
@@ -180,11 +202,16 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
       $order = is_array($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
       $multiple = count($order) > 1 ? TRUE : FALSE;
       $delta = 0;
+
+      $og_groups = module_exists('og') && FILE_CCK_OG_INHERITANCE ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
+      $og_public = module_exists('og_access') && FILE_CCK_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
+
       foreach ($order as $o) {
         $nid = NULL;
         if (($file = file_save_upload($field['field_name'] .'_'. $o, file_get_validators())) || ($file = $_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o])) {
-          $node_new = file_node_create(array('file' => $file));
-          $nid = $node_new->nid;
+          $file_node = file_node_create(array_merge(array('file' => $file), $og_groups, $og_public));
+          _file_cck_propagate_terms($node, $file_node);
+          $nid = $file_node->nid;
         }
         else {
           $nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid));
@@ -465,5 +492,55 @@ function _file_cck_sql($sql = NULL, $args = array()) {
  */
 function file_cck_upload_validate($file, $extensions = '') {
   return !empty($extensions) ? file_validate_extensions($file, $extensions) : array();
+}
+
+/**
+ * Propagates taxonomy terms to the file node.
+ *
+ * @param $node
+ *   A node object.
+ * @param $file_node
+ *   A file node object.
+ */
+function _file_cck_propagate_terms($node, $file_node) {
+  if (!empty($node->taxonomy)) {
+    global $user;
+
+    // Retrieve the list of vocabulary IDs from which we'll propagate
+    // taxonomy terms associated with the containing parent node to any
+    // contained file attachment nodes:
+
+    $vocabularies = taxonomy_get_vocabularies('file');
+    $og_vocabs = $og_vocabs_hidden = array();
+    if (module_exists('og_vocab')) {
+      $result = db_query('SELECT nid, vid FROM {og_vocab}');
+      while ($row = db_fetch_object($result)) {
+        if (in_array($row->nid, array_keys($user->og_groups)))
+          $og_vocabs[] = $vid;
+        else
+          $og_vocabs_hidden[] = $vid;
+      }
+    }
+
+    $vocabs = FILE_CCK_VOCABULARIES_ALL ? array_diff(array_keys($vocabularies), $og_vocabs_hidden) : array_merge(array_keys(unserialize(FILE_CCK_VOCABULARIES)), FILE_CCK_OG_VOCABULARIES ? $og_vocabs : array());
+    if (!empty($vocabs)) {
+      $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
+      if (is_array($taxonomy['tags'])) {
+        foreach ($taxonomy['tags'] as $vid => $data) {
+          if (!in_array($vid, $vocabs))
+            unset($taxonomy['tags'][$vid]);
+        }
+      }
+      foreach ($taxonomy as $vid => $data) {
+        if (is_numeric($vid) && !in_array($vid, $vocabs))
+          unset($taxonomy[$vid]);
+      }
+
+      if (!empty($taxonomy)) {
+        $file_node->taxonomy = $taxonomy;
+        node_save($file_node);
+      }
+    }
+  }
 }
 

@@ -14,6 +14,9 @@ define('FILE_ATTACH_SHOW_ATTACHMENTS', variable_get('file_attach_show_attachment
 define('FILE_ATTACH_SHOW_PREVIEWS',    variable_get('file_attach_show_previews', 1));
 define('FILE_ATTACH_SHOW_GENERATED',   variable_get('file_attach_show_generated', 1));
 define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_all', 1));
+define('FILE_ATTACH_VOCABULARIES',     serialize(variable_get('file_attach_vocabularies', array())));
+define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance', 0));
+define('FILE_ATTACH_OG_VOCABULARIES',  variable_get('file_attach_og_vocabularies', 0));
 
 define('FILE_ATTACH_TITLE_LENGTH', 50);
 
@@ -672,7 +675,6 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
         if (user_access('attach files')) {
           _file_attach_save($node);
         }
-        _file_attach_propagate_terms($node);
       }
       break;
 
@@ -877,10 +879,14 @@ function _file_attach_save($node, $comment = NULL) {
     // Create new nodes.
     if (!empty($file->sid)) {
       $file->name = trim($file->name);
-      $node_new = file_node_create(array('file' => $file));
-      $file_attachment = (object)array('fnid' => $node_new->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
+      $og_groups = module_exists('og') && FILE_ATTACH_OG_INHERITANCE ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
+      $og_public = module_exists('og_access') && FILE_ATTACH_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
+      $file_node = file_node_create(array_merge(array('file' => $file), $og_groups, $og_public));
+      if (!$comment)
+        _file_attach_propagate_terms($node, $file_node);
+      $file_attachment = (object)array('fnid' => $file_node->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_attachment);
-      watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $node_new->nid, '%nid' => $node->nid), WATCHDOG_NOTICE);
+      watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $file_node->nid, '%nid' => $node->nid), WATCHDOG_NOTICE);
       continue;
     }
 
@@ -908,46 +914,46 @@ function _file_attach_save($node, $comment = NULL) {
  *
  * @param $node
  *   A node object.
+ * @param $file_node
+ *   A file node object.
  */
-function _file_attach_propagate_terms($node) {
+function _file_attach_propagate_terms($node, $file_node) {
   if (!empty($node->taxonomy)) {
+    global $user;
+
     // Retrieve the list of vocabulary IDs from which we'll propagate
     // taxonomy terms associated with the containing parent node to any
     // contained file attachment nodes:
-    $vocabs = array_intersect(
-      FILE_ATTACH_VOCABULARIES_ALL ? array_keys(taxonomy_get_vocabularies()) : array_keys(variable_get('file_attach_vocabularies', array())),
-      array_merge(array_keys(is_array($node->taxonomy) ? $node->taxonomy : array()), array_keys(is_array($node->taxonomy['tags']) ? $node->taxonomy['tags'] : array()))
-    );
 
-    if (!empty($vocabs)) {
-
-      // Lookup all contained file attachment nodes:
-      $result = db_query('SELECT fa.fnid AS nid FROM {file_attachments} fa WHERE fa.nid = %d ORDER BY fa.fnid', $node->nid);
+    $vocabularies = taxonomy_get_vocabularies('file');
+    $og_vocabs = $og_vocabs_hidden = array();
+    if (module_exists('og_vocab')) {
+      $result = db_query('SELECT nid, vid FROM {og_vocab}');
       while ($row = db_fetch_object($result)) {
-        $file_node = node_load($row->nid);
+        if (in_array($row->nid, array_keys($user->og_groups)))
+          $og_vocabs[] = $vid;
+        else
+          $og_vocabs_hidden[] = $vid;
+      }
+    }
 
-        $taxonomy = $file_node->taxonomy;
-        // Creating union of the free tags.
-        foreach (array_intersect_key(is_array($node->taxonomy['tags']) ? $node->taxonomy['tags'] : array(), array_flip($vocabs)) as $vid => $free_tags) {
-          $terms = array();
-          foreach ($taxonomy as $tid => $data) {
-            if ($data->vid == $vid) {
-              $terms[] = $data->name;
-              unset($taxonomy[$tid]);
-            }
-          }
-          $tags[$vid] = implode(', ', $terms) .', '. $node->taxonomy['tags'][$vid];
+    $vocabs = FILE_ATTACH_VOCABULARIES_ALL ? array_diff(array_keys($vocabularies), $og_vocabs_hidden) : array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array());
+    if (!empty($vocabs)) {
+      $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
+      if (is_array($taxonomy['tags'])) {
+        foreach ($taxonomy['tags'] as $vid => $data) {
+          if (!in_array($vid, $vocabs))
+            unset($taxonomy['tags'][$vid]);
         }
+      }
+      foreach ($taxonomy as $vid => $data) {
+        if (is_numeric($vid) && !in_array($vid, $vocabs))
+          unset($taxonomy[$vid]);
+      }
 
-        // creating union of the other tags.
-        foreach (array_intersect_key($node->taxonomy, array_flip($vocabs)) as $vid => $other_tags) {
-          $taxonomy = array_merge($taxonomy, array_diff_key(is_array($node->taxonomy[$vid]) ? $node->taxonomy[$vid] : array(), $taxonomy));
-        }
-
-        // merge both tag types.
-        $taxonomy['tags'] = $tags;
-
-        taxonomy_node_save($file_node, $taxonomy);
+      if (!empty($taxonomy)) {
+        $file_node->taxonomy = $taxonomy;
+        node_save($file_node);
       }
     }
   }

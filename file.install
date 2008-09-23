@@ -22,6 +22,7 @@ function file_enable() {
 function file_install() {
   drupal_install_schema('file');
   rdf_db_create_repository('file', array('dc:title' => t('File metadata'), 'dc:description' => ''));
+  //bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.'));
 }
 
 /**
@@ -44,6 +45,7 @@ function file_uninstall() {
   variable_del('file_og_browser_tab');
   variable_del('file_og_gallery_tab');
 
+  //bitcache_delete_repository('file');
   rdf_db_delete_repository('file');
 }
 

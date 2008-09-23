@@ -36,5 +36,10 @@ function file_cck_install() {
  */
 function file_cck_uninstall() {
   content_notify('uninstall', 'file_cck');
+
+  variable_del('file_cck_vocabularies_all');
+  variable_del('file_cck_vocabularies');
+  variable_del('file_cck_og_inheritance');
+  variable_del('file_cck_og_vocabularies');
 }
 

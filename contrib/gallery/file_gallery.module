@@ -12,7 +12,7 @@
 define('FILE_GALLERY_PER_PAGE',   variable_get('file_gallery_per_page', 12));
 define('FILE_GALLERY_EMBED_SIZE', variable_get('file_gallery_embed_size', '130x150'));
 define('FILE_GALLERY_POPUP_SIZE', variable_get('file_gallery_popup_size', '800x600'));
-define('FILE_GALLERY_HIDE_EMPTY', variable_get('file_gallery_hide_empty', FALSE));
+define('FILE_GALLERY_HIDE_EMPTY', variable_get('file_gallery_hide_empty', 0));
 define('FILE_GALLERY_NAVIGATION', variable_get('file_gallery_navigation', 0));
 
 define('FILE_GALLERY_TITLE_LENGTH_SHORT',  18);
@@ -182,27 +182,25 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
     }
   }
   else if ($vid == 'all') {
+    global $user;
+
     // For the vocabulary view, get the list of file_browser.module
     // vocabularies, if available, and the user's og_vocab.module
     // subscriptions:
-    $terms = array();
+    $vocabularies = taxonomy_get_vocabularies('file');
 
-    if (module_exists('file_browser')) {
-      $terms = array_filter(variable_get('file_browser_vocabularies', array()), 'is_string');
-    }
-
-    if (module_exists('og_vocab') && FILE_BROWSER_OG_VOCABULARIES) {
-      global $user;
-      foreach (array_keys($user->og_groups) as $nid) {
-        $result = db_query('SELECT vid FROM {og_vocab} WHERE nid = %d', $nid);
-        while ($vid = db_result($result)) {
-          if (!array_key_exists($vid, $terms)) {
-            $terms[$vid] = (string)$vid;
-          }
-        }
+    $og_vocabs = $og_vocabs_hidden = array();
+    if (module_exists('og_vocab')) {
+      $result = db_query('SELECT nid, vid FROM {og_vocab}');
+      while ($row = db_fetch_object($result)) {
+        if (in_array($row->nid, array_keys($user->og_groups)))
+          $og_vocabs[] = $vid;
+        else
+          $og_vocabs_hidden[] = $vid;
       }
     }
 
+    $terms = FILE_BROWSER_VOCABULARIES_ALL ? array_diff(array_keys($vocabularies), $og_vocabs_hidden) : array_merge(array_keys(unserialize(FILE_BROWSER_VOCABULARIES)), FILE_BROWSER_OG_VOCABULARIES ? $og_vocabs : array());
     foreach ($terms as $term) {
       $folders++;
       $output .= _file_gallery_term($vocabularies[$term], $embed_options, $filter, $module);
@@ -368,7 +366,6 @@ function _file_gallery_term($term, $options = array(), $filter = NULL, $module =
 function _file_gallery_node($node, $options = array(), $module = NULL) {
   $url_preview = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid) : NULL;
   $file_links = $module && ($l = module_invoke($module, 'file_gallery', 'file_links', $node->nid)) && is_array($l) ? $l : array();
-  $thickbox = $module && module_invoke($module, 'file_gallery', 'thickbox') === FALSE ? FALSE : TRUE;
 
   $file = $node->file;
 
@@ -376,11 +373,13 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
 
   // Find a first enabled handler for the file.
-  $preview = _file_gallery_preview($file);
-  $width_preview = $preview['width'];
-  $height_preview = $preview['height'];
+  if ($preview = file_first_preview($file)) {
+    $width_preview = $preview['width'];
+    $height_preview = $preview['height'];
+  }
 
-  $url_preview = $url_preview ? $url_preview : array('link' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']));
+  $url_preview = $url_preview ? $url_preview : ($preview ? array('link' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height'])) : NULL);
+  $thickbox = $module && module_invoke($module, 'file_gallery', 'thickbox') === FALSE ? FALSE : ($preview ? TRUE : FALSE);
   $url_open = $module ? module_invoke($module, 'file_gallery', 'node_link', $node->nid, FALSE) : array('link' => 'node/'. $node->nid);
 
   $title = check_plain($node->title);
@@ -455,52 +454,6 @@ function _file_gallery_filter_select($data) {
   $output .= theme_select($select);
   $output .= '</div>';
   return $output;
-}
-
-/*
- * Finds a file first preview handler with parameters.
- *
- * @param $file
- *   A file object.
- *
- * @return
- *   An array with a preview parameters.
- */
-function _file_gallery_preview($file) {
-  $previews = array();
-  $file_handlers = file_handlers_for($file);
-  foreach (file_get_mime_handlers() as $handler => $data) {
-    if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render')) {
-      $previews[] = $handler;
-    }
-  }
-  $handler = !empty($previews) ? reset($previews) : NULL;
-  $width = $height = 0;
-  if ($handler) {
-    $handlers = file_get_mime_handlers();
-    list($width, $height) = explode('x', $handlers[$handler]['dimensions']);
-    $generated_found = FALSE;
-    $generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri));
-    foreach ($generated as $uri => $data) {
-      if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
-        $generated_found = TRUE;
-        break;
-      }
-    }
-    if (!$generated_found) {
-      // We're displaying the file itself.
-      $uri = $file->uri;
-    }
-    foreach (array('exif', 'wordnet') as $name) {
-      $width += rdf_value($uri, rdf_qname_to_uri($name .':width'))->value;
-      $height += rdf_value($uri, rdf_qname_to_uri($name .':height'))->value;
-    }
-  }
-  list($width_max, $height_max) = explode('x', FILE_GALLERY_POPUP_SIZE);
-  $width = min($width, $width_max);
-  $height = min($height, $height_max);
-
-  return array('handler' => $handler, 'width' => $width, 'height' => $height);
 }
 
 /*

@@ -367,11 +367,12 @@ function _file_convert_is_needed($file, $handler) {
 
   if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
     foreach ($generated as $uri => $data) {
-      if (rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler))
+      $preview = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler));
+      if (!empty($preview))
         return TRUE;
     }
   }
 
-  return FALSE;;
+  return FALSE;
 }
 

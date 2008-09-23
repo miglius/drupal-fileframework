@@ -29,6 +29,7 @@ function file_browser_uninstall() {
   variable_del('file_browser_hide_empty');
   variable_del('file_browser_embed_previews');
   variable_del('file_browser_folder_properties');
+  variable_del('file_browser_og_vocabularies_all');
   variable_del('file_browser_og_vocabularies');
   variable_del('file_browser_og_upload');
   variable_del('file_browser_og_preview');

@@ -57,6 +57,7 @@ function theme_file_admin_handler_settings($form) {
  */
 function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   static $initialized = FALSE;
+  bitcache_use_repository('file');
   $is_node = $file->nid && !$file->derived;
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
@@ -79,13 +80,13 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
     drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
   }
 
-  if ($is_node)
+  // We don't need open link on the node view page.
+  if ($is_node && !(arg(0) == 'node' && arg(1) == $file->nid))
     $links['open'] = array('title' => t('Open'), 'href' => 'node/'. $file->nid, 'attributes' => array('title' => t('Open file.')));
-  if ($is_node) {
-    // Find a first enabled handler for the file.
-    $preview = _file_gallery_preview($file);
+
+  // Find a first enabled handler for the file.
+  if ($is_node && ($preview = file_first_preview($file)))
     $links['show'] = array('title' => t('Show'), 'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']), 'attributes' => array('title' => t('Show file in the thickbox.'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id));
-  }
   if (FILE_VIEW_LINK) {
     $links['view'] = array('title' => t('View'), 'attributes' => array('title' => t('View file inline in the browser.')));
     $links['view']['href'] = $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
@@ -98,7 +99,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
   $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
-  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) . ($file->name ? ' <span class="title">'. check_plain($file->name) .'</span>': '') .'</span>'. $links .'</span></span>';
+  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) . ($file->name ? ' <span class="title">'. check_plain($file->name) . ($file->desc ? ' - '. $file->desc : '') .'</span>': '') .'</span>'. $links .'</span></span>';
   if ($is_node)
     $output .= '<script type=\'text/javascript\'>'. ($iframe ? 'parent.' : '') .'tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
   $output = preg_replace("/\n/", '', $output);

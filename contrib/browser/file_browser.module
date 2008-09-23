@@ -8,15 +8,17 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', FALSE));
-define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', TRUE));
-define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', TRUE));
+define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', 0));
+define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', 1));
+define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', 1));
+define('FILE_BROWSER_VOCABULARIES_ALL',  variable_get('file_browser_vocabularies_all', 1));
+define('FILE_BROWSER_VOCABULARIES',      serialize(variable_get('file_browser_vocabularies', array())));
 define('FILE_BROWSER_OG_VOCABULARIES',   variable_get('file_browser_og_vocabularies', 0));
-define('FILE_BROWSER_OG_UPLOAD',         variable_get('file_browser_og_upload', FALSE));
-define('FILE_BROWSER_OG_PREVIEW',        variable_get('file_browser_og_preview', FALSE));
+define('FILE_BROWSER_OG_UPLOAD',         variable_get('file_browser_og_upload', 0));
+define('FILE_BROWSER_OG_PREVIEW',        variable_get('file_browser_og_preview', 0));
 define('FILE_BROWSER_OG_UNFILED',        variable_get('file_browser_og_unfiled', ''));
 define('FILE_BROWSER_OG_CREATE',         variable_get('file_browser_og_create', ''));
-define('FILE_BROWSER_LOCATION_PREVIEW',  variable_get('file_browser_location_preview', FALSE));
+define('FILE_BROWSER_LOCATION_PREVIEW',  variable_get('file_browser_location_preview', 0));
 
 define('FILE_BROWSER_TITLE_LENGTH',        50);
 define('FILE_BROWSER_TITLE_LENGTH_SHORT',  14);
@@ -135,7 +137,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
           'region' => 'right',
           'weight' => -1,
         ),
-        'my' => array(
+        'all' => array(
           'info' => t('My files'),
         ),
       );
@@ -162,9 +164,9 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
           $block['subject'] = check_plain(t('File information'));
           $block['content'] = $block_show ? theme('file_browser_preview', array()) : NULL;
           break;
-        case 'my':
+        case 'all':
           $block['subject'] = check_plain(t('My files'));
-          $block['content'] = _file_browser_block('my');
+          $block['content'] = _file_browser_block('all');
           break;
         default:
           list($type, $vid) = explode('-', $delta);
@@ -225,10 +227,18 @@ function _file_browser_enforce_unfiled(&$node) {
   if (!is_array($node->og_groups) || !module_exists('og_vocab'))
     return;
 
+  if (!is_array($node->taxonomy))
+    $node->taxonomy = array();
+
+  // When an attachment is updated when the parent node is saved
+  // then $node->taxonomy points to the array of the term objects.
+  if (is_object(reset($node->taxonomy)))
+    return;
+
   // Normalize the $node->taxonomy array into a known-good format that we
   // can rely on for comparisons in the code further below.
   foreach ($node->taxonomy as $vid => $tids) {
-    if (is_string($tids)) {
+    if (!is_array($tids)) {
       unset($node->taxonomy[$vid]);
       if ($term = taxonomy_get_term($tids)) {
         $node->taxonomy[$term->vid] = array($term->tid => $term->tid);
@@ -276,8 +286,8 @@ function _file_browser_enforce_unfiled(&$node) {
  * @return
  */
 function file_browser_page($vid, $tid = NULL, $script = NULL) {
-  $vid = empty($vid) ? 'my' : $vid;
-  if ($vid != 'my' && !is_numeric($vid) && !is_array($vid)) {
+  $vid = empty($vid) ? 'all' : $vid;
+  if ($vid != 'all' && !is_numeric($vid) && !is_array($vid)) {
     drupal_set_message('No vocabulary specified.', 'error');
     return '';
   }
@@ -551,7 +561,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
   if (module_exists('og_vocab')) {
     if ($term = taxonomy_get_term($tid)) {
       if ($og_group = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) {
-        $og_groups[$og_group] = (string)$og_group;
+        $og_groups[$og_group] = $og_group;
       }
     }
   }
@@ -560,16 +570,16 @@ function file_browser_upload_form_submit($form, &$form_state) {
   $i = 0;
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
-      $node_new = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
+      $file_node = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
 
       // theme the node so we can display it on the screen to the user
-      $output = _file_browser_node('page', $node_new, TRUE, TRUE, TRUE);
+      $output = _file_browser_node('page', $file_node, TRUE, TRUE, TRUE);
       preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $output, $matches);
       $output = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $output);
 
-      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $node_new->title)) .'</div>';
+      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file_node->title)) .'</div>';
       print "<script type='text/javascript'>";
-      print "parent.Drupal.file_browserDisplayNode('page', '". $node_new->nid ."','". $tid ."','". $output ."','". $msg ."', '". check_plain($node_new->title) ."');";
+      print "parent.Drupal.file_browserDisplayNode('page', '". $file_node->nid ."','". $tid ."','". $output ."','". $msg ."', '". check_plain($file_node->title) ."');";
       print 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
       print implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
       print "</script>";
@@ -829,6 +839,9 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
   $count_terms = count(taxonomy_get_children($term->tid ? $term->tid : 0, $term->vid));
   $xhtml_id = empty($term->tid) ? 'file-folder-v'. $term->vid .'-b'. $block : 'file-folder-t'. $term->tid .'-b'. $block;
+  if (module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid)))) {
+    $xhtml_id .= '-g'. $gid;
+  }
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
   $hierarchy = _file_browser_allow_hierarchy($term->vid, $term->tid) ? FALSE : TRUE;
 
@@ -882,23 +895,25 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
 
   $vocabularies = taxonomy_get_vocabularies('file');
   $output = '';
+
   if (is_array($vid)) {
     foreach ($vid as $v) {
       $terms[$v] = $vocabularies[$v];
     }
   }
-  else if ($vid == 'my') {
-    $terms = array_filter(variable_get('file_browser_vocabularies', array()), 'is_string');
-    if (module_exists('og_vocab') && FILE_BROWSER_OG_VOCABULARIES) {
-      foreach (array_keys($user->og_groups) as $nid) {
-        $result = db_query('SELECT vid FROM {og_vocab} WHERE nid = %d', $nid);
-        while ($vid = db_result($result)) {
-          if (!array_key_exists($vid, $terms)) {
-            $terms[$vid] = (string)$vid;
-          }
-        }
+  else if ($vid == 'all') {
+    $og_vocabs = $og_vocabs_hidden = array();
+    if (module_exists('og_vocab')) {
+      $result = db_query('SELECT nid, vid FROM {og_vocab}');
+      while ($row = db_fetch_object($result)) {
+        if (in_array($row->nid, array_keys($user->og_groups)))
+          $og_vocabs[] = $vid;
+        else
+          $og_vocabs_hidden[] = $vid;
       }
     }
+
+    $terms = FILE_BROWSER_VOCABULARIES_ALL ? array_diff(array_keys($vocabularies), $og_vocabs_hidden) : array_merge(array_keys(unserialize(FILE_BROWSER_VOCABULARIES)), FILE_BROWSER_OG_VOCABULARIES ? $og_vocabs : array());
     foreach ($terms as $i => $term) {
       $terms[$i] = $vocabularies[$term];
     }

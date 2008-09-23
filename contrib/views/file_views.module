@@ -11,4 +11,14 @@
 define('FILE_VIEWS_TITLE_LENGTH_SHORT', 18);
 
 //////////////////////////////////////////////////////////////////////////////
+// Views API hooks
+
+/**
+ * Implementation of hook_views_api().
+ */
+function file_views_views_api() {
+  return array(
+    'api' => 2,
+  );
+}
 

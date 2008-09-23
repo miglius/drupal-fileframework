@@ -65,6 +65,12 @@ Drupal.file_browserUploadCheck = function(id) {
 
     Drupal.file_browserToggleUpload();
     $('#block-file_browser-upload').show();
+    // select and disable current group checkbox
+    $('#file-browser-upload-form').find('.form-checkbox').each(function() { this.checked = false; }).removeAttr('disabled');
+    if (id.match(/-g([\d]+)/)) {
+      var gid = id.match(/-g([\d]+)/)[1];
+      $('#edit-og-groups-' + gid).each(function() { this.checked = true; }).attr('disabled', 'disabled');
+    }
   }
   $('#block-file_browser-preview').show();
   $('#file-preview').show().html(translate.no_file_selected)

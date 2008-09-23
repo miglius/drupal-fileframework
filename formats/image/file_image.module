@@ -480,6 +480,7 @@ function _file_image_render_options($uri, $options = array()) {
 
   $node = node_load($options['nid'], $options['vid']);
   $title = $node->title;
+  //bitcache_use_repository('file');
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => "max-width: {$max_width}px; max-height: {$max_height}px;", 'border' => '0'), $options);
