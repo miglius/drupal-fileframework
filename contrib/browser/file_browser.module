@@ -913,7 +913,7 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
       }
     }
 
-    $terms = array_diff(FILE_BROWSER_VOCABULARIES_ALL ? array_keys($vocabularies) : array_merge(array_keys(unserialize(FILE_BROWSER_VOCABULARIES)), FILE_BROWSER_OG_VOCABULARIES ? $og_vocabs : array()), $og_vocabs_hidden);
+    $terms = array_diff(FILE_BROWSER_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_BROWSER_VOCABULARIES)), FILE_BROWSER_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
     foreach ($terms as $i => $term) {
       $terms[$i] = $vocabularies[$term];
     }

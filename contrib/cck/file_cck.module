@@ -522,7 +522,7 @@ function _file_cck_propagate_terms($node, $file_node) {
       }
     }
 
-    $vocabs = array_diff(FILE_CCK_VOCABULARIES_ALL ? array_keys($vocabularies) : array_merge(array_keys(unserialize(FILE_CCK_VOCABULARIES)), FILE_CCK_OG_VOCABULARIES ? $og_vocabs : array()), $og_vocabs_hidden);
+    $vocabs = array_diff(FILE_CCK_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_CCK_VOCABULARIES)), FILE_CCK_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
     if (!empty($vocabs)) {
       $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
       if (is_array($taxonomy['tags'])) {
