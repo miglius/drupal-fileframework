@@ -144,11 +144,11 @@ function file_browser_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_browser_vocabularies_all', $values['file_browser_vocabularies_all']);
       variable_set('file_browser_vocabularies', $values['file_browser_vocabularies']);
       variable_set('file_browser_hide_empty', $values['file_browser_hide_empty']);
       variable_set('file_browser_embed_previews', $values['file_browser_embed_previews']);
       variable_set('file_browser_folder_properties', $values['file_browser_folder_properties']);
-      variable_set('file_browser_og_vocabularies_all', $values['file_browser_og_vocabularies_all']);
       variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
       variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
       variable_set('file_browser_og_preview', $values['file_browser_og_preview']);
@@ -158,11 +158,11 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_browser_vocabularies_all');
       variable_del('file_browser_vocabularies');
       variable_del('file_browser_hide_empty');
       variable_del('file_browser_embed_previews');
       variable_del('file_browser_folder_properties');
-      variable_del('file_browser_og_vocabularies_all');
       variable_del('file_browser_og_vocabularies');
       variable_del('file_browser_og_upload');
       variable_del('file_browser_og_preview');

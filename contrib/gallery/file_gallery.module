@@ -194,9 +194,9 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
       $result = db_query('SELECT nid, vid FROM {og_vocab}');
       while ($row = db_fetch_object($result)) {
         if (in_array($row->nid, array_keys($user->og_groups)))
-          $og_vocabs[] = $vid;
+          $og_vocabs[] = $row->vid;
         else
-          $og_vocabs_hidden[] = $vid;
+          $og_vocabs_hidden[] = $row->vid;
       }
     }
 
