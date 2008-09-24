@@ -937,7 +937,7 @@ function _file_attach_propagate_terms($node, $file_node) {
       }
     }
 
-    $vocabs = FILE_ATTACH_VOCABULARIES_ALL ? array_diff(array_keys($vocabularies), $og_vocabs_hidden) : array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array());
+    $vocabs = array_diff(FILE_ATTACH_VOCABULARIES_ALL ? array_keys($vocabularies) : array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array()), $og_vocabs_hidden);
     if (!empty($vocabs)) {
       $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
       if (is_array($taxonomy['tags'])) {
