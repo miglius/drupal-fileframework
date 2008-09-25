@@ -240,7 +240,7 @@ function file_text_code_render($uri, $options = array()) {
  */
 function _file_text_render_options($uri, $options = array()) {
   $hash = file_get_hash($uri);
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $text = bitcache_get_contents($hash);
   if (FILE_TEXT_PREVIEW_LINES > 0) {
     $text = explode("\n", $text);

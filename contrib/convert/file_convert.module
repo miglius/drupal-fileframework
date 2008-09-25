@@ -345,7 +345,7 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
  */
 function _file_convert_failure_log($file, $handler) {
   if (!rdf_exists($file->uri, 'wordnet:failed', $handler))
-    return rdf_insert($file->uri, 'wordnet:failed', $handler, array('repository' => 'file'));
+    return rdf_insert($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY));
 
   return TRUE;
 }

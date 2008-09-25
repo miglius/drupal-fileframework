@@ -79,7 +79,7 @@ function file_convert_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
     case t('Clear'):
-      if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => 'file'))) {
+      if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY))) {
         watchdog('file_convert', 'The RDF data about failed conversions was not deleted.', WATCHDOG_ERROR);
       }
       drupal_set_message(t('The data about failed conversions have been cleared.'));

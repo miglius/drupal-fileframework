@@ -9,6 +9,9 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+define('FILE_RDF_REPOSITORY',      'file');
+define('FILE_BITCACHE_REPOSITORY', 'file');
+
 define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 1));
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));

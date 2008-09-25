@@ -486,7 +486,7 @@ function _file_video_render_options($uri, $options = array()) {
 
   $node = node_load($options['nid'], $options['vid']);
   $title = $node->title;
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   // Thumbnail

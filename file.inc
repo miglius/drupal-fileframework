@@ -107,7 +107,7 @@ function file_data_save(&$file) {
   ) : array();
 
   // Move the file to permanent storage, deleting the temporary file.
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $hash = bitcache_put_file(NULL, $file->filepath, $file->converted ? FALSE : TRUE);
   if (!$hash) {
     watchdog('file', 'The bitcache_put_file() function failed for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
@@ -118,7 +118,7 @@ function file_data_save(&$file) {
   // Save metadata information to the RDF.
   if (!rdf_exists($file->uri)) {
     $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
-    if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => 'file'))) {
+    if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
       watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
       return FALSE;
     }
@@ -171,7 +171,7 @@ function file_node_create($node = array()) {
  */
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
-    //bitcache_use_repository('file');
+    //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
     $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
 
     // File object passed from cron has a created property.
@@ -184,7 +184,7 @@ function file_node_delete_node($file) {
         foreach ($derived as $key => $data) {
           // Check if derived is not referenced in the table.
           if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $key)) == 0) {
-            if (!rdf_delete($key, NULL, NULL, array('repository' => 'file'))) {
+            if (!rdf_delete($key, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
               watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
             }
             // Delete from a bitcache.
@@ -194,7 +194,7 @@ function file_node_delete_node($file) {
           }
         }
       }
-      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => 'file'))) {
+      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
         watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
       }
       // Delete from a bitcache.
@@ -576,7 +576,7 @@ function file_metadata_extract($filename, $mimetype) {
  *   Structured array pointing to the structored array of metadata information.
  */
 function file_get_metadata($file) {
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $metadata = file_metadata_extract(bitcache_get(file_get_hash($file))->path, $file->filemime);
   return array($file->uri => $metadata);
 }
@@ -596,7 +596,7 @@ function file_generate_previews($file, $cron = NULL) {
   $result = TRUE;
 
   $previews = array();
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
 
   if (!empty($file->uri)) {
     // Check if file exists in the bitcache.
@@ -607,7 +607,7 @@ function file_generate_previews($file, $cron = NULL) {
 
     //Extract metadata if it is missing and save to RDF.
     if (!rdf_exists($file->uri)) {
-      if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => 'file'))) {
+      if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
         watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
         return FALSE;
       }
@@ -621,7 +621,7 @@ function file_generate_previews($file, $cron = NULL) {
           // The blob does not exist in the bitcache or the size is zero.
           // We delete the generated entry reference in the RDF
           // and the file will be converted again.
-          if (!rdf_delete($uri, NULL, NULL, array('repository' => 'file'))) {
+          if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
             watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
           }
         }
@@ -952,7 +952,7 @@ function file_wrapper_html($node, $handler, $options = array()) {
  */
 function file_wrapper_ahah($handler, $hash, $vid) {
   // Access control is not done at menu layer.
-  //bitcache_use_repository('file');
+  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   if ($node = file_bitcache_access($hash, $vid)) {
     $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
     if (empty($handlers[$handler])) {
