@@ -607,7 +607,7 @@ function file_attach_autocomplete($string = '') {
       if (node_access('view', $node)) {
         $matches[] = array(
           'nid'     => $node->nid,
-          'title'   => $node->title,
+          'title'   => check_plain($node->title),
           'created' => $node->created,
           'changed' => $node->changed,
           'type'    => $row->type,
