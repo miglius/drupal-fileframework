@@ -503,7 +503,8 @@ function file_browser_newterm_form_submit($form, &$form_state) {
     }
   }
   // check that the vocabulary that it is being created under allows hierarchy
-  $errmsg = _file_browser_allow_hierarchy($form_state['values']['vid'], $form_state['values']['parent']);
+  $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $form_state['values']['vid']))) ? $gid : '0';
+  $errmsg = _file_browser_allow_hierarchy($form_state['values']['vid'], $form_state['values']['parent'], $gid);
   if ($errmsg) {
     print "<script type='text/javascript'>parent.Drupal.file_browserErrorMsg('". $errmsg ."');</script>";
     exit;
@@ -533,7 +534,7 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   $output .= _file_browser_term('page', $term, FALSE, in_array($term->tid, array()), TRUE);
   // make sure the output is sent back to the server so the data can be updated for the user
   print "<script type='text/javascript'>";
-  print "parent.Drupal.file_browserDisplayTerm('page', '". $term->tid ."', '". (is_array($form_state['values']['parent']) ? 0 : $form_state['values']['parent']) ."','". $term->vid ."','". $output ."','". $msg ."','". $form_state['values']['name'] ."');";
+  print "parent.Drupal.file_browserDisplayTerm('page', '". $term->tid ."', '". (is_array($form_state['values']['parent']) ? 0 : $form_state['values']['parent']) ."','". $term->vid ."','". $gid ."','". $output ."','". $msg ."','". $form_state['values']['name'] ."');";
   print "</script>";
   drupal_get_messages(); // calling because we do not want any set
   exit;
@@ -551,6 +552,8 @@ function file_browser_upload_form_submit($form, &$form_state) {
   }
 
   $tid = $form_state['clicked_button']['#post']['tid'];
+  $term = taxonomy_get_term($tid);
+  $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
 
   // Organic groups (og.module) integration: explicit audience selection.
   $og_groups = !empty($form_state['values']['og_groups']) ? $form_state['values']['og_groups'] : array();
@@ -558,12 +561,8 @@ function file_browser_upload_form_submit($form, &$form_state) {
   // Organic group vocabularies (og_vocab.module) integration: implicit
   // audience selection if the currently-selected taxonomy category is
   // related to an Og group.
-  if (module_exists('og_vocab')) {
-    if ($term = taxonomy_get_term($tid)) {
-      if ($og_group = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) {
-        $og_groups[$og_group] = $og_group;
-      }
-    }
+  if ($gid > 0) {
+    $og_groups[$gid] = $gid;
   }
   $og_public = module_exists('og_access') && !$form_state['values']['og_public'] ? FALSE : TRUE;
 
@@ -579,7 +578,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
 
       $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file_node->title)) .'</div>';
       print "<script type='text/javascript'>";
-      print "parent.Drupal.file_browserDisplayNode('page', '". $file_node->nid ."','". $tid ."','". $output ."','". $msg ."', '". check_plain($file_node->title) ."');";
+      print "parent.Drupal.file_browserDisplayNode('page', '". $file_node->nid ."','". $tid ."','". $gid ."','". $output ."','". $msg ."', '". check_plain($file_node->title) ."');";
       print 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
       print implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
       print "</script>";
@@ -602,16 +601,15 @@ function file_browser_upload_form_submit($form, &$form_state) {
 
   if (FILE_BROWSER_FOLDER_PROPERTIES) {
     // Update term and all parent terms.
-    $term = taxonomy_get_term($tid);
     $parents = taxonomy_get_parents_all($tid);
     foreach ($parents as $parent) {
       $data = _file_browser_term_data($term->vid, $parent->tid);
-      print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-t". $parent->tid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
+      print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-t". $parent->tid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
     }
 
     // Update the vocabulary data.
     $data = _file_browser_term_data($term->vid, 0);
-    print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-v". $term->vid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
+    print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-v". $term->vid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
   }
 
   // Clean up the file upload widget.
@@ -838,12 +836,10 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   $is_vocab = $term->tid ? FALSE : TRUE;
   $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
   $count_terms = count(taxonomy_get_children($term->tid ? $term->tid : 0, $term->vid));
-  $xhtml_id = empty($term->tid) ? 'file-folder-v'. $term->vid .'-b'. $block : 'file-folder-t'. $term->tid .'-b'. $block;
-  if (module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid)))) {
-    $xhtml_id .= '-g'. $gid;
-  }
+  $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
+  $xhtml_id = (empty($term->tid) ? 'file-folder-v'. $term->vid : 'file-folder-t'. $term->tid) .'-g'. $gid .'-b'. $block;
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
-  $hierarchy = _file_browser_allow_hierarchy($term->vid, $term->tid) ? FALSE : TRUE;
+  $hierarchy = _file_browser_allow_hierarchy($term->vid, $term->tid, $gid) ? FALSE : TRUE;
 
   return theme('file_browser_term', compact('size', 'count_files', 'count_terms', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'name', 'visibile', 'expanded', 'columns'));
 }
@@ -1042,14 +1038,14 @@ function _file_browser_add_headers() {
  * @param $tid
  *   A parent term ID
  */
-function _file_browser_allow_hierarchy($vid, $tid) {
+function _file_browser_allow_hierarchy($vid, $tid, $gid) {
   // check that the vocabulary that it is being created under allows hierarchy
   $vocabularies = taxonomy_get_vocabularies('file');
   $voc = $vocabularies[$vid];
   if ($tid > 0 && ($voc->tags == 1 || $voc->hierarchy == 0)) {
     return t('Permission denied. Vocabulary does not support hierarchies');
   }
-  if (!$tid && !FILE_BROWSER_OG_CREATE) {
+  if ($gid > 0 && !$tid && !FILE_BROWSER_OG_CREATE) {
     return t('Permission denied. You may only create new folders under Home Folder');
   }
 }

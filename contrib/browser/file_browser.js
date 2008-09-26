@@ -119,8 +119,8 @@ Drupal.file_browserGetWindowHeight = function() {
  * @param title {String} message to display on screen to the user
  * @param nodename {String} name of the new node being created
  */
-Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, node, msg, nodename) {
-  var folder = 'file-folder-' + (ptid == 0 ? 'v' + vid : 't' + ptid) + '-b' + block;
+Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg, nodename) {
+  var folder = 'file-folder-' + (ptid == 0 ? 'v' + vid : 't' + ptid) + '-g' + gid + '-b' + block;
   var check = 0;
   var child = 0;
   $('#' + folder).children().each(function() {
@@ -163,8 +163,8 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, node, msg, node
  * @param node {String} html representation of the node
  * @param title {String} message to display on screen to the user
  */
-Drupal.file_browserDisplayNode = function(block, nid, ptid, node, msg, nodename) {
-  var folder = 'file-folder-t' + ptid + '-b' + block;
+Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, nodename) {
+  var folder = 'file-folder-t' + ptid + '-g' + gid + '-b' + block;
   var check = 0;
   $('#' + folder).children().each(function() {
     if (this.id.match(/file-node-/)) {
