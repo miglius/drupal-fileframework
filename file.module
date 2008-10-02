@@ -371,21 +371,17 @@ function file_cron() {
     $result = db_query("SELECT f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d", $byte_limit);
     while (($file = db_fetch_object($result)) && $byte_counter <= $byte_limit) {
       $total++;
-      if (!file_generate_previews($file, 1)) {
-        $errors++;
-      }
-      if ($file->convert) {
-        $files++;
-        $converted += $file->convert;
-        $byte_counter += $file->size;
-      }
+      file_generate_previews($file, TRUE);
+      $converted += $file->converts;
+      $errors += $file->errors;
+      $byte_counter += $file->size;
     }
 
     // Log a concise summary message to let the administrator know what
     // occurred. Note that if any problems were encountered, file_repair()
     // will have already logged them on its part.
     if ($total > 0) {
-      watchdog('file', 'On a cron run inspected %total file(s), %converted conversion(s) were performed on %files file(s) (%size) with %errors errors.', array('%total' => $total, '%converted' => $converted, '%files' => $files, '%errors' => $errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+      watchdog('file', 'On a cron run %total file(s), %size were inspected. %converted conversion(s) were performed with %errors error(s).', array('%total' => $total, '%converted' => (int)$converted, '%errors' => (int)$errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
     }
   }
 

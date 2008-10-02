@@ -179,3 +179,9 @@ div#file-references {
   text-align: left;
 }
 
+div.file-block-scroll {
+  display: block;
+  max-height: 200px;
+  overflow: auto;
+}
+

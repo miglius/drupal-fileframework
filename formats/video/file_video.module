@@ -320,24 +320,14 @@ function file_video_metadata_parse($filename, $mimetype) {
 /**
  * Generates a flash_swf preview.
  */
-function file_video_flash_swf_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($file->converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_video_flash_swf'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
+function file_video_flash_swf_generate($file, $tier = NULL) {
+  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    file_get_converted($file, $tier);
+    if ($file->converted[$tier]) {
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
     }
-
-    $file->converted = TRUE;
-
-    watchdog('file_video', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   }
   return TRUE;
 }
@@ -345,50 +335,41 @@ function file_video_flash_swf_generate($file) {
 /**
  * Generates a flash_flv preview.
  */
-function file_video_flash_flv_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($file->converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_video_flash_flv'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
+function file_video_flash_flv_generate($file, $tier = NULL) {
+  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    file_get_converted($file, $tier);
+    if ($file->converted[$tier]) {
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
     }
-
-    watchdog('file_video', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
-
-    // Create a flash thumbnail image.
-    file_generate_secondary_previews('file_video', $file, 'image/jpeg', 'file_video_flash_image');
-
-    $file->converted = TRUE;
   }
-  return TRUE;
+
+  // Create an image previews.
+  $previews = array(
+    'file_video_flash_image' => 'image/jpeg',
+  );
+
+  $result = TRUE;
+  $tier = isset($tier) ? $tier + 1 : 0;
+  foreach ($previews as $handler => $to) {
+    $file->handlers[$tier] = $handler;
+    $file->mimes[$tier] = $to;
+    $result = file_generate_secondary_previews($file, $tier) && $result;
+  }
+  return $result;
 }
 
 /**
  * Generates a flash_image preview.
  */
-function file_video_flash_image_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($file->converted) {
-    //$file->noconvert = TRUE;
-    $file->handler = 'file_video_flash_image';
-
-    if (function_exists('file_image_preview_generate') && !file_image_preview_generate($file)) {
-      watchdog('file_video', 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => 'image/jpeg', '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+function file_video_flash_image_generate($file, $tier = NULL) {
+  if (function_exists('file_image_image_generate')) {
+    $file->handlers[$tier] = 'file_video_flash_image';
+    if (!file_image_image_generate($file, $tier)) {
       return FALSE;
     }
   }
-
-  watchdog('file_video', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   return TRUE;
 }
 
@@ -486,7 +467,6 @@ function _file_video_render_options($uri, $options = array()) {
 
   $node = node_load($options['nid'], $options['vid']);
   $title = $node->title;
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
 
   // Thumbnail

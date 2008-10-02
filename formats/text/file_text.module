@@ -63,6 +63,7 @@ function file_text_mime_handlers() {
     'file_text_code' => array(
       'name' => t('Code'),
       'dimensions' => '590x360',
+      'parent' => 'file_text_text',
       'weight' => 2,
     ),
   );
@@ -170,46 +171,29 @@ function file_text_metadata_parse($filename, $mimetype) {
 /**
  * Generates a text preview.
  */
-function file_text_text_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($converted || $file->converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_text_text'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
+function file_text_text_generate($file, $tier = NULL) {
+  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    file_get_converted($file, $tier);
+    if ($file->converted[$tier]) {
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
     }
-
-    $file->converted = TRUE;
-
-    watchdog('file_text', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   }
-  else if (FILE_TEXT_CODE) {
-    if (module_exists('file_convert') && !$file->noconvert) {
-      // Convert the file.
-      if ($converted = file_convert($file, array('file_text_code'), "{code2html} --fallback ruby [in_file] [out_file]")) {
-        $file->filepath = $converted;
 
-        // Extract metadata.
-        $metadata = file_metadata_extract($converted, $file->filemime);
-        $file->metadata = array_merge(array(
-          'dc:creator' => array('file_text_code'),
-        ), $metadata);
-
-        // Save preview to the bitcache and RDF.
-        if (!file_data_save($file)) {
+  if (!isset($tier) && FILE_TEXT_CODE) {
+    $tier = 0;
+    $file->converters[$tier] = array('pipeline' => '{code2html} --fallback ruby [in_file] [out_file]');
+    $file->handlers[$tier] = 'file_text_code';
+    $file->mimes[$tier] = 'text/html';
+    if (!in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+      file_get_converted($file, $tier);
+      if ($file->converted[$tier]) {
+        if (!file_data_save($file, $tier))
           return FALSE;
-        }
-
-        watchdog('file_text', 'The %mime preview %handler was generated for the %uri.', array('%mime' => $file->filemime, '%handler' => 'file_text_code', '%uri' => $file->uri));
-      }
-      else {
-        watchdog('file_text', 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $file->filemime, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+        watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
+        file_delete($file->converted[$tier]->filepath);
+        unset($file->converted[$tier]);
       }
     }
   }
@@ -240,7 +224,6 @@ function file_text_code_render($uri, $options = array()) {
  */
 function _file_text_render_options($uri, $options = array()) {
   $hash = file_get_hash($uri);
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $text = bitcache_get_contents($hash);
   if (FILE_TEXT_PREVIEW_LINES > 0) {
     $text = explode("\n", $text);

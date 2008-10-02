@@ -217,6 +217,9 @@ function file_admin_handler_settings() {
         '#value' => implode('<br />', $converters),
       );
     }
+    $form['handler'][$handler]['parent'] = array(
+      '#value' => $mime_handlers[$mime_handlers[$handler]['parent']]['name'],
+    );
     $form['handler'][$handler]['module'] = array(
       '#value' => $mime_handlers[$handler]['module'],
     );

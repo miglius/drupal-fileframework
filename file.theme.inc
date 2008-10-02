@@ -21,6 +21,7 @@ function theme_file_admin_handler_settings($form) {
   if (function_exists('file_get_mime_converters')) {
     $header[] = t('Converters');
   }
+  $header[] = t('Parent');
   $header[] = t('Module');
   $header[] = array('data' => t('Enabled'), 'class' => 'checkbox');
   $header[] = t('Weight');
@@ -34,6 +35,7 @@ function theme_file_admin_handler_settings($form) {
       if (function_exists('file_get_mime_converters')) {
         $row[] = drupal_render($element['convert']);
       }
+      $row[] = drupal_render($element['parent']);
       $row[] = drupal_render($element['module']);
       $element['weight']['#attributes']['class'] = "handler-weight";
       $row[] = array('data' => drupal_render($element['enabled']), 'class' => 'checkbox');
@@ -57,7 +59,6 @@ function theme_file_admin_handler_settings($form) {
  */
 function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   static $initialized = FALSE;
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $is_node = $file->nid && !$file->derived;
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.

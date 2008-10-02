@@ -98,7 +98,7 @@ function file_slideshow_mime_converters() {
       'image/jpeg' => array(
         'pipeline' => '{gs} -q -sDEVICE=jpeg -dBATCH -dNOPAUSE -dFirstPage=1 -dLastPage=1 -r300 -sOutputFile=[out_file] [in_file]',
         //'pipeline' => 'cd [tmpdir]; {mv} [in_file] [in_file].pdf; {convert} [in_file].pdf\[0\] [out_file].jpeg; {mv} [in_file].pdf [in_file]; {mv} [out_file].jpeg [out_file]',
-        'handlers' => array('file_image_preview'),
+        'handlers' => array('file_image_image'),
       ),
       'application/x-shockwave-flash' => array(
         'pipeline' => 'cd [tmpdir]; {pdf2swf} -lb [in_file] [out_file]',
@@ -200,45 +200,31 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
 /**
  * Generates a slideshow_pdf preview.
  */
-function file_slideshow_pdf_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($converted || $file->converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_slideshow_pdf'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
-    }
-
-    $file->converted = TRUE;
-
-    watchdog('file_slideshow', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
-
-    // Save file data.
-    $filepath = $file->filepath;
-    $filemime = $file->filemime;
-
-    // Create a plain text, image and swf previews.
-    $previews = array(
-      'text/plain' => 'file_text_text',
-      'image/jpeg' => 'file_image_preview',
-      'application/x-shockwave-flash' => 'file_video_flash_swf',
-    );
-    foreach ($previews as $mime_to => $handler) {
-      file_generate_secondary_previews('file_slideshow', $file, $mime_to, $handler);
-
-      // Restore file data.
-      $file->filepath = $filepath;
-      $file->filemime = $filemime;
-      $file->converted = TRUE;
+function file_slideshow_pdf_generate($file, $tier = NULL) {
+  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    file_get_converted($file, $tier);
+    if ($file->converted[$tier]) {
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
     }
   }
-  return TRUE;
+
+  // Create a plain text, image and swf previews.
+  $previews = array(
+    'file_text_text' => 'text/plain',
+    'file_image_image' => 'image/jpeg',
+    'file_video_flash_swf' => 'application/x-shockwave-flash',
+  );
+
+  $result = TRUE;
+  $tier = isset($tier) ? $tier + 1 : 0;
+  foreach ($previews as $handler => $to) {
+    $file->handlers[$tier] = $handler;
+    $file->mimes[$tier] = $to;
+    $result = file_generate_secondary_previews($file, $tier) && $result;
+  }
+  return $result;
 }
 
 //////////////////////////////////////////////////////////////////////////////

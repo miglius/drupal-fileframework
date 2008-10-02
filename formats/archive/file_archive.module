@@ -118,20 +118,13 @@ function filearchive_metadata_info() {
 /**
  * Generates a text preview.
  */
-function file_archive_archive_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
+function file_archive_archive_generate($file, $tier = NULL) {
   if (function_exists('file_text_text_generate')) {
-    $file->noconvert = TRUE;
-    $file->handler = 'file_archive_archive';
-
-    if (!file_text_text_generate($file)) {
-      watchdog('file_archive', 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => 'text/plain', '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+    $file->handlers[$tier] = 'file_archive_archive';
+    if (!file_text_text_generate($file, $tier)) {
       return FALSE;
     }
   }
-
-  watchdog('file_archive', 'The %mime preview was generated for %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   return TRUE;
 }
 
@@ -150,7 +143,6 @@ function file_archive_archive_render($uri, $options = array()) {
  * Renders options for the archive display.
  */
 function _file_archive_render_options($uri, $options = array()) {
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $text = check_plain(bitcache_get_contents(file_get_hash($uri)));
 
   return array_merge($options, compact('text'));

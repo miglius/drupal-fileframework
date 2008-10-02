@@ -243,24 +243,14 @@ function file_audio_metadata_parse($filename, $mimetype) {
 /**
  * Generates an audio_mp3 preview.
  */
-function file_audio_mp3_generate($file) {
-  if (!isset($file->parent)) $file->parent = $file->uri;
-
-  $metadata = $file->converted ? file_metadata_extract($file->filepath, $file->filemime) : rdf_normalize(rdf_query($file->uri));
-
-  if ($converted || $file->converted) {
-    $file->metadata = array_merge(array(
-      'dc:creator' => array($file->handler ? $file->handler : 'file_audio_mp3'),
-    ), $metadata);
-
-    // Save preview to the bitcache and RDF.
-    if (!file_data_save($file)) {
-      return FALSE;
+function file_audio_mp3_generate($file, $tier = NULL) {
+  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    file_get_converted($file, $tier);
+    if ($file->converted[$tier]) {
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_audio', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
     }
-
-    $file->converted = TRUE;
-
-    watchdog('file_audio', 'The %mime preview was generated for the %uri.', array('%mime' => $file->filemime, '%uri' => $file->uri));
   }
   return TRUE;
 }

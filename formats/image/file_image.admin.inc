@@ -129,6 +129,9 @@ function file_image_admin_settings_validate($form, &$form_state) {
           if (empty($handler) || !preg_match('/^[a-z_]+$/', $handler)) {
             form_set_error('file_image_custom_previews', t('Invalid value %value specified for embedded image custom preview short name.', array('%value' => $handler)));
           }
+          if (in_array($handler, array('preview', 'medium', 'thumbnail'))) {
+            form_set_error('file_image_custom_previews', t('The value %value is reserved. Please use a different name.', array('%value' => $handler)));
+          }
           if (empty($name)) {
             form_set_error('file_image_custom_previews', t('Embedded image custom preview name cannot be empty.'));
           }

@@ -33,15 +33,13 @@ function file_node_save(&$node, $file) {
 
     // If we didn't get a proper MIME type from the client, attempt to guess
     // it from the uploaded file name
-    if (empty($file->filemime) || $file->filemime == 'application/octet-stream') {
+    if (empty($file->filemime) || $file->filemime == 'application/octet-stream')
       $file->filemime = file_mime_guess($file->filepath);
-    }
 
     // If specified by the administrator, we'll always try and autodetect the
     // MIME type on the server-side for any uploaded files
-    if (FILE_MIME_AUTODETECTION > 0 && ($mime = file_mime_detect($file))) {
+    if (FILE_MIME_AUTODETECTION > 0 && ($mime = file_mime_detect($file)))
       $file->filemime = $mime;
-    }
 
     // Assign nid and vid to the file object for the logging.
     if (isset($node->nid)) {
@@ -51,22 +49,17 @@ function file_node_save(&$node, $file) {
 
     // Move the file to permanent storage, deleting the temporary file.
     // Save metadata information to the RDF.
-    if (!file_data_save($file)) {
+    if (!file_data_save($file))
       return FALSE;
-    }
 
     // Remove the entry from the {files} table about the temporary file, which was
     // added by the file_save_upload().
-    if ($file->fid) {
+    if ($file->fid)
       db_query('DELETE FROM {files} WHERE fid = %d', $file->fid);
-    }
 
     // Generate and save the preview of the file.
-    if (!$file->noconvert) {
-      if (!file_generate_previews($file)) {
-        watchdog('file', 'The preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, $node->nid ? l(t('edit'), 'node/'. $node->nid) : '');
-      }
-    }
+    if (!$file->noconvert && !file_generate_previews($file))
+      watchdog('file', 'At least one preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, $node->nid ? l(t('edit'), 'node/'. $node->nid) : '');
   }
 
   // Create a file object for the node and saving it to the db.
@@ -78,7 +71,6 @@ function file_node_save(&$node, $file) {
     global $user;
     $file_tmp = (object)array('uid' => $user->uid, 'uri' => $file->parent ? $file->parent : $file->uri, 'created' => time());
     return drupal_write_record('file_tmp', $file_tmp);
-    return TRUE;
   }
 }
 
@@ -91,35 +83,37 @@ function file_node_save(&$node, $file) {
  * @return
  *   Bitcache resource uri.
  */
-function file_data_save(&$file) {
+function file_data_save($file, $tier = NULL) {
   // Check the file size.
-  if (!filesize($file->filepath)) {
-    if (!isset($file->converted)) {
-      file_delete($file->filepath);
-    }
+  if ($file->filepath && file_exists($file->filepath) && !filesize($file->filepath)) {
     watchdog('file', 'The file converted from uri=%uri, name=%name to %mime was not saved because it was empty.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
     return FALSE;
   }
 
-  // Hook with a parent file.
-  $parent = isset($file->parent) || isset($file->uri) ? array(
-    'dc:source' => array(isset($file->parent) ? $file->parent : $file->uri),
-  ) : array();
+  // File itself or derivative to be saved.
+  $file_save = isset($tier) ? $file->converted[$tier] : $file;
+  $mime = isset($tier) ? $file->mimes[$tier] : $file->filemime;
 
   // Move the file to permanent storage, deleting the temporary file.
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
-  $hash = bitcache_put_file(NULL, $file->filepath, $file->converted ? FALSE : TRUE);
-  if (!$hash) {
-    watchdog('file', 'The bitcache_put_file() function failed for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
+  bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
+  if (!($hash = bitcache_put_file(NULL, $file_save->filepath, $file->noconvert ? TRUE : FALSE))) {
+    watchdog('file', 'The bitcache_put_file() function failed for the file or it\'s derivative from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
     return FALSE;
   }
-  $file->uri = bitcache_uri($hash);
+
+  if (($uri = bitcache_uri($hash)) && isset($tier))
+    $file->converted[$tier]->uri = $uri;
+  else
+    $file->uri = $uri;
+
+  // Hook with a parent file.
+  $parent = isset($tier) ? array('dc:source' => array($file->uri)) : array();
 
   // Save metadata information to the RDF.
-  if (!rdf_exists($file->uri)) {
-    $metadata = isset($file->metadata) ? array($file->uri => array_merge($parent, $file->metadata)) : array_merge_recursive(array($file->uri => $parent), file_get_metadata($file));
+  if (!rdf_exists($uri)) {
+    $metadata = is_array($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
-      watchdog('file', 'The RDF data was not saved for the file converted from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->filemime), WATCHDOG_ERROR);
+      watchdog('file', 'The RDF data was not saved for the file or it\'s derivative from from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
       return FALSE;
     }
   }
@@ -139,9 +133,8 @@ function file_node_create($node = array()) {
   global $user;
   $node = (object)$node;
 
-  if (empty($node->file)) {
+  if (empty($node->file))
     return FALSE;
-  }
 
   // Set default attributes
   $node->type = 'file';
@@ -171,36 +164,34 @@ function file_node_create($node = array()) {
  */
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
-    //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
+    bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
     $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
 
     // File object passed from cron has a created property.
     if ((!$file->created && $count == 1) || ($file->created && $count == 0)) {
-      // The last reference to the blob.
-      // Search for a previews.
-      $derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri));
-      if ($derived) {
+      // The last reference to the blob. Search for a previews.
+      if ($derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
         // Delete all previews.
         foreach ($derived as $key => $data) {
           // Check if derived is not referenced in the table.
           if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $key)) == 0) {
-            if (!rdf_delete($key, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
+            if (!rdf_delete($key, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
               watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
-            }
+
             // Delete from a bitcache.
-            if (!bitcache_delete(file_get_hash($key))) {
+            if (!bitcache_delete(file_get_hash($key)))
               watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $key), WATCHDOG_ERROR);
-            }
           }
         }
       }
-      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
+
+      // Delete from the RDF.
+      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
         watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
-      }
+
       // Delete from a bitcache.
-      if (!bitcache_delete(file_get_hash($file))) {
+      if (!bitcache_delete(file_get_hash($file)))
         watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
-      }
     }
   }
 }
@@ -230,9 +221,8 @@ function file_mime_registry_path($file = 'mime.types') {
     );
     foreach ($locations as $location) {
       $filename = $location .'/'. $file;
-      if (file_exists($filename) && is_readable($filename)) {
+      if (file_exists($filename) && is_readable($filename))
         return $path = $filename;
-      }
     }
   }
   return $path;
@@ -253,8 +243,10 @@ function file_get_mime_types() {
       if (($types = module_invoke($module, 'mime_types')) && is_array($types)) {
         foreach ($types as $mime => $data) {
           $types[$mime]['module'] = $module;
-          if (!is_array($data['handlers'])) $types[$mime]['handlers'] = array();
-          if (!is_array($data['extensions'])) $types[$mime]['extensions'] = array();
+          if (!is_array($data['handlers']))
+            $types[$mime]['handlers'] = array();
+          if (!is_array($data['extensions']))
+            $types[$mime]['extensions'] = array();
         }
         $handlers = array_merge_recursive($handlers, $types);
       }
@@ -310,9 +302,9 @@ function file_mime_icon_for($type, $description = NULL) {
   $default_mime_types = file_default_mime_types();
   $icon = is_array($handlers[$type]['icon']) ? reset($handlers[$type]['icon']) : $handlers[$type]['icon'];
   $icon = isset($icon) ? $icon : (in_array(preg_replace('/([^\/]+).*/', '$1/*', $type), array_keys($default_mime_types)) ? $default_mime_types[preg_replace('/([^\/]+).*/', '$1/*', $type)]['icon'] : '');
-  if (!empty($icon) && file_exists(drupal_get_path('module', 'file') .'/icons/'. $icon)) {
+  if (!empty($icon) && file_exists(drupal_get_path('module', 'file') .'/icons/'. $icon))
     return theme('image', drupal_get_path('module', 'file') .'/icons/'. $icon, $description, $description, NULL, TRUE);
-  }
+
   return NULL;
 }
 
@@ -326,23 +318,20 @@ function file_mime_extensions() {
   static $registry = NULL;
   if (!$registry) {
     $registry = array();
-    if (($typemap = file_mime_registry_path())) {
-      if (($file = fopen($typemap, 'r'))) {
-        while (!feof($file)) {
-          if (($line = trim(preg_replace('/\s+/', ' ', fgets($file, 1024)))) && $line[0] != '#') {
-            $extensions = explode(' ', $line);
-            $type = array_shift($extensions);
-            if (count($extensions) > 0)
-              $registry[$type] = $extensions;
-          }
+    if (($typemap = file_mime_registry_path()) && ($file = fopen($typemap, 'r'))) {
+      while (!feof($file)) {
+        if (($line = trim(preg_replace('/\s+/', ' ', fgets($file, 1024)))) && $line[0] != '#') {
+          $extensions = explode(' ', $line);
+          $type = array_shift($extensions);
+          if (count($extensions) > 0)
+            $registry[$type] = $extensions;
         }
-        fclose($file);
       }
+      fclose($file);
     }
     foreach (file_get_mime_types() as $type => $data) {
-      if (!empty($data['extensions'])) {
+      if (!empty($data['extensions']))
         $registry[$type] = is_array($registry[$type]) ? array_unique(array_merge($data['extensions'], $registry[$type])) : $data['extensions'];
-      }
     }
   }
   return $registry;
@@ -376,9 +365,8 @@ function file_mime_guess($filename) {
   $pathinfo = pathinfo($filename);
   $extension = $pathinfo['extension'];
   foreach ($registry as $type => $extensions) {
-    if (in_array($extension, $extensions)) {
+    if (in_array($extension, $extensions))
       return $type;
-    }
   }
 
   // Default MIME type if the file extension is not registerd.
@@ -409,9 +397,8 @@ function file_mime_detect($file) {
       }
     }
     $ext = preg_replace('/^.*\.([^\.]+)$/', '$1', drupal_strtolower($file->filename));
-    if (!in_array($ext, $exts) && !in_array($file->filemime, $mimes)) {
+    if (!in_array($ext, $exts) && !in_array($file->filemime, $mimes))
       return FALSE;
-    }
   }
 
   if (extension_loaded('fileinfo') && ($finfo = finfo_open(FILEINFO_MIME))) {
@@ -482,7 +469,8 @@ function file_get_mime_handlers() {
       if (($types = module_invoke($module, 'mime_handlers')) && is_array($types)) {
         foreach ($types as $handler => $data) {
           $types[$handler]['module'] = $module;
-          if (!isset($data['weight'])) $types[$handler]['weight'] = 0;
+          if (!isset($data['weight']))
+            $types[$handler]['weight'] = 0;
         }
         $handlers = array_merge_recursive($handlers, $types);
       }
@@ -505,6 +493,7 @@ function file_get_mime_handlers() {
         $mime_handlers[$handler] = array(
           'name' => $handlers[$handler]['name'],
           'dimensions' => $handlers[$handler]['dimensions'] ? $handlers[$handler]['dimensions'] : '0x0',
+          'parent' => $handlers[$handler]['parent'],
           'weight' => $weight,
           'enabled' => isset($default_handlers[$handler]['enabled']) ? $default_handlers[$handler]['enabled'] : (isset($handlers[$handler]['enabled']) ? $handlers[$handler]['enabled'] : 1),
           'module' => $handlers[$handler]['module'],
@@ -532,9 +521,8 @@ function file_get_metadata_info() {
     $result['dc:extent'] = array('name' => t('Size'), 'theme' => 'file_metadata_size');
     foreach (module_implements('metadata_info') as $module) {
       $info = module_invoke($module, 'metadata_info');
-      if (is_array($info)) {
+      if (is_array($info))
         $result = array_merge($result, $info);
-      }
     }
   }
   return $result;
@@ -559,9 +547,8 @@ function file_metadata_extract($filename, $mimetype) {
   );
   foreach (module_implements('metadata_parse') as $module) {
     $metadata = module_invoke($module, 'metadata_parse', $filename, $mimetype);
-    if (is_array($metadata)) {
+    if (is_array($metadata))
       $result = array_merge($result, $metadata);
-    }
   }
   return $result;
 }
@@ -576,9 +563,7 @@ function file_metadata_extract($filename, $mimetype) {
  *   Structured array pointing to the structored array of metadata information.
  */
 function file_get_metadata($file) {
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
-  $metadata = file_metadata_extract(bitcache_get(file_get_hash($file))->path, $file->filemime);
-  return array($file->uri => $metadata);
+  return array($file->uri => file_metadata_extract(bitcache_get(file_get_hash($file))->path, $file->filemime));
 }
 
 /**
@@ -592,109 +577,109 @@ function file_get_metadata($file) {
  * @return
  *   TRUE if the preview was generated, FALSE otherwise.
  */
-function file_generate_previews($file, $cron = NULL) {
+function file_generate_previews($file, $cron = FALSE) {
   $result = TRUE;
-
   $previews = array();
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
 
-  if (!empty($file->uri)) {
-    // Check if file exists in the bitcache.
-    if (!bitcache_exists(file_get_hash($file->uri))) {
-      watchdog('file', 'The blob was not found in the bitcache for the uri=%uri.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+  // Check if file exists in the bitcache.
+  if (!bitcache_exists(file_get_hash($file->uri))) {
+    watchdog('file', 'The blob was not found in the bitcache for the uri=%uri.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  //Extract metadata if it is missing and save to RDF.
+  if (!rdf_exists($file->uri)) {
+    if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
+      watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
       return FALSE;
     }
+  }
+  $file->metadata = file_metadata_normalize(rdf_normalize(rdf_query($file->uri)));
 
-    //Extract metadata if it is missing and save to RDF.
-    if (!rdf_exists($file->uri)) {
-      if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
-        watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
-        return FALSE;
+  // Find generated previews for the file.
+  $file->previews = array();
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+    foreach ($generated as $uri => $data) {
+      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+      if (!bitcache_exists(file_get_hash($uri)) || !$item[$uri][rdf_qname_to_uri('dc:extent')][0]->value) {
+        // The blob does not exist in the bitcache or the size is zero.
+        // We delete the generated entry reference in the RDF
+        // and the file will be converted again.
+        if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+          watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
       }
-    }
-
-    // Find generated previews for the file.
-    if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
-      foreach ($generated as $uri => $data) {
-        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        if (!bitcache_exists(file_get_hash($uri)) || !$item[$uri][rdf_qname_to_uri('dc:extent')][0]->value) {
-          // The blob does not exist in the bitcache or the size is zero.
-          // We delete the generated entry reference in the RDF
-          // and the file will be converted again.
-          if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
-            watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
-          }
-        }
-        if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]) {
-          // Preview is already generated.
-          // All derived files should have a MIME type set.
-          $previews[$mime][] = $item[$uri][rdf_qname_to_uri('dc:creator')][0];
-        }
+      if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]) {
+        // Preview is already generated.
+        // All derived files should have a MIME type set.
+        $file->previews[$mime][] = ($creator = $item[$uri][rdf_qname_to_uri('dc:creator')][0]) ? $creator : 'no_handler';
       }
     }
   }
 
   // Create array of enabled handlers.
-  $handlers_enabled = array();
-  foreach (file_get_mime_handlers() as $handler => $data) {
-    if ($data['enabled'] != 0) {
-      $handlers_enabled[] = $handler;
-    }
-  }
+  $file->handlers_enabled = array_keys(array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'enabled\'];')));
 
-  // Find all preview generation handlers for the MIME type and check if the preview is already generated.
+  // Find all preview generation handlers for the MIME type and generate previews if they are not already generated.
   $mime_types = file_get_mime_types();
   if (is_array($mime_types[$file->filemime]['handlers'])) {
-    foreach (array_diff($mime_types[$file->filemime]['handlers'], is_array($previews[$file->filemime]) ? $previews[$file->filemime] : array()) as $handler) {
-      if (in_array($handler, $handlers_enabled) && function_exists($full_handler = $handler .'_generate')) {
+    foreach (array_diff($mime_types[$file->filemime]['handlers'], is_array($file->previews[$file->filemime]) ? $file->previews[$file->filemime] : array()) as $handler) {
+      if (in_array($handler, $file->handlers_enabled) && function_exists($full_handler = $handler .'_generate'))
         $result = $full_handler($file) && $result;
-      }
     }
   }
 
-  // Perform file conversions and generate previews.
-  if (module_exists('file_convert')) {
-    // Check size limit for conversion.
-    // There is no restrictions for the cron run.
-    if (!isset($cron) && FILE_CONVERT_LIMIT_SIZE > 0 && $file->filesize > FILE_CONVERT_LIMIT_SIZE * 1024 * 1024) {
-      return $result;
-    }
+  // We are done if the convert module is disabled.
+  if (!module_exists('file_convert'))
+    return $result;
 
-    $mime_converters = file_get_mime_converters();
-    if (is_array($mime_converters[$file->filemime])) {
-      foreach ($mime_converters[$file->filemime] as $to => $converter) {
-        if ($converter['handlers']) {
-          // Check if we already have a preview generated and the handler is enabled.
-          $converter['handlers'] = array_intersect($handlers_enabled, array_diff($converter['handlers'], is_array($previews[$to]) ? $previews[$to] : array()));
-        }
-        if ($converter['enabled']) {
-          // Need to generate a preview if there is no converted
-          // file of the targer MIME or if we have not used MIME
-          // handler of the target MIME.
-          if (!empty($converter['handlers']) || !is_array($previews[$to])) {
-            if ($converted = file_convert($file, $converter['handlers'], $converter['pipeline'])) {
-              $file_converted = (object)array('uri' => $file->uri, 'filepath' => $converted, 'filename' => $file->filename, 'filemime' => $to, 'uri' => $file->uri, 'converted' => TRUE);
-              if (!empty($converter['handlers'])) {
-                // Apply generate handlers.
-                foreach ($converter['handlers'] as $handler) {
-                  if (function_exists($full_handler = $handler .'_generate'))
-                    $result = $full_handler($file_converted) && $result;
-                }
-              }
-              else {
-                // Save the file to the bitcache and RDF.
-                $result = file_data_save($file_converted) && $result;
-              }
-              file_delete($converted);
-              // Flag the wile that conversion took place.
-              // Needed for a cron to calculate conversions.
-              $file->convert = $file->convert ? $file->convert + 1 : 1;
-            }
-          }
+  // Check size limit for the conversion.
+  // There is no restrictions for the cron run.
+  if (!$cron && FILE_CONVERT_LIMIT_SIZE > 0 && $file->filesize > FILE_CONVERT_LIMIT_SIZE * 1024 * 1024)
+    return $result;
+
+  // Check if any of the converters is defined and enabled.
+  $file->converters_enabled = array();
+  foreach (file_get_mime_converters() as $from => $data) {
+    $data = array_filter($data, create_function('$a', 'return $a[\'enabled\'];'));
+    if (!empty($data))
+      $file->converters_enabled[$from] = $data;
+  }
+
+  // Loop over the enebled converters for the MIME types. The conversion is implemented in analogy to streams,
+  // i.e. the actual file conversion is done only on the first time it is needed.
+  if (!empty($file->converters_enabled[$file->filemime])) {
+    foreach ($file->converters_enabled[$file->filemime] as $to => $converter) {
+      $file->converters = array($converter);
+      $file->mimes = array($to);
+
+      // Executes generation handlers.
+      foreach (array_intersect($file->handlers_enabled, $converter['handlers']) as $handler) {
+        if (function_exists($handler_generate = $handler .'_generate')) {
+          $file->handlers = array($handler);
+          $result = $handler_generate($file, 0) && $result;
         }
       }
+      unset($file->handlers);
+
+      // Save the file if there is no convertion handlers defined.
+      if (empty($converter['handlers']) && !in_array('no_handler', is_array($file->previews[$to]) ? $file->previews[$to]: array())) {
+        file_get_converted($file, 0);
+        if ($file->converted[0]) {
+          if (!file_data_save($file, 0))
+            return FALSE;
+          watchdog('file', 'The %mime preview was generated for the file uri=%uri, name=%name.', array('%mime' => $to, '%uri' => $file->uri, '%name' => $file->filename));
+        }
+      }
+
+      // Delete converted fie.
+      file_delete($file->converted[0]->filepath);
+      unset($file->converted);
     }
   }
+
+  // Delete uploaded file.
+  file_delete($file->filepath);
+
   return $result;
 }
 
@@ -702,38 +687,55 @@ function file_generate_previews($file, $cron = NULL) {
  * Converts and saves a secondary file derivative.
  *
  * @param
- *   Module name, used for the watchdog.
+ *   A file object.
+ * @param
+ *   A tier level.
+ *
+ * @return
+ *   TRUE if the preview was generated, FALSE otherwise.
+ */
+function file_generate_secondary_previews($file, $tier) {
+  if ($tier >= FILE_CONVERT_TIER_LIMIT)
+    return FALSE;
+
+  $result = FALSE;
+  if (($handler_generate = $file->handlers[$tier] .'_generate') && function_exists($handler_generate) && ($converter = $file->converters_enabled[$file->mimes[$tier - 1]][$file->mimes[$tier]])) {
+    $file->converters[$tier] = $converter;
+    $result = $handler_generate($file, $tier);
+    file_delete($file->converted[$tier]->filepath);
+    unset($file->converted[$tier]);
+  }
+  return $result;
+}
+
+/**
+ * Recursively find or generate missing converted file.
+ *
  * @param
  *   A file object.
  * @param
- *   A mime tipe to convert to.
- * @param
- *   A file generate handler.
+ *   A tier level.
  */
-function file_generate_secondary_previews($module, $file, $mime_to, $handler) {
-  $handler_generate = $handler .'_generate';
-  $mime_handlers = file_get_mime_handlers();
-  if ($mime_handlers[$handler]['enabled'] == 1 && module_exists('file_convert') && function_exists($handler_generate)) {
-    $mime_converters = file_get_mime_converters();
-    $converter = $mime_converters[$file->filemime][$mime_to];
-    if (is_array($converter)) {
-      if ($converter['enabled'] && in_array($handler, $converter['handlers'])) {
-        // Convert the file.
-        if ($converted = file_convert($file, array($handler), $converter['pipeline'])) {
-          $file->filepath = $converted;
-          $file->filemime = $mime_to;
-
-          if (!$handler_generate($file)) {
-            watchdog($module, 'A preview of type %mime was not created for the file %file, %uri.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
-          }
-
-          // Remove temporal file
-          file_delete($converted);
-        }
-        else {
-          watchdog($module, 'A preview of type %mime was not created for the file %file, %uri. File conversion failed.', array('%mime' => $mime_to, '%file' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
+function file_get_converted($file, $tier) {
+  if ($tier >= 0 && !$file->converted[$tier]) {
+    if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+      foreach ($generated as $uri => $data) {
+        if ($file->handlers[$tier] && rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $file->handlers[$tier]))) {
+          $file->converted[$tier] = (object)array('uri' => $uri);
+          $file->converted[$tier]->metadata = file_metadata_normalize(rdf_normalize(rdf_query($uri)));
+          return;
         }
       }
+    }
+    file_get_converted($file, $tier - 1);
+    if (module_exists('file_convert') && ($converted = file_convert($file, $file->converters[$tier]['pipeline'], $tier, $file->handlers[$tier] ? array($file->handlers[$tier]) : array(), is_array($file->converters[$tier]['options']) ? $file->converters[$tier]['options'] : array()))) {
+      $file->converted[$tier] = (object)array('filepath' => $converted);
+      $file->converted[$tier]->metadata = array_merge(file_metadata_extract($converted, $file->mimes[$tier]), $file->handlers[$tier] ? array('dc:creator' => array($file->handlers[$tier])) : array());
+      $file->converts++;
+    }
+    else {
+      $file->errorss++;
+      watchdog('file', 'File uri=%uri, name=%name was not converted to %mime by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->mimes[$tier], '%pipeline' => $file->converters[$tier]['pipeline']), WATCHDOG_ERROR);
     }
   }
 }
@@ -757,18 +759,15 @@ function file_handlers_for($file) {
 
   // Find generated previews for the file.
   $previews = array();
-  if (!empty($file->uri)) {
-    if ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
-      foreach ($generated as $uri => $data) {
-        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        if ($handler = $item[$uri][rdf_qname_to_uri('dc:creator')][0]) {
-          $result[$handler] = array(
-            'uri' => $uri,
-            'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
-            'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
-          );
-        }
-      }
+  if (!empty($file->uri) && ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri)))) {
+    foreach ($generated as $uri => $data) {
+      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+      if ($handler = $item[$uri][rdf_qname_to_uri('dc:creator')][0])
+        $result[$handler] = array(
+          'uri' => $uri,
+          'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
+          'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
+        );
     }
   }
 
@@ -799,16 +798,14 @@ function file_handlers_for($file) {
 function file_generated_for($file) {
   $result = array();
   // Find generated previews for the file.
-  if (!empty($file->uri)) {
-    if ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
-      foreach ($generated as $uri => $data) {
-        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
-        $result[$uri] = array(
-          'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
-          'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
-          'handler' => $item[$uri][rdf_qname_to_uri('dc:creator')][0],
-        );
-      }
+  if (!empty($file->uri) && ($generated = rdf_normalize(rdf_query(NULL, NULL, $file->uri)))) {
+    foreach ($generated as $uri => $data) {
+      $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+      $result[$uri] = array(
+        'type' => $item[$uri][rdf_qname_to_uri('dc:format')][0],
+        'size' => $item[$uri][rdf_qname_to_uri('dc:extent')][0]->value,
+        'handler' => $item[$uri][rdf_qname_to_uri('dc:creator')][0],
+      );
     }
   }
 
@@ -830,12 +827,11 @@ function file_render_generated($file, $id = 0) {
   $formats = array();
   $file_uris = file_generated_for($file);
   foreach ($file_uris as $uri => $data) {
-    if ($file->uri != $uri) {
+    if ($file->uri != $uri)
       $formats[] = array_merge($data, array(
         'uri' => $uri,
         'description' => file_mime_description_for($data['type']),
       ));
-    }
   }
 
   return theme('file_generated', array('formats' => $formats, 'nid' => $file->nid, 'vid' => $file->vid, 'name' => check_plain($file->name), 'id' => $id));
@@ -918,9 +914,9 @@ function file_wrapper($handler, $uri, $node = NULL, $options = array(), $type = 
     $handler_full = $handler .'_render';
     $output = $handler_full($uri, is_object($node) ? array_merge(array('nid' => $node->nid, 'vid' => $node->vid), $options) : $options);
   }
-  if ($type == 'html') {
+  if ($type == 'html')
     return $output;
-  }
+
   drupal_json(array('status' => TRUE, 'data' => theme('status_messages') . $output));
 }
 
@@ -952,12 +948,11 @@ function file_wrapper_html($node, $handler, $options = array()) {
  */
 function file_wrapper_ahah($handler, $hash, $vid) {
   // Access control is not done at menu layer.
-  //bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   if ($node = file_bitcache_access($hash, $vid)) {
     $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
-    if (empty($handlers[$handler])) {
+    if (empty($handlers[$handler]))
       $handlers[$handler]['uri'] = 'bitcache://'. $hash;
-    }
+
     return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', array(), 'js');
   }
   //header("HTTP/1.1 403 Forbidden");
@@ -977,9 +972,8 @@ function file_first_preview($file) {
   $previews = array();
   $file_handlers = file_handlers_for($file);
   foreach (file_get_mime_handlers() as $handler => $data) {
-    if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render')) {
+    if (array_key_exists($handler, $file_handlers) && $data['enabled'] == 1 && function_exists($handler .'_render'))
       $previews[] = $handler;
-    }
   }
   $handler = !empty($previews) ? reset($previews) : NULL;
   if (!$handler)
@@ -1080,9 +1074,8 @@ function file_bitcache_access($id, $vid) {
 
   if (isset($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
-    if (!$row) {
+    if (!$row)
       $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $parent_uri, $vid));
-    }
     if ($row) {
       $node = node_load($row->nid, $row->vid);
       return node_access('view', $node) ? $node : FALSE;
@@ -1096,9 +1089,8 @@ function file_bitcache_access($id, $vid) {
   );
 
   foreach ($files as $file) {
-    if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri) {
+    if (is_object($file) && $file->uri == $parent_uri || $file->uri == $uri)
       return (object)array('title' => $file->name, 'file' => $file);
-    }
   }
 
   return NULL;
@@ -1157,6 +1149,32 @@ function file_get_files_size($uid, $converted = 1) {
 // Auxiliary functions
 
 /**
+ * Normalizes metadata array returned by rdf_normalize().
+ *
+ * @param $dataa
+ *   An array returned by rdf_normalize()..
+ *
+ * @return
+ *   An array of normalized metadata.
+ */
+function file_metadata_normalize($data) {
+  $metadata = array();
+  if (!is_array($data))
+    return $metadata;
+
+  $namespaces = rdf_get_namespaces();
+  foreach ($data as $subject => $predicates) {
+    foreach ($predicates as $predicate => $objects) {
+      $predicate_normalized = rdf_uri_to_qname($predicate, $namespaces, FALSE);
+      foreach ($objects as $object) {
+        $metadata[$subject][$predicate_normalized][] = is_object($object) ? $object->value : $object;
+      }
+    }
+  }
+  return is_array($metadata[$subject]) ? $metadata[$subject] : array();
+}
+
+/**
  * Compares data with the template array and gets the matching entry.
  * Is needed by format modules.
  *
@@ -1206,9 +1224,8 @@ function file_get_image($file, $handler, $dimensions) {
   if (!$image && preg_match('/^image\//', $file->type)) {
     $width = rdf_value($file->uri, rdf_qname_to_uri('exif:width'))->value;
     $height = rdf_value($file->uri, rdf_qname_to_uri('exif:height'))->value;
-    if ($width < $dimensions[0] && $height < $dimensions[1]) {
+    if ($width < $dimensions[0] && $height < $dimensions[1])
       $image = file_get_hash($file->uri);
-    }
   }
   return $image ? '<img width="'. $width .'" height="'. $height .'" src="'. url('bitcache/'. $image, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
 }

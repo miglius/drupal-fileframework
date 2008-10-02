@@ -21,8 +21,8 @@ function file_enable() {
  */
 function file_install() {
   drupal_install_schema('file');
-  rdf_db_create_repository(FILE_RDF_REPOSITORY, array('dc:title' => t('File metadata'), 'dc:description' => ''));
-  //bitcache_create_repository(FILE_BITCACHE_REPOSITORY, array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.'));
+  rdf_db_create_repository('file', array('dc:title' => t('File framework'), 'dc:description' => 'A repository for the file framework managed files metadata.'));
+  bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.'));
 }
 
 /**
@@ -45,8 +45,8 @@ function file_uninstall() {
   variable_del('file_og_browser_tab');
   variable_del('file_og_gallery_tab');
 
-  //bitcache_delete_repository(FILE_BITCACHE_REPOSITORY);
-  rdf_db_delete_repository(FILE_RDF_REPOSITORY);
+  bitcache_delete_repository('file');
+  rdf_db_delete_repository('file');
 }
 
 /**

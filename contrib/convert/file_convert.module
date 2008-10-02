@@ -10,6 +10,8 @@
 
 define('FILE_CONVERT_LIMIT_SIZE', (int)variable_get('file_convert_limit_size', 10));
 
+define('FILE_CONVERT_TIER_LIMIT', 2);
+
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
 
@@ -122,15 +124,15 @@ function file_get_mime_converters() {
  * @return
  *   A converted file's filename or NULL.
  */
-function file_convert($file, $handlers, $pipeline, $options = array()) {
+function file_convert($file, $pipeline, $tier, $handlers = array(), $options = array()) {
   $status = TRUE;
   foreach ($handlers as $handler) {
-    $status = $status && !_file_convert_is_needed($file, $handler);
+    $status = $status && !_file_convert_isnot_needed($file, $handler);
   }
   if (!$status)
     return NULL;
 
-  $status = _file_convert($file, $pipeline, $options);
+  $status = _file_convert($file, $pipeline, $tier, $options);
   if (!$status) {
     foreach ($handlers as $handler) {
       _file_convert_failure_log($file, $handler);
@@ -154,22 +156,18 @@ function file_convert($file, $handlers, $pipeline, $options = array()) {
  *   A converted file's filename or NULL. Calling function
  *   should delete the tomporal file.
  */
-function _file_convert($file, $pipeline, $options) {
-  //if ($file->uri == 'bitcache://29630611d6c76e4d75807508e3fc100371ffbbfe')
-  //  return;
-  //if ($file->uri == 'bitcache://a2e482b05e6a5da7aa8f283d133401ab09fdc2ac')
-  //  return;
-
+function _file_convert($file, $pipeline, $tier, $options) {
   $options['filename'] = $file->filename;
   $tmpdir  = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '/tmp';
   $options['tmpdir'] = $tmpdir;
-  if ($file->converted) {
-    $in_file = $file->filepath;
+  $file_convert = ($tier > 0) ? $file->converted[$tier - 1] : $file;
+  if ($file_convert->filepath) {
+    $in_file = $file_convert->filepath;
     $keep_in_file = TRUE;
   }
   else {
     // Copy file to the temporal file.
-    $input = bitcache_get_stream(file_get_hash($file->uri));
+    $input = bitcache_get_stream(file_get_hash($file_convert->uri));
     $tmpfile = tempnam($tmpdir, 'drupal_file_convert_');
     $output  = fopen($tmpfile, 'wb');
     stream_copy_to_stream($input, $output);
@@ -177,11 +175,11 @@ function _file_convert($file, $pipeline, $options) {
     fclose($output);
     $in_file = $tmpfile;
   }
+
   if (!_file_convert_check_pipeline($pipeline)) {
     watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
     if (!$keep_in_file)
       file_delete($in_file);
-
     return NULL;
   }
   foreach (explode('||', $pipeline) as $pipe) {
@@ -202,11 +200,11 @@ function _file_convert($file, $pipeline, $options) {
     file_delete($in_file);
 
   if (filesize($out_file)) {
-    watchdog('file_convert', 'File uri=%uri, name=%name was converted by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline));
+    watchdog('file_convert', 'File %name, uri=%uri was converted by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline));
     return $out_file;
   }
   else {
-    watchdog('file_convert', 'File uri=%uri, name=%name was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%uri' => $file->uri, '%name' => $file->filename, '%pipeline' => $pipeline), WATCHDOG_ERROR);
+    watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline), WATCHDOG_ERROR);
     file_delete($out_file);
     return NULL;
   }
@@ -361,7 +359,7 @@ function _file_convert_failure_log($file, $handler) {
  * @return
  *   TRUE if failure is logged.
  */
-function _file_convert_is_needed($file, $handler) {
+function _file_convert_isnot_needed($file, $handler) {
   if (rdf_exists($file->uri, 'wordnet:failed', $handler))
     return TRUE;
 

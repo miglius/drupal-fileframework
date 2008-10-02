@@ -193,7 +193,7 @@ function file_embed_textarea_process($element) {
   }
 
   // Match the current path against the allowed paths configured by the administrator
-  if (_file_embed_page_match($_GET['q'])) {
+  if (user_access('embed files') && _file_embed_page_match($_GET['q'])) {
 
     // By default, only show the link on the node edit screen and the comment edit screen
     $fields = array_map('rtrim', explode("\n", FILE_EMBED_BUTTON_FIELDS));
