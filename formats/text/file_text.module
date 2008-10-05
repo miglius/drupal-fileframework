@@ -183,7 +183,7 @@ function file_text_text_generate($file, $tier = NULL) {
 
   if (!isset($tier) && FILE_TEXT_CODE) {
     $tier = 0;
-    $file->converters[$tier] = array('pipeline' => '{code2html} --fallback ruby [in_file] [out_file]');
+    $file->converters[$tier] = array('pipeline' => '{code2html} --fallback ruby "[in_file]" "[out_file]"');
     $file->handlers[$tier] = 'file_text_code';
     $file->mimes[$tier] = 'text/html';
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {

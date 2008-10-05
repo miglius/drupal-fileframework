@@ -195,6 +195,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
     }
     $out_file = tempnam($tmpdir, 'drupal_file_convert_');
     if (!_file_convert_execute_pipeline($in_file, $out_file, $pipe, $options)) {
+      watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR);
       return NULL;
     }
   }
