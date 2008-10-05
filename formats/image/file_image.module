@@ -75,12 +75,12 @@ function file_image_menu() {
 function file_image_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'insert':
-      if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && is_array($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
+      if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && isset($node->locations) && is_array($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
         $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL));
         $namespaces = rdf_get_namespaces();
-        if ($data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0] && $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0]) {
-          $node->locations[0]['locpick']['user_latitude'] = $data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0];
-          $node->locations[0]['locpick']['user_longitude'] = $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0];
+        if (($lat = isset($data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0] : NULL) && ($long = isset($data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0] : NULL)) {
+          $node->locations[0]['locpick']['user_latitude'] = $lat;
+          $node->locations[0]['locpick']['user_longitude'] = $long;
         }
       }
       break;
@@ -238,7 +238,7 @@ function file_image_metadata_info() {
   );
   foreach (_file_image_exif() as $name => $data) {
     $info[$data['rdf']] = array('name' => t($data['name']));
-    if ($data['theme'])
+    if (isset($data['theme']))
       $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
@@ -253,7 +253,8 @@ function file_image_metadata_parse($filename, $mimetype) {
 
   $metadata = array();
   if ($info = @getimagesize($filename)) {
-    list($width, $height, $type, , $mime) = getimagesize($filename);
+    $width = $info[0];
+    $height = $info[1];
     $metadata =  array_merge(array(
       'exif:width'  => array((int)$width),
       'exif:height' => array((int)$height),
@@ -270,7 +271,7 @@ function file_image_metadata_parse($filename, $mimetype) {
     if ($info = @exif_read_data($filename)) {
       $rdf_exif = array();
       foreach ($exif as $name => $data) {
-        if ($exif_data[$name] && $element = file_get_recursive($info, $data['exif'])) {
+        if (isset($exif_data[$name]) && $element = file_get_recursive($info, $data['exif'])) {
           switch ($data['type']) {
             case 'date':
               $rdf_exif[$data['rdf']] = array(rdf_datetime(strtotime($element)));
@@ -285,7 +286,7 @@ function file_image_metadata_parse($filename, $mimetype) {
         }
       }
       $metadata =  array_merge($rdf_exif, $metadata);
-      if (FILE_IMAGE_GEO && $info['GPSLatitudeRef'] && $info['GPSLatitude'] && $info['GPSLongitudeRef'] && $info['GPSLongitude']) {
+      if (FILE_IMAGE_GEO && isset($info['GPSLatitudeRef']) && isset($info['GPSLatitude']) && isset($info['GPSLongitudeRef']) && isset($info['GPSLongitude'])) {
         // Geo data.
         $lat = _file_image_geo_convert($info['GPSLatitude'], 'float');
         $long = _file_image_geo_convert($info['GPSLongitude'], 'float');
@@ -318,9 +319,9 @@ function file_image_image_generate($file, $tier = NULL) {
     return FALSE;
   }
 
-  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+  if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
     file_get_converted($file, $tier);
-    if ($file->converted[$tier]) {
+    if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
       watchdog('file_image', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
@@ -362,9 +363,9 @@ function file_image_image_generate($file, $tier = NULL) {
     $file->converters[$tier] = array('pipeline' => "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", 'options' => array('resize' => 'resize', 'width' => $width, 'height' => $height));
     $file->handlers[$tier] = $data['handler'];
     $file->mimes[$tier] = $mime;
-    if (!in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+    if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
       file_get_converted($file, $tier);
-      if ($file->converted[$tier]) {
+      if (isset($file->converted[$tier])) {
         if (!file_data_save($file, $tier))
           return FALSE;
         watchdog('file_image', 'The %mime preview %handler was generated for the file %name, uri=%uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%name' => $file->filename, '%uri' => $file->uri));
@@ -467,8 +468,8 @@ function _file_image_render_options($uri, $options = array()) {
   }
 
   $node = node_load($options['nid'], $options['vid']);
-  $title = $node->title;
-  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
+  $title = isset($node->title) ? $node->title : NULL;
+  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) . (isset($node->vid) ? '?vid='. $node->vid : '');
 
   $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => "max-width: {$max_width}px; max-height: {$max_height}px;", 'border' => '0'), $options);
   return array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));

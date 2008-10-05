@@ -85,9 +85,10 @@ function file_embed_admin_settings() {
  */
 function file_embed_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $size = $form_state['values']['file_embed_popup_size'];
+      $size = $values['file_embed_popup_size'];
       if (empty($size) || !preg_match('/^[0-9]+x[0-9]+$/', $size)) {
         form_set_error('file_embed_popup_size', t('Invalid value %value specified for popup size.', array('%value' => $size)));
       }

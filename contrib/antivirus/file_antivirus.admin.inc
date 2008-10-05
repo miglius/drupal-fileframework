@@ -40,8 +40,8 @@ function file_antivirus_admin_settings() {
   );
   // Deamon.
   $clamav_daemon_version = _file_antivirus_check_clamav(array('host' => FILE_ANTIVIRUS_CLAMAV_HOST, 'port' => FILE_ANTIVIRUS_CLAMAV_PORT, 'version' => TRUE));
-  $clamav_daemon_version = preg_match('/ClamAV/', $clamav_daemon_version) ? $clamav_daemon_version : '';
-  $message = $clamav_daemon_version ? t('The \'clamav-daemon\' %version is found at %host:%port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT, '%version' => $clamav_daemon_version)) : t('The clamav-daemon is not found at %host:%port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT));
+  $clamav_daemon_version = preg_match('/ClamAV/', $clamav_daemon_version) ? $clamav_daemon_version : NULL;
+  $message = isset($clamav_daemon_version) ? t('The \'clamav-daemon\' %version is found at %host:%port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT, '%version' => $clamav_daemon_version)) : t('The clamav-daemon is not found at %host:%port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT));
   $form['daemon'] = array('#type' => 'fieldset', '#title' => t('ClamAV daemon'), '#description' => t('These settings will be used if you have chosen "Connect to a \'clamav-daemon\' TCP socket" above. '. $message), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['daemon']['file_antivirus_clamav_host'] = array(
     '#type'          => 'textfield',
@@ -62,9 +62,9 @@ function file_antivirus_admin_settings() {
   $form['utility'] = array('#type' => 'fieldset', '#title' => t('ClamAV program'), '#description' => t('These settings will be used if you have chosen "Run a \'clamscan\' program" above.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   if ($clamav_utility_path = exec('which clamscan 2>/dev/null')) {
     $clamav_utility_version = _file_antivirus_check_clamav(array('path' => $clamav_utility_path));
-    $clamav_utility_version = preg_match('/ClamAV/', $clamav_utility_version) ? $clamav_utility_version : '';
+    $clamav_utility_version = preg_match('/ClamAV/', $clamav_utility_version) ? $clamav_utility_version : NULL;
   }
-  $message = $clamav_utility_version ? t('The \'clamscan\' %version is found at %path. If the field is left empty the default utility will be used.', array('%path' => $clamav_utility_path, '%version' => $clamav_utility_version)) : t('The \'clamscan\' is not found. Please, specify the full path.');
+  $message = isset($clamav_utility_version) ? t('The \'clamscan\' %version is found at %path. If the field is left empty the default utility will be used.', array('%path' => $clamav_utility_path, '%version' => $clamav_utility_version)) : t('The \'clamscan\' is not found. Please, specify the full path.');
   $form['utility']['file_antivirus_clamav_path'] = array(
     '#type'          => 'textfield',
     '#title'         => t('A path to the scanning utility \'clamscan\''),
@@ -90,10 +90,11 @@ function file_antivirus_admin_settings() {
  */
 function file_antivirus_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $clamav_path = $form_state['values']['file_antivirus_clamav_path'];
-      if ($form_state['values']['file_antivirus_clamav_method'] && !empty($clamav_path)) {
+      $clamav_path = $values['file_antivirus_clamav_path'];
+      if ($values['file_antivirus_clamav_method'] && !empty($clamav_path)) {
         if (!preg_match('/clamscan$/', $clamav_path)) {
           form_set_error('file_antivirus_clamav_path', t('Invalid path %path specified for the \'clamscan\' utility. The path should end with a \'clamscan\'.', array('%path' => $clamav_path)));
         }
@@ -104,14 +105,14 @@ function file_antivirus_admin_settings_validate($form, &$form_state) {
           form_set_error('file_antivirus_clamav_path', t('Invalid path %path specified for the \'clamscan\' utility. Utility have not returned it\'s version string.', array('%path' => $clamav_path)));
         }
       }
-      if (!$form_state['values']['file_antivirus_clamav_method']) {
-        if (empty($form_state['values']['file_antivirus_clamav_host'])) {
+      if (!$values['file_antivirus_clamav_method']) {
+        if (empty($values['file_antivirus_clamav_host'])) {
           form_set_error('file_antivirus_clamav_host', t('A hostname should be provided to connect to.'));
         }
-        if (empty($form_state['values']['file_antivirus_clamav_port'])) {
+        if (empty($values['file_antivirus_clamav_port'])) {
           form_set_error('file_antivirus_clamav_port', t('A port should be provided to connect to.'));
         }
-        else if (!ctype_digit($form_state['values']['file_antivirus_clamav_port'])) {
+        else if (!ctype_digit($values['file_antivirus_clamav_port'])) {
           form_set_error('file_antivirus_clamav_port', t('A port should only contain digits.'));
         }
       }

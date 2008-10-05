@@ -75,8 +75,7 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
           $db_info = content_database_info($data);
           $multiple = count($node->$field) > 1 ? TRUE : FALSE;
           foreach ($node->$field as $delta => $data) {
-            $file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta];
-            if (is_object($file)) {
+            if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && is_object($file)) {
               $node->content[$field]['field']['items'][$delta]['#item']['value'] = 's_'. $field .'_'. $delta;
             }
             else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), $node->vid))) {
@@ -105,13 +104,13 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
         if ($data['type'] == 'file_cck') {
           $db_info = content_database_info($data);
           foreach ($form[$field] as $delta => $field_data) {
-            if (!is_array($field_data)) continue;
+            if (!is_array($field_data))
+              continue;
             $title = NULL;
-            $file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta];
-            if (is_object($file)) {
+            if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && is_object($file)) {
               $title = $file->name;
             }
-            else if ($node->vid && $nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. (!empty($data['multiple']) ? ' AND delta = '. $delta : ''), $node->vid))) {
+            else if (isset($node->vid) && ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. (!empty($data['multiple']) ? ' AND delta = '. $delta : ''), $node->vid)))) {
               $node_file = node_load($nid);
               $title = $node_file->title;
             }
@@ -173,7 +172,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
   switch ($op) {
     case 'validate':
       $db_info = content_database_info($field);
-      $order = is_array($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
+      $order = isset($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
       $multiple = count($order) > 1 ? TRUE : FALSE;
       $delta = 0;
       foreach ($order as $o) {
@@ -199,11 +198,11 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
     case 'insert':
     case 'update':
       $db_info = content_database_info($field);
-      $order = is_array($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
+      $order = isset($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
       $multiple = count($order) > 1 ? TRUE : FALSE;
       $delta = 0;
 
-      $og_groups = module_exists('og') && FILE_CCK_OG_INHERITANCE ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
+      $og_groups = module_exists('og') && FILE_CCK_OG_INHERITANCE && !empty($node->og_groups) ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
       $og_public = module_exists('og_access') && FILE_CCK_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
 
       foreach ($order as $o) {
@@ -315,16 +314,16 @@ function theme_file_cck_formatter_generic($element) {
       break;
     case 'thumbnail':
       $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      return $thumbnail ? $thumbnail : t('no thumbnail');
+      return isset($thumbnail) ? $thumbnail : t('no thumbnail');
       break;
     case 'thumbnail_open':
       $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
+      $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
       return !empty($file->nid) ? l($thumbnail, 'node/'. $file->nid, array('html' => TRUE)) : $thumbnail;
       break;
     case 'thumbnail_download':
       $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
+      $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
       return !empty($file->nid) ? l($thumbnail, 'file/'. $file->nid .'/download/'. $file->vid, array('html' => TRUE)) : $thumbnail;
       break;
     case 'default':
@@ -335,7 +334,7 @@ function theme_file_cck_formatter_generic($element) {
           break;
         }
       }
-      return $handler ? file_wrapper_html($node, $handler) : '';
+      return isset($handler) ? file_wrapper_html($node, $handler) : '';
       break;
   }
 }
@@ -357,7 +356,7 @@ function file_cck_render_links($file, $id = 0) {
 
   $output = '<div class="file-links" id="file_formats_'. $id .'">';
   $links = l('open', 'node/'. $file->nid) . (FILE_VIEW_LINK ? ' | '. l('view', 'file/'. $file->nid .'/view/'. $file->vid) : '') .' | '. l('download', 'file/'. $file->nid .'/download/'. $file->vid);
-  $output .= t('File') .' '. ($file->name ? '"'. check_plain($file->name) .'" ': '') . t('options') .': '. $links;
+  $output .= t('File') .' '. (isset($file->name) ? '"'. check_plain($file->name) .'" ': '') . t('options') .': '. $links;
   $output .= '</div>';
   return $output;
 }

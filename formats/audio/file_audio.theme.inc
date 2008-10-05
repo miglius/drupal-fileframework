@@ -25,8 +25,7 @@ function theme_file_audio_admin_settings($form) {
     }
   }
   $form['getid3']['getid3'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
-  $output .= drupal_render($form);
-  return $output;
+  return drupal_render($form);
 }
 
 /**
@@ -47,7 +46,7 @@ function theme_file_audio_mp3_render($options = array()) {
   $output .= '<object type="application/x-shockwave-flash" data="'. $url .'" width="400" height="15">';
   $output .= '<param name="movie" value="'. $url .'" />';
   $output .= '</object>';
-  if (is_null($container) || !empty($container)) {
+  if (!isset($container) || !empty($container)) {
     $output .= '<p><small>'. t('Problems with audio?') .' ';
     $output .= str_replace('&gt;&gt;', '&raquo;', l(t('Download the latest Adobe Flash Player') .' >>', FILE_AUDIO_FLASH_LINK, array('title' => $title), NULL, NULL, TRUE));
     $output .= '</small></p>';

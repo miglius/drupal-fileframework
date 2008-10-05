@@ -142,7 +142,7 @@ function file_slideshow_metadata_info() {
   $info = array();
   foreach (_file_slideshow_pdf() as $name => $data) {
     $info[$data['rdf']] = array('name' => t($data['name']));
-    if ($data['theme'])
+    if (isset($data['theme']))
       $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
@@ -152,7 +152,7 @@ function file_slideshow_metadata_info() {
  * Implementation of hook_metadata_parse().
  */
 function file_slideshow_metadata_parse($filename, $mimetype) {
-  if ($mimetype !='application/pdf')
+  if ($mimetype != 'application/pdf')
     return NULL;
 
   $pdfinfo = exec('which pdfinfo');
@@ -177,7 +177,7 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
 
     $rdf_pdf = array();
     foreach ($pdf as $name => $data) {
-      if ($pdf_data[$name] && $element = file_get_recursive($info, $data['pdf'])) {
+      if (isset($pdf_data[$name]) && $element = file_get_recursive($info, $data['pdf'])) {
         switch ($data['type']) {
           case 'int' :
             $rdf_pdf[$data['rdf']] = array((int)$element);
@@ -201,9 +201,9 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
  * Generates a slideshow_pdf preview.
  */
 function file_slideshow_pdf_generate($file, $tier = NULL) {
-  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+  if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
     file_get_converted($file, $tier);
-    if ($file->converted[$tier]) {
+    if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
       watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));

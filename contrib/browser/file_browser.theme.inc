@@ -82,9 +82,9 @@ function theme_file_browser_preview($data) {
   $output .= '<div id="file-preview-spinner" style="display: none;"></div>';
   $output .= '<div id="file-preview">';
 
-  if (is_object($node)) {
+  if (isset($node)) {
     $file = $node->file;
-    $file->name = $file->name ? $file->name : $node->title;
+    $file->name = isset($file->name) ? $file->name : $node->title;
     $file->name = drupal_strlen($file->name) > FILE_BROWSER_TITLE_LENGTH_BLOCK ? drupal_substr($file->name, 0, FILE_BROWSER_TITLE_LENGTH_BLOCK - 3) .'...' : $file->name;
     $output .= '<div id="file-preview-info">';
     $output .= '<table>';
@@ -111,7 +111,7 @@ function theme_file_browser_preview($data) {
     $output .= '</table>';
     $output .= '</div>';
     $output .= '<script type=\'text/javascript\'>$(\'#file-preview-info\').find(\'span.file.with-menu\').click(function(event) { $(this).toggleClass(\'active\'); $(this).find(\'ul\').toggle(); });</script>';
-    $output .= $url_preview ? l($thumbnail, $url_preview, array('html' => TRUE, 'attributes' => array('title' => check_plain($node->title)))) : $thumbnail;
+    $output .= isset($url_preview) ? l($thumbnail, $url_preview, array('html' => TRUE, 'attributes' => array('title' => check_plain($node->title)))) : $thumbnail;
     $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
 
     // Backreferences
@@ -121,7 +121,7 @@ function theme_file_browser_preview($data) {
       $output .= '<div class="item-list">';
       $output .= '<ul>';
       foreach ($nodes as $n) {
-        $output .= '<li>'. l($n->title, 'node/'. $n->nid, $n->cid ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
+        $output .= '<li>'. l($n->title, 'node/'. $n->nid, isset($n->cid) ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
       }
       $output .= '</ul>';
       $output .= '</div>';
@@ -162,7 +162,7 @@ function theme_file_browser_newterm($form) {
  * Renders a file upload block
  */
 function theme_file_browser_upload($form) {
-  $output .= '<div id="file-upload-spinner" style="display: none;"></div>';
+  $output = '<div id="file-upload-spinner" style="display: none;"></div>';
   $output .= '<div id="file-upload">';
   $output .= $form;
   $output .= '</div>';

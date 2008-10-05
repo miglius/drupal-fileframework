@@ -46,7 +46,7 @@ function file_restriction_admin_settings() {
     '#type'          => 'checkbox',
     '#title'         => t('Include generated files'),
     '#description'   => t('Count generated (converted) files when calculating total files\' size.'),
-    '#default_value' => FILE_RESTRICTIONS_QUOTA_GENERATED,
+    '#default_value' => FILE_RESTRICTION_QUOTA_GENERATED,
   );
 
   $roles = user_roles(FALSE, 'upload files');
@@ -65,14 +65,14 @@ function file_restriction_admin_settings() {
     $form['settings_role_'. $rid]['file_restriction_extension_allowed_'. $rid] = array(
       '#type'          => 'textfield',
       '#title'         => t('Allowed file extensions'),
-      '#default_value' => $roles_extension_allowed[$rid] ? $roles_extension_allowed[$rid] : FILE_RESTRICTION_EXTENSION_ALLOWED,
+      '#default_value' => isset($roles_extension_allowed[$rid]) ? $roles_extension_allowed[$rid] : FILE_RESTRICTION_EXTENSION_ALLOWED,
       '#maxlength'     => 255,
       '#description'   => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.'),
     );
     $form['settings_role_'. $rid]['file_restriction_size_'. $rid] = array(
       '#type'          => 'textfield',
       '#title'         => t('Max file size'),
-      '#default_value' => $roles_size[$rid] ? $roles_size[$rid] : FILE_RESTRICTION_SIZE,
+      '#default_value' => isset($roles_size[$rid]) ? $roles_size[$rid] : FILE_RESTRICTION_SIZE,
       '#size'          => 10,
       '#maxlength'     => 255,
       '#description'   => t('Maximum size of the files which are allowed to be uploaded. The size should be specified in MB. Zero means that no size restriction is applied.') . t('Your PHP settings limit the maximum file size per upload to %size.', array('%size' => format_size(file_upload_max_size()))),
@@ -80,7 +80,7 @@ function file_restriction_admin_settings() {
     $form['settings_role_'. $rid]['file_restriction_quota_'. $rid] = array(
       '#type'          => 'textfield',
       '#title'         => t('Max size of all uploaded files'),
-      '#default_value' => $roles_quota[$rid] ? $roles_quota[$rid] : FILE_RESTRICTION_QUOTA,
+      '#default_value' => isset($roles_quota[$rid]) ? $roles_quota[$rid] : FILE_RESTRICTION_QUOTA,
       '#size'          => 10,
       '#maxlength'     => 255,
       '#description'   => t('Maximum size of the all uploaded files by the user. The size should be specified in MB. Zero means that no quotas are applied.'),
@@ -89,7 +89,7 @@ function file_restriction_admin_settings() {
       '#type'          => 'checkbox',
       '#title'         => t('Include generated files'),
       '#description'   => t('Count generated (converted) files when calculating total files\' size.'),
-      '#default_value' => $roles_quota_generated[$rid] ? $roles_quota_generated[$rid] : FILE_RESTRICTIONS_QUOTA_GENERATED,
+      '#default_value' => isset($roles_quota_generated[$rid]) ? $roles_quota_generated[$rid] : FILE_RESTRICTION_QUOTA_GENERATED,
     );
   }
 
@@ -110,33 +110,34 @@ function file_restriction_admin_settings() {
  */
 function file_restriction_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
       $exceed_max_msg = t('Your PHP settings limit the maximum file size per upload to %size.', array('%size' => format_size(file_upload_max_size())));
-      if (!is_numeric($form_state['values']['file_restriction_size']) || $form_state['values']['file_restriction_size'] < 0) {
+      if (!is_numeric($values['file_restriction_size']) || $values['file_restriction_size'] < 0) {
         form_set_error('file_restriction_size', t('A file size should be a positive inumber.'));
       }
-      if ($form_state['values']['file_restriction_size'] * 1024 * 1024 > file_upload_max_size()) {
+      if ($values['file_restriction_size'] * 1024 * 1024 > file_upload_max_size()) {
         form_set_error('file_restriction_size', $exceed_max_msg);
       }
-      if ($form_state['values']['file_restriction_size'] > $form_state['values']['file_restriction_quota']) {
+      if ($values['file_restriction_size'] > $values['file_restriction_quota']) {
         form_set_error('file_restriction_size', t('Max file size is bigger than max size of all uploaded files.'));
       }
-      if (!is_numeric($form_state['values']['file_restriction_quota']) || $form_state['values']['file_restriction_quota'] < 0) {
+      if (!is_numeric($values['file_restriction_quota']) || $values['file_restriction_quota'] < 0) {
         form_set_error('file_restriction_quota', t('A disk quota should be a positive number.'));
       }
 
-      foreach ($form_state['values']['roles'] as $rid => $role) {
-        if (!is_numeric($form_state['values']['file_restriction_size_'. $rid]) || $form_state['values']['file_restriction_size_'. $rid] < 0) {
+      foreach ($values['roles'] as $rid => $role) {
+        if (!is_numeric($values['file_restriction_size_'. $rid]) || $values['file_restriction_size_'. $rid] < 0) {
           form_set_error('file_restriction_size_'. $rid, t('A %role file size should be a positive inumber.', array('%role' => $role)));
         }
-        if ($form_state['values']['file_restriction_size_'. $rid] * 1024 * 1024 > file_upload_max_size()) {
+        if ($values['file_restriction_size_'. $rid] * 1024 * 1024 > file_upload_max_size()) {
           form_set_error('file_restriction_size_'. $rid, $exceed_max_msg);
         }
-        if ($form_state['values']['file_restriction_size_'. $rid] > $form_state['values']['file_restriction_quota_'. $rid]) {
+        if ($values['file_restriction_size_'. $rid] > $values['file_restriction_quota_'. $rid]) {
           form_set_error('file_restriction_size_'. $rid, t('Max %role file size is bigger than max size of all uploaded files.', array('%role' => $role)));
         }
-        if (!is_numeric($form_state['values']['file_restriction_quota_'. $rid]) || $form_state['values']['file_restriction_quota_'. $rid] < 0) {
+        if (!is_numeric($values['file_restriction_quota_'. $rid]) || $values['file_restriction_quota_'. $rid] < 0) {
           form_set_error('file_restriction_quota_'. $rid, t('A %role disk quota should be a positive number.', array('%role' => $role)));
         }
       }

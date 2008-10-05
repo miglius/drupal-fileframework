@@ -24,7 +24,7 @@ function theme_file_gallery_page($content, $options = array()) {
   $output .= drupal_get_js();
   $output .= '</head>';
   $output .= '<body style="background-color: #fff; color: #000; margin: 10px;">';
-  if ($breadcrumb) {
+  if (isset($breadcrumb) && $breadcrumb) {
     $output .= '<div id="wrapper" class="gallery"><div id="container"><div class="breadcrumb gallery">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
   }
   $output .= "\n<!-- begin content -->\n";
@@ -59,11 +59,12 @@ function theme_file_gallery_node($data, $options) {
 
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
+  $id = '';
   for ($i = 0; $i < 8; $i++)
     $id .= mt_rand(0, 9);
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l($thumbnail ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => $thumbnail ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => $url_preview['onclick'], 'title' => $title, 'id' => 'file-'. $file->nid .'-'. $id))) : ($thumbnail ? $thumbnail : t('No thumbnail'));
+  $output .= !empty($url_preview) ? l(isset($thumbnail) ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => isset($thumbnail) ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => isset($url_preview['onclick']) ? $url_preview['onclick'] : NULL, 'title' => $title, 'id' => 'file-'. $file->nid .'-'. $id))) : (isset($thumbnail) ? $thumbnail : t('No thumbnail'));
   $output .= $thickbox ? '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>' : '';
   $file->name = $title_short;
   $output .= '<br />'. theme('file_render', $file, $file_links);
@@ -105,7 +106,7 @@ function theme_file_gallery_navigation($navigation) {
  * Outputs a gallery tabs.
  */
 function theme_file_gallery_tabs($tabs) {
-  $tabs = array_map(create_function('$a', 'return \'<li\'. ($a[\'active\'] ? \' class="active"\' : \' class="ff"\') .\'>\'. l($a[\'title\'], $a[\'link\'], array(\'query\' => $a[\'query\'], \'attributes\' => $a[\'active\'] ? array(\'class\' => \'active\') : array())) .\'</li>\';'), $tabs);
+  $tabs = array_map(create_function('$a', 'return \'<li\'. (isset($a[\'active\']) ? \' class="active"\' : \' class="ff"\') .\'>\'. l($a[\'title\'], $a[\'link\'], array(\'query\' => $a[\'query\'], \'attributes\' => isset($a[\'active\']) ? array(\'class\' => \'active\') : array())) .\'</li>\';'), $tabs);
   $output = '<div id="tabs-wrapper" class="clear-block file-gallery"><ul class="tabs primary">';
   $output .= implode('', $tabs);
   $output .= '</ul></div>';

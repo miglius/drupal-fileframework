@@ -235,7 +235,7 @@ function file_video_metadata_info() {
   );
   foreach (_file_video_getid3() as $name => $data) {
     $info[$data['rdf']] = array('name' => t($data['name']));
-    if ($data['theme'])
+    if (isset($data['theme']))
       $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
@@ -273,14 +273,14 @@ function file_video_metadata_parse($filename, $mimetype) {
       $info['video']['codec'] = $info['video']['encoder'];
 
     // Needed to get the resolution for Windows Media files
-    if (is_array($info['video']['streams'])) {
+    if (isset($info['video']['streams'])) {
       foreach (reset($info['video']['streams']) as $key => $value) {
         $info['video'][$key] = $value;
       }
     }
 
     // Resolution for the FLV videos.
-    if (is_array($info['meta']['onMetaData'])) {
+    if (isset($info['meta']['onMetaData'])) {
       $info['video']['resolution_x'] = $info['meta']['onMetaData']['width'];
       $info['video']['resolution_y'] = $info['meta']['onMetaData']['height'];
     }
@@ -294,7 +294,7 @@ function file_video_metadata_parse($filename, $mimetype) {
 
     $rdf_getid3 = array();
     foreach ($getid3 as $name => $data) {
-      if ($getid3_data[$name] && $element = file_get_recursive($info, $data['getid3'])) {
+      if (isset($getid3_data[$name]) && $element = file_get_recursive($info, $data['getid3'])) {
         switch ($data['type']) {
           case 'int' :
             $rdf_getid3[$data['rdf']] = array((int)$element);
@@ -321,9 +321,9 @@ function file_video_metadata_parse($filename, $mimetype) {
  * Generates a flash_swf preview.
  */
 function file_video_flash_swf_generate($file, $tier = NULL) {
-  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+  if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
     file_get_converted($file, $tier);
-    if ($file->converted[$tier]) {
+    if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
       watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
@@ -336,9 +336,9 @@ function file_video_flash_swf_generate($file, $tier = NULL) {
  * Generates a flash_flv preview.
  */
 function file_video_flash_flv_generate($file, $tier = NULL) {
-  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+  if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
     file_get_converted($file, $tier);
-    if ($file->converted[$tier]) {
+    if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
       watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
@@ -466,8 +466,8 @@ function _file_video_render_options($uri, $options = array()) {
   }
 
   $node = node_load($options['nid'], $options['vid']);
-  $title = $node->title;
-  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) .'?vid='. $node->vid;
+  $title = isset($node->title) ? $node->title : NULL;
+  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) . (isset($node->vid) ? '?vid='. $node->vid : '');
 
   // Thumbnail
   $source = rdf_value($uri, rdf_qname_to_uri('dc:source'));
@@ -475,7 +475,7 @@ function _file_video_render_options($uri, $options = array()) {
   foreach ($derivatives as $derivative => $data) {
     if (rdf_exists($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image')) {
       $image = bitcache_resolve_uri($derivative, array('absolute' => FALSE)) .'?vid='. $node->vid;
-      last;
+      break;
     }
   }
 

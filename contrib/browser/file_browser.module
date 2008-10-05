@@ -138,7 +138,7 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
           'weight' => -1,
         ),
         'all' => array(
-          'info' => t('My files'),
+          'info' => t('All files'),
         ),
       );
       $vocabularies = taxonomy_get_vocabularies('file');
@@ -158,14 +158,14 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
           break;
         case 'upload':
           $block['subject'] = check_plain(t('File upload'));
-          $block['content'] = $block_show ? _file_browser_upload($node->nid) : NULL;
+          $block['content'] = $block_show ? _file_browser_upload(isset($node) ? $node->nid : 0) : NULL;
           break;
         case 'preview':
           $block['subject'] = check_plain(t('File information'));
           $block['content'] = $block_show ? theme('file_browser_preview', array()) : NULL;
           break;
         case 'all':
-          $block['subject'] = check_plain(t('My files'));
+          $block['subject'] = check_plain(t('All files'));
           $block['content'] = _file_browser_block('all');
           break;
         default:
@@ -532,7 +532,7 @@ function file_browser_newterm_form_submit($form, &$form_state) {
     }
   }
   $term = _file_browser_term_nodes($term, $term, NULL);
-  $output .= _file_browser_term('page', $term, FALSE, in_array($term->tid, array()), TRUE);
+  $output = _file_browser_term('page', $term, FALSE, in_array($term->tid, array()), TRUE);
   // make sure the output is sent back to the server so the data can be updated for the user
   print "<script type='text/javascript'>";
   print "parent.Drupal.file_browserDisplayTerm('page', '". $term->tid ."', '". (is_array($form_state['values']['parent']) ? 0 : $form_state['values']['parent']) ."','". $term->vid ."','". $gid ."','". $output ."','". $msg ."','". $form_state['values']['name'] ."');";
@@ -630,7 +630,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
  */
 function _file_browser_upload($gid) {
   if (!user_access('upload files'))
-    return '';
+    return;
 
   _file_browser_add_headers();
   $form = drupal_get_form('file_browser_upload_form', $gid);
@@ -642,7 +642,7 @@ function _file_browser_upload($gid) {
  */
 function _file_browser_newterm() {
   if (!user_access('create terms'))
-    return '';
+    return;
 
   _file_browser_add_headers();
   $form = drupal_get_form('file_browser_newterm_form');
@@ -697,7 +697,7 @@ function file_browser_preview($node = NULL) {
     $file = $node->file;
     // Find a thumbnail for the file.
     $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-    $thumbnail = $thumbnail ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
+    $thumbnail = isset($thumbnail) ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
   }
 
   // File back references.
@@ -749,7 +749,8 @@ function _file_browser_page($vid, $expanded_tids = array()) {
  *   The HTML block for a requested vocabulary.
  */
 function _file_browser_ajax_voc($block, $vid, $columns) {
-  if ($vid) {
+  $output = '';
+  if (isset($vid)) {
     if ($terms = taxonomy_get_tree($vid, 0, -1, 1)) {
       foreach ($terms as $term) {
         $term = clone($term);
@@ -798,7 +799,7 @@ function _file_browser_ajax_term($block, $t, $columns) {
   }
 
   foreach (_file_browser_term_nodes($t, $t, 0) as $node) {
-    if ($node) {
+    if (is_object($node)) {
       $output .= _file_browser_node($block, $node, FALSE, $columns);
     }
   }
@@ -832,15 +833,15 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   }
 
   $name = check_plain($term->name);
-  $size = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? $node->file->size : 0;'), $term->nodes));
+  $size = array_sum(array_map(create_function('$node', 'return isset($node->file) ? $node->file->size : 0;'), $term->nodes));
   $size = FILE_BROWSER_FOLDER_PROPERTIES ? format_size($size) : '&mdash;';
-  $is_vocab = $term->tid ? FALSE : TRUE;
-  $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
-  $count_terms = count(taxonomy_get_children($term->tid ? $term->tid : 0, $term->vid));
+  $is_vocab = isset($term->tid) ? FALSE : TRUE;
+  $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return isset($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
+  $count_terms = count(taxonomy_get_children(isset($term->tid) ? $term->tid : 0, $term->vid));
   $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
   $xhtml_id = (empty($term->tid) ? 'file-folder-v'. $term->vid : 'file-folder-t'. $term->tid) .'-g'. $gid .'-b'. $block;
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
-  $hierarchy = _file_browser_allow_hierarchy($term->vid, $term->tid, $gid) ? FALSE : TRUE;
+  $hierarchy = _file_browser_allow_hierarchy($term->vid, isset($term->tid) ? $term->tid : 0, $gid) ? FALSE : TRUE;
 
   return theme('file_browser_term', compact('size', 'count_files', 'count_terms', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'name', 'visibile', 'expanded', 'columns'));
 }
@@ -864,7 +865,7 @@ function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE, $if
   $title = check_plain($node->title);
   $file = $node->file;
   $file->name = $node->title;
-  $id = 't'. $node->tid .'-n'. $file->nid .'-b'. $block;
+  $id = 't'. (isset($node->tid) ? $node->tid : 0) .'-n'. $file->nid .'-b'. $block;
   $icon = file_mime_icon_for($file->type, file_mime_description_for($file->type));
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);
@@ -921,17 +922,17 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
       drupal_set_title(check_plain($vocabulary->name));
     }
   }
-  if ($terms) {
+  if (!empty($terms)) {
     foreach ($terms as $term) {
       $term = clone($term);
-      $childterms = taxonomy_get_tree($term->vid, $term->tid ? $term->tid : 0, -1, NULL);
+      $childterms = taxonomy_get_tree($term->vid, isset($term->tid) ? $term->tid : 0, -1, NULL);
       foreach ($childterms as $childterm) {
         if (is_object($childterm)) {
           $term = _file_browser_term_nodes($term, $childterm, NULL);
         }
       }
       $term = _file_browser_term_nodes($term, $term, NULL);
-      $output .= _file_browser_term($block, $term, FALSE, in_array($term->tid, $expanded_tids), $columns);
+      $output .= _file_browser_term($block, $term, FALSE, isset($term->tid) && in_array($term->tid, $expanded_tids), $columns);
     }
   }
   return $output;
@@ -951,7 +952,7 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
  *   A term object or term's nodes.
  */
 function _file_browser_term_nodes($term, $childterm, $getnodes = NULL) {
-  if ($nodes = _file_browser_select_nodes($childterm->tid ? array($childterm->tid) : array(), 0, 'n.sticky DESC, n.title ASC, n.created DESC')) {
+  if ($nodes = _file_browser_select_nodes(isset($childterm->tid) ? array($childterm->tid) : array(), 0, 'n.sticky DESC, n.title ASC, n.created DESC')) {
     while ($node = db_fetch_object($nodes)) {
       $node = node_load($node->nid);
       if ($node = clone((object)$node)) {
@@ -962,7 +963,7 @@ function _file_browser_term_nodes($term, $childterm, $getnodes = NULL) {
     }
   }
 
-  if (!$term->nodes) {
+  if (!isset($term->nodes)) {
     $term->nodes = array();
   }
   return is_null($getnodes) ? $term : $term->nodes;
@@ -990,18 +991,17 @@ function _file_browser_select_nodes($tids = array(), $depth = 0, $order = 'n.sti
       $depth = NULL;
     }
     foreach ($tids as $index => $tid) {
-      $tree = taxonomy_get_tree($term->vid, $tid, -1, $depth);
+      $tree = taxonomy_get_tree(taxonomy_get_term($tid)->vid, $tid, -1, $depth);
       $descendant_tids[] = array_merge(array($tid), array_map('_taxonomy_get_tid_from_term', $tree));
     }
 
     $str_tids = implode(',', call_user_func_array('array_merge', $descendant_tids));
-    if ($str_tids) {
+    if (!empty($str_tids)) {
       $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
       $sql = db_rewrite_sql($sql);
-      $result = db_query($sql);
+      return db_query($sql);
     }
   }
-  return $result;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1039,7 +1039,7 @@ function _file_browser_add_headers() {
  * @param $tid
  *   A parent term ID
  */
-function _file_browser_allow_hierarchy($vid, $tid, $gid) {
+function _file_browser_allow_hierarchy($vid, $tid = 0, $gid = 0) {
   // check that the vocabulary that it is being created under allows hierarchy
   $vocabularies = taxonomy_get_vocabularies('file');
   $voc = $vocabularies[$vid];

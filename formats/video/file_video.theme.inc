@@ -25,8 +25,7 @@ function theme_file_video_admin_settings($form) {
     }
   }
   $form['getid3']['getid3'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
-  $output .= drupal_render($form);
-  return $output;
+  return drupal_render($form);
 }
 
 /**
@@ -36,7 +35,7 @@ function theme_file_video_render_player($options, $output, $url, $link_text, $ti
   extract($options, EXTR_SKIP);
 
   $output = "\n".'<div'. drupal_attributes(array('class' => $class)) .'>'. $output;
-  if (is_null($container) || !empty($container)) {
+  if (!isset($container) || !empty($container)) {
     $output .= '<p><small>'. t('Problems viewing the video?') .' ';
     $output .= str_replace('&gt;&gt;', '&raquo;', l($link_text .' >>', $url, array('title' => $title), NULL, NULL, TRUE));
     $output .= '</small></p>';
@@ -106,7 +105,7 @@ function theme_file_video_flash_flv_render($options = array()) {
   $min_width = 175; //smaller than that breaks player controls
   $player_path = url() . drupal_get_path('module', 'file') .'/vendor/flowplayer';
 
-  $output .= '<embed ';
+  $output = '<embed ';
   $output .= 'id="FlowPlayer" ';
   $output .= 'width="'. $width .'" ';
   $output .= 'height="'. $height .'" ';

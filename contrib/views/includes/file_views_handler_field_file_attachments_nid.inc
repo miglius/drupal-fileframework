@@ -37,7 +37,7 @@ class file_views_handler_field_file_attachments_nid extends views_handler_field_
     foreach ($values as $result) {
       $nids[] = $result->{$this->aliases['nid']};
     }
-    if ($nids) {
+    if (!empty($nids)) {
       // Support "only listed files" option.
       $where = '';
       if (!empty($this->options['only_listed'])) {

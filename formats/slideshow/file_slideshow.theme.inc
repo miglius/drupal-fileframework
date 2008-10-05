@@ -25,7 +25,6 @@ function theme_file_slideshow_admin_settings($form) {
     }
   }
   $form['pdf']['pdf'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
-  $output .= drupal_render($form);
-  return $output;
+  return drupal_render($form);
 }
 

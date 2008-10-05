@@ -35,7 +35,6 @@ function theme_file_convert_admin_converter_settings($form) {
   }
   $header = array(t('From/To'), t('Conversion utilities'), t('Installed'), t('Enabled'), t('Module'));
   $form['convert']['convert'] = array('#type' => 'markup', '#value' => theme('table', $header, $rows));
-  $output .= drupal_render($form);
-  return $output;
+  return drupal_render($form);
 }
 

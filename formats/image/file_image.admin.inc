@@ -105,21 +105,22 @@ function file_image_admin_settings() {
  */
 function file_image_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $preview_resolution = $form_state['values']['file_image_preview_resolution'];
+      $preview_resolution = $values['file_image_preview_resolution'];
       if (empty($preview_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $preview_resolution)) {
         form_set_error('file_image_preview_resolution', t('Invalid value %value specified for embedded image preview resolution.', array('%value' => $preview_resolution)));
       }
-      $medium_resolution = $form_state['values']['file_image_medium_resolution'];
+      $medium_resolution = $values['file_image_medium_resolution'];
       if (empty($medium_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $medium_resolution)) {
         form_set_error('file_image_medium_resolution', t('Invalid value %value specified for embedded image medium resolution.', array('%value' => $medium_resolution)));
       }
-      $thumbnail_resolution = $form_state['values']['file_image_thumbnail_resolution'];
+      $thumbnail_resolution = $values['file_image_thumbnail_resolution'];
       if (empty($thumbnail_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $thumbnail_resolution)) {
         form_set_error('file_image_thumbnail_resolution', t('Invalid value %value specified for embedded image thumbnail resolution.', array('%value' => $thumbnail_resolution)));
       }
-      foreach (explode("\n", $form_state['values']['file_image_custom_previews']) as $line) {
+      foreach (explode("\n", $values['file_image_custom_previews']) as $line) {
         $line = trim(preg_replace('/\s+/', ' ', $line));
         if (!empty($line) && !preg_match('/^#/', $line)) {
           list($resolution, $handler, $name) = explode(' ', $line, 3);

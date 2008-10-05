@@ -218,7 +218,7 @@ function file_admin_handler_settings() {
       );
     }
     $form['handler'][$handler]['parent'] = array(
-      '#value' => $mime_handlers[$mime_handlers[$handler]['parent']]['name'],
+      '#value' => isset($mime_handlers[$handler]['parent']) ? $mime_handlers[$mime_handlers[$handler]['parent']]['name'] : NULL,
     );
     $form['handler'][$handler]['module'] = array(
       '#value' => $mime_handlers[$handler]['module'],

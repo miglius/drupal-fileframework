@@ -40,12 +40,12 @@ function theme_file_admin_handler_settings($form) {
       $element['weight']['#attributes']['class'] = "handler-weight";
       $row[] = array('data' => drupal_render($element['enabled']), 'class' => 'checkbox');
       $row[] = drupal_render($element['weight']);
-      $rows[] = array('data' => $row, 'class' => 'draggable'. ($element['enabled']['#default_value'] ? ' menu-enabled' : ' menu-disabled'));
+      $rows[] = array('data' => $row, 'class' => 'draggable'. (isset($element['enabled']['#default_value']) ? ' menu-enabled' : ' menu-disabled'));
       unset($form['handler'][$handler]);
     }
   }
 
-  if ($rows) {
+  if (!empty($rows)) {
     $form['handler']['table'] = array(
       '#value' => theme('table', $header, $rows, array('id' => 'file-table')),
     );
@@ -59,9 +59,10 @@ function theme_file_admin_handler_settings($form) {
  */
 function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   static $initialized = FALSE;
-  $is_node = $file->nid && !$file->derived;
+  $is_node = isset($file->nid) && !isset($file->derived);
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
+  $id = '';
   for ($i = 0; $i < 8; $i++)
     $id .= mt_rand(0, 9);
 
@@ -100,9 +101,9 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
   $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
-  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . ($file->desc ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) . ($file->name ? ' <span class="title">'. check_plain($file->name) . ($file->desc ? ' - '. $file->desc : '') .'</span>': '') .'</span>'. $links .'</span></span>';
+  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . (isset($file->desc) ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) .' <span class="title">'. (isset($file->name) ? check_plain($file->name) : '') . (isset($file->name) && isset($file->desc) ? ' - ' : '') . (isset($file->desc) ? $file->desc : '') .'</span></span>'. $links .'</span></span>';
   if ($is_node)
-    $output .= '<script type=\'text/javascript\'>'. ($iframe ? 'parent.' : '') .'tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
+    $output .= '<script type=\'text/javascript\'>'. (isset($iframe) ? 'parent.' : '') .'tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>';
   $output = preg_replace("/\n/", '', $output);
   return $output;
 }
@@ -121,6 +122,7 @@ function theme_file_show($data) {
 function theme_file_previews($data) {
   extract($data, EXTR_SKIP);
 
+  $output = '';
   $prevs = array();
   foreach ($previews as $preview) {
     if (!isset($handler_first)) {
@@ -129,7 +131,7 @@ function theme_file_previews($data) {
     $prevs[] = '<span class="file-preview-toggle" id="'. $preview['handler'] .'-'. $id .'">'. l($preview['name'], !empty($nid) ? 'node/'. $nid .'/file_preview/'. $preview['handler'] : '') .'</span>';
   }
   if (!empty($prevs)) {
-    $output = '<div class="file-generated" id="file-preview-'. $id .'">';
+    $output .= '<div class="file-generated" id="file-preview-'. $id .'">';
     // If there is no string before the first previre, the first preview does not work.
     $output .= t('Preview') .': '. implode(' | ', $prevs);
     $output .= !isset($nid) ? '<div id="file-preview-notice-'. $id .'">'. t(' (works only with a Javascript enabled)') .'</div>' : '';
@@ -154,14 +156,15 @@ function theme_file_previews($data) {
 function theme_file_generated($data) {
   extract($data, EXTR_SKIP);
 
+  $output = '';
   $entries = array();
   $handlers = file_get_mime_handlers();
   foreach ($formats as $gid => $format) {
     $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : '';
-    $entries[] = theme('file_render', (object)array('nid' => $nid, 'vid' => $vid, 'name' => '', 'type' => $format['type'], 'size' => $format['size'], 'uri' => $format['uri'], 'derived' => TRUE, 'desc' => $description));
+    $entries[] = theme('file_render', (object)array('nid' => $nid, 'vid' => $vid, 'type' => $format['type'], 'size' => $format['size'], 'uri' => $format['uri'], 'derived' => TRUE, 'desc' => $description));
   }
   if (!empty($entries)) {
-    $output = '<div class="file-formats" id="file-formats-'. $id .'">';
+    $output .= '<div class="file-formats" id="file-formats-'. $id .'">';
     $output .= t('Other available formats') .': ';
     $output .= implode(' ', $entries);
     $output .= '</div>';
@@ -239,7 +242,7 @@ function theme_file_block_formats($data) {
   $entries = array();
   $handlers = file_get_mime_handlers();
   foreach ($formats as $id => $format) {
-    $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : '';
+    $description = preg_match('/^file_image_/', $format['handler']) ? $handlers[$format['handler']]['name'] : NULL;
     $entries[] = theme('file_render', (object)array('nid' => $nid, 'vid' => $vid, 'name' => file_mime_description_for($format['type']), 'type' => $format['type'], 'size' => $format['size'], 'uri' => $format['uri'], 'derived' => TRUE, 'desc' => $description));
   }
   if (!empty($entries)) {

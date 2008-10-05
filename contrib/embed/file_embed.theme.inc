@@ -16,7 +16,7 @@ function theme_file_embed_textarea_link($data) {
   extract($data, EXTR_SKIP);
 
   static $initialized = FALSE;
-  if (!$initialized) { // once only
+  if (!$initialized) {
     $initialized = TRUE;
 
     // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
@@ -49,7 +49,7 @@ function theme_file_embed_options($data) {
   $output .= '</div>';
   $output .= '<div id="file-gallery-body">';
   $output .= '<div style="text-align: center; padding-bottom: 10px;"><h4>'. $title .'</h4></div>';
-  $output .= '<div style="float: right;"><br />'. ($preview ? $preview : '<br /><span class="no-thumbnail">'. t('No preview') .'</span><br />') .'</div>';
+  $output .= '<div style="float: right;"><br />'. (isset($preview) ? $preview : '<br /><span class="no-thumbnail">'. t('No preview') .'</span><br />') .'</div>';
   $output .= $form;
   $output .= '</div>';
   return $output;
@@ -61,9 +61,9 @@ function theme_file_embed_options($data) {
 function theme_file_embed_file($data) {
   extract($data, EXTR_SKIP);
 
-  $output = '<div class="embed'. (isset($align) ? '-'. $align : '') .'" style="'. ($width ? 'width: '. $width .'px;' : '') .'">';
+  $output = '<div class="embed'. (isset($align) ? '-'. $align : '') .'">';
   $output .= '<div class="embed-file">'. $file_html .'</div>';
-  $output .= $caption ? '<div class="embed-caption">'. $caption .'</div>' : '';
+  $output .= isset($caption) ? '<div class="embed-caption">'. $caption .'</div>' : '';
   $output .= '</div>';
   return $output;
 }

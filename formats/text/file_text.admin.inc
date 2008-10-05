@@ -63,15 +63,16 @@ function file_text_admin_settings() {
  */
 function file_text_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $preview_lines = $form_state['values']['file_text_preview_lines'];
+      $preview_lines = $values['file_text_preview_lines'];
       if (!ctype_digit($preview_lines)) {
         form_set_error('file_text_preview_lines', t('Invalid value %value specified for the number of lines.', array('%value' => $preview_lines)));
       }
-      $code = $form_state['values']['file_text_code'];
+      $code = $values['file_text_code'];
       $code2html = exec('which code2html 2>/dev/null');
-      if (!empty($code) && !$code2html) {
+      if (!empty($code) && empty($code2html)) {
         form_set_error('file_text_code', t('Code2HTML cannot be enabled because code2html utility is not found in the system path.'));
       }
       break;

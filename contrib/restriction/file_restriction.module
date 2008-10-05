@@ -155,9 +155,12 @@ function _file_restriction_get_restrictions() {
     $roles_quota_generated = variable_get('file_restriction_roles_quota_generated', array());
 
     foreach ($user->roles as $rid => $name) {
-      $extension_allowed = array_merge($extension_allowed, explode(' ', $roles_extension_allowed[$rid]));
-      $size = max($size, $roles_size[$rid] * 1024*1024);
-      $quota = max($quota, $roles_quota[$rid] * 1024*1024);
+      if (isset($roles_extension_allowed[$rid]))
+        $extension_allowed = array_merge($extension_allowed, explode(' ', $roles_extension_allowed[$rid]));
+      if (isset($roles_size[$rid]))
+        $size = max($size, $roles_size[$rid] * 1024*1024);
+      if (isset($roles_quota[$rid]))
+        $quota = max($quota, $roles_quota[$rid] * 1024*1024);
       $quota_generated = min($quota_generated, isset($roles_quota_generated[$rid]) ? $roles_quota_generated[$rid] : 1);
     }
     $restrictions = array(

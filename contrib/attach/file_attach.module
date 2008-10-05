@@ -117,7 +117,7 @@ function file_attach_block($op = 'list', $delta = 0, $edit = array()) {
  * Implementation of hook_init().
  */
 function file_attach_init() {
-  if (!empty($_POST) && $_POST['form_id'] == 'comment_form' && $_POST['op'] == t('Preview') && FILE_ATTACH_METHOD) {
+  if (!empty($_POST) && $_POST['form_id'] == 'comment_form' && isset($_POST['op']) && $_POST['op'] == t('Preview') && FILE_ATTACH_METHOD) {
     // When AHAH file attach is disabled everything is working
     // as expected and this section is not needed, however, when it's
     // enabled, the AHAH sets #cache to TRUE and then hook_form_alter()
@@ -135,10 +135,11 @@ function file_attach_init() {
     unset($form_state['values']['files']['upload_0']);
 
     // Handle new uploads, and merge tmp files into node-files.
+    $form = array();
     file_attach_form_submit($form, $form_state);
 
     $files = array();
-    if (is_array($form_state['values']['files'])) {
+    if (isset($form_state['values']['files'])) {
       foreach ($form_state['values']['files'] as $fid => $file) {
         $files[$fid] = (object)$file;
       }
@@ -183,8 +184,8 @@ function file_attach_init() {
 function file_attach_link($type, $node, $teaser = NULL) {
   $links = array();
   // Display a link with the number of attachments when the node teaser is shown
-  if ($teaser && $type == 'node' && !empty($node->files) && user_access('view attached files')) {
-    $num_files = is_array($node->files) ? count($node->files) : 0;
+  if (isset($teaser) && $type == 'node' && !empty($node->files) && user_access('view attached files')) {
+    $num_files = isset($node->files) ? count($node->files) : 0;
     if ($num_files) {
       $type = node_get_types('type', $node);
       $links['attachments'] = array(
@@ -235,7 +236,7 @@ function file_attach_form_alter(&$form, $form_state, $form_id) {
     // Comments API does not have a 'prepare' handler, so here we have
     // to clean a session from old files when user navigated away from the
     // comment preview page with unsaved files.
-    if (!$_POST) {
+    if (!isset($_POST)) {
       $_SESSION['file_attach_files'] = array();
     }
 
@@ -269,6 +270,9 @@ function file_attach_form_alter(&$form, $form_state, $form_id) {
  *   An array with thw user input showing which attachmwnts are marked fordeletion.
  */
 function _file_attach_form_fieldset(&$form, $object) {
+  if (!user_access('attach files'))
+    return;
+
   if (!FILE_ATTACH_METHOD) {
     drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
     drupal_add_js(array(
@@ -329,14 +333,14 @@ function _file_attach_form($object) {
 
       // Nodes and comments are cached differently. Nodes
       // needs #default_value', but comments - #value.
-      $value = $object->type ? '#default_value' : '#value';
+      $value = isset($object->type) ? '#default_value' : '#value';
       $form['files'][$fid] = array(
         'nid'      => array('#type' => 'value', '#value' => $file->nid),
         'vid'      => array('#type' => 'value', '#value' => $file->vid),
-        'sid'      => array('#type' => 'value', '#value' => $file->sid),
+        'sid'      => array('#type' => 'value', '#value' => isset($file->sid) ? $file->sid : NULL),
         'uri'      => array('#type' => 'value', '#value' => $file->uri),
-        'name'     => array('#type' => 'textfield', $value => $file->name, '#size' => 40, '#maxlength' => 256, '#disabled' => $file->nochange ? TRUE : FALSE),
-        'nochange' => array('#type' => 'value', '#value' => $file->nochange),
+        'name'     => array('#type' => 'textfield', $value => $file->name, '#size' => 40, '#maxlength' => 256, '#disabled' => isset($file->nochange) ? TRUE : FALSE),
+        'nochange' => array('#type' => 'value', '#value' => isset($file->nochange) ? $file->nochange : NULL),
         'type'     => array('#type' => 'value', '#value' => $file->type),
         'size'     => array('#type' => 'value', '#value' => $file->size),
         'remove'   => array('#type' => 'checkbox', $value => !empty($file->remove)),
@@ -424,7 +428,7 @@ function file_attach_form_submit($form, &$form_state) {
 
   // Loop through submitted data and fill in missing
   // default values, such as bitcache URI, etc.
-  if (is_array($form_state['values']['files'])) {
+  if (isset($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file) {
 
       // Make sure that all submitted form elements are set, otherwise they
@@ -466,7 +470,7 @@ function file_attach_form_submit($form, &$form_state) {
   } while (array_key_exists('upload_'. $i, $form_state['values']));
 
   // Attach already saved file node.
-  if (preg_match('/^\[(\d+)\]/', $form_state['values']['attach_saved'], $matches)) {
+  if (isset($form_state['values']['attach_saved']) && preg_match('/^\[(\d+)\]/', $form_state['values']['attach_saved'], $matches)) {
     if (($node = node_load($matches[1])) && is_object($node->file)) {
       if (node_access('view', $node)) {
         $node->file->name = $node->title;
@@ -495,9 +499,9 @@ function file_attach_form_submit($form, &$form_state) {
       // For the attached saved files the user does not have permision to change
       // node name the form name element is dissabled and the name is not passed
       // in the $form_state. Have to merge back the default name.
-      if (isset($file['nochange'])) {
+      if (isset($file['nochange']) && $file['nochange'] == 1) {
         $node = node_load($file['nid']);
-        $form_state['values']['files'][$fid]['name'] = $node->title;
+        $form_state['values']['files'][$fid]['name'] = isset($node->title) ? $node->title : '';
       }
 
       $form_state['values']['files'][$fid]['#weight'] = $file['weight'] + $microweight;
@@ -518,7 +522,7 @@ function file_attach_form_submit($form, &$form_state) {
 function _file_attach_file(&$form_state, $file) {
   // We do not allow the same file to be uploaded several times.
   $is_uploaded = FALSE;
-  if (is_array($form_state['values']['files'])) {
+  if (isset($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file_attached) {
       if ($file_attached['uri'] == $file->uri) {
         $is_uploaded = TRUE;
@@ -530,7 +534,7 @@ function _file_attach_file(&$form_state, $file) {
   if (!$is_uploaded) {
     // Add default list and weight parameters.
     $file->list = 1;
-    $file->weight = is_array($form_state['values']['files']) ? count($form_state['values']['files']) + 1 : 1;
+    $file->weight = isset($form_state['values']['files']) ? count($form_state['values']['files']) + 1 : 1;
 
     $fid = isset($file->sid) ? $file->sid : 'n_'. $file->nid;
     $_SESSION['file_attach_files'][$fid] = $file;
@@ -559,7 +563,7 @@ function file_attach_js() {
   file_attach_form_submit($form, $form_state);
 
   $files = array();
-  if (is_array($form_state['values']['files'])) {
+  if (isset($form_state['values']['files'])) {
     foreach ($form_state['values']['files'] as $fid => $file) {
       $files[$fid] = (object)$file;
     }
@@ -627,7 +631,7 @@ function file_attach_autocomplete($string = '') {
 /**
  * Implementation of hook_nodeapi().
  */
-function file_attach_nodeapi(&$node, $op, $a3, $a4) {
+function file_attach_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'load':
       if (variable_get('file_attach_node_'. $node->type, TRUE) == TRUE) {
@@ -639,7 +643,7 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
       // Initialize $_SESSION['file_attach_files'] if no post occurred.
       // This clears the variable from old forms and makes sure it
       // is an array to prevent notices and errors in other parts.
-      if (!$_POST) {
+      if (!isset($_POST)) {
         $_SESSION['file_attach_files'] = array();
       }
       break;
@@ -691,7 +695,7 @@ function file_attach_nodeapi(&$node, $op, $a3, $a4) {
       break;
 
     case 'search result':
-      return is_array($node->files) ? format_plural(count($node->files), '1 attachment', '@count attachments') : NULL;
+      return isset($node->files) ? format_plural(count($node->files), '1 attachment', '@count attachments') : NULL;
 
     case 'rss item':
       if ($node->type != 'file' && !empty($node->files)) {
@@ -808,11 +812,11 @@ function _file_attach_load($nid, $vid, $cid = 0) {
 function _file_attach_view($object) {
   drupal_add_css(drupal_get_path('module', 'file_attach') .'/file_attach.css', 'module');
 
-  $pid = $object->type ? 0 : $object->cid;
+  $pid = isset($object->type) ? 0 : $object->cid;
   $files = array();
 
   // Hide not listed or marked for deletion files.
-  if (is_array($object->files)) {
+  if (isset($object->files)) {
     foreach ($object->files as $file) {
       if (!empty($file->list) && empty($file->remove)) {
         $files[] = (object)$file;
@@ -845,7 +849,7 @@ function _file_attach_view($object) {
       $id++;
     }
   }
-  return is_array($content) ? $content : array();
+  return isset($content) ? $content : array();
 }
 
 /**
@@ -857,8 +861,8 @@ function _file_attach_view($object) {
  *   A comment object.
  */
 function _file_attach_save($node, $comment = NULL) {
-  $files = $comment ? $comment->files : $node->files;
-  $cid = $comment ? $comment->cid : 0;
+  $files = isset($comment) ? (isset($comment->files) ? $comment->files : array()) : (isset($node->files) ? $node->files : array());
+  $cid = isset($comment) ? $comment->cid : 0;
 
   if (empty($files)) {
     return;
@@ -879,7 +883,7 @@ function _file_attach_save($node, $comment = NULL) {
     // Create new nodes.
     if (!empty($file->sid)) {
       $file->name = trim($file->name);
-      $og_groups = module_exists('og') && FILE_ATTACH_OG_INHERITANCE ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
+      $og_groups = module_exists('og') && FILE_ATTACH_OG_INHERITANCE && !empty($node->og_groups) ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
       $og_public = module_exists('og_access') && FILE_ATTACH_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
       $file_node = file_node_create(array_merge(array('file' => $file), $og_groups, $og_public));
       if (!$comment)

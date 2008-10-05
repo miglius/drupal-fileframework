@@ -34,7 +34,7 @@ function file_page_metadata($node) {
       foreach ($objects as $object) {
         $rdf = rdf_uri_to_qname($predicate, $namespaces, FALSE);
         if ($name = $info[$rdf]['name']) {
-          db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
+          db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $name, isset($info[$rdf]['theme']) ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
         }
       }
     }
@@ -105,7 +105,7 @@ function file_serve($node, $vid, $disposition = 'download') {
     return;
   }
   $href = bitcache_resolve_uri('bitcache://'. file_get_hash($node->file));
-  $query = array('vid' => $vid ? $vid : $node->vid, 'disposition' => $disposition);
+  $query = array('vid' => isset($vid) ? $vid : $node->vid, 'disposition' => $disposition);
   drupal_goto($href, $query);
 }
 
@@ -130,9 +130,9 @@ function file_metadata($uri, $nid) {
   $parent_uri = rdf_value($uri, rdf_qname_to_uri('dc:source'));
 
   $files = array_merge(
-    is_object($_SESSION['file_preview_file']) ? array($_SESSION['file_preview_file']) : array(),
-    is_array($_SESSION['file_attach_files']) ? $_SESSION['file_attach_files'] : array(),
-    is_array($_SESSION['file_cck_files']) ? $_SESSION['file_cck_files'] : array()
+    isset($_SESSION['file_preview_file']) && is_object($_SESSION['file_preview_file']) ? array($_SESSION['file_preview_file']) : array(),
+    isset($_SESSION['file_attach_files']) && is_array($_SESSION['file_attach_files']) ? $_SESSION['file_attach_files'] : array(),
+    isset($_SESSION['file_cck_files']) && is_array($_SESSION['file_cck_files']) ? $_SESSION['file_cck_files'] : array()
   );
 
   foreach ($files as $file) {
@@ -155,8 +155,8 @@ function file_metadata($uri, $nid) {
       foreach ($predicates as $predicate => $objects) {
         foreach ($objects as $object) {
           $rdf = rdf_uri_to_qname($predicate, $namespaces, FALSE);
-          if ($name = $info[$rdf]['name']) {
-            $data[] = array($name, $info[$rdf]['theme'] ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
+          if (isset($info[$rdf]) && $name = $info[$rdf]['name']) {
+            $data[] = array($name, isset($info[$rdf]['theme']) ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
           }
         }
       }
@@ -182,15 +182,15 @@ function file_metadata($uri, $nid) {
  */
 function file_og_browser($node, $vid) {
   drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File browser') .')');
-  if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if ($vid && is_object($vocabs[$vid])) {
+  if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
+    if (isset($vid) && is_object($vocabs[$vid])) {
       return file_browser_page($vid);
     }
     else {
       foreach ($vocabs as $vid => $v) {
         $vids[] = $vid;
       }
-      $script = count($vids) == 1 ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-bpage > div.file-cells").click(); });</script>' : '';
+      $script = (count($vids) == 1) ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-bpage > div.file-cells").click(); });</script>' : '';
       return file_browser_page($vids, NULL, $script);
     }
   }
@@ -210,15 +210,15 @@ function file_og_browser($node, $vid) {
  */
 function file_og_gallery($node, $vid, $tid, $filter) {
   drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File gallery') .')');
-  if (is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if ($vid && is_object($vocabs[$vid])) {
+  if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
+    if (isset($vid) && is_object($vocabs[$vid])) {
       return file_gallery_page($vid, $tid, $filter, 'file');
     }
     else {
       foreach ($vocabs as $vid => $v) {
         $vids[] = $vid;
       }
-      return count($vids) == 1 ? file_gallery_page(reset($vids), NULL, NULL, 'file') : file_gallery_page($vids, NULL, NULL, 'file');
+      return (count($vids) == 1) ? file_gallery_page(reset($vids), NULL, NULL, 'file') : file_gallery_page($vids, NULL, NULL, 'file');
     }
   }
   else {

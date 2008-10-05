@@ -55,9 +55,10 @@ function file_convert_admin_settings() {
  */
 function file_convert_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      if (!ctype_digit($form_state['values']['file_convert_limit_size'])) {
+      if (!ctype_digit($values['file_convert_limit_size'])) {
         form_set_error('file_convert_limit_size', t('A file size should be an integer value.'));
       }
       break;
@@ -69,9 +70,10 @@ function file_convert_admin_settings_validate($form, &$form_state) {
  */
 function file_convert_admin_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      variable_set('file_convert_limit_size', $form_state['values']['file_convert_limit_size']);
+      variable_set('file_convert_limit_size', $values['file_convert_limit_size']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
@@ -149,13 +151,13 @@ function file_convert_admin_converter_settings_validate($form, &$form_state) {
  */
 function file_convert_admin_converter_settings_submit($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
-
+  $values = $form_state['values'];
   $pipelines = array();
-  foreach ($form_state['values'] as $key => $val) {
+  foreach ($values as $key => $val) {
     if (preg_match('/^file_.*_pipeline$/', $key)) {
       list($module, $from_to) = explode('__', preg_replace('/_pipeline$/', '', $key));
       list($from, $to) = explode('_', $from_to);
-      $enabled = !empty($form_state['values'][$module .'__'. $from .'_'. $to .'_enabled']) ? 1 : 0;
+      $enabled = !empty($values[$module .'__'. $from .'_'. $to .'_enabled']) ? 1 : 0;
       $pipelines[$module][preg_replace('/\\\\/', '.', $from)][preg_replace('/\\\\/', '.', $to)] = array('pipeline' => $val, 'enabled' => $enabled);
     }
   }

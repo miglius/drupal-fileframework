@@ -25,8 +25,7 @@ function theme_file_image_admin_settings($form) {
     }
   }
   $form['exif']['exif'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
-  $output .= drupal_render($form);
-  return $output;
+  return drupal_render($form);
 }
 
 /**
@@ -35,11 +34,12 @@ function theme_file_image_admin_settings($form) {
 function theme_file_image_image_render($options = array()) {
   extract($options, EXTR_SKIP);
 
-  if (is_null($container) || !empty($container)) {
-    $output = '<span class="file-image" style="display: block; margin: 0px; padding: 0px;';
-    $output .= $width ? ' width: '. min($width, $max_width) .'px;' : '';
-    $output .= $height ? ' height: '. min($height, $max_height) .'px;' : '';
-    $output .= $width || $height ? ' overflow: hidden;' : '';
+  $output = '';
+  if (!isset($container) || !empty($container)) {
+    $output .= '<span class="file-image" style="display: block; margin: 0px; padding: 0px;';
+    $output .= isset($width) ? ' width: '. min($width, $max_width) .'px;' : '';
+    $output .= isset($height) ? ' height: '. min($height, $max_height) .'px;' : '';
+    $output .= isset($width) || isset($height) ? ' overflow: hidden;' : '';
     $output .= '">';
   }
   $output .= '<img ';
@@ -52,7 +52,7 @@ function theme_file_image_image_render($options = array()) {
     }
   }
   $output .= '/>';
-  if (is_null($container) || !empty($container)) {
+  if (!isset($container) || !empty($container)) {
     $output .= '</span>';
   }
 

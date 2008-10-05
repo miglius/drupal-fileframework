@@ -16,12 +16,13 @@ function theme_file_text_text_render($options = array()) {
   extract($options, EXTR_SKIP);
 
   $form['preview'] = array(
+    '#id' => 'file_text_text',
     '#type' => 'textarea',
     '#name' => 'file_preview',
     '#rows' => 15,
     '#cols' => 80,
     '#attributes' => array('disabled' => 'disabled'),
-    '#value' => utf8_encode($text) . $append,
+    '#value' => utf8_encode($text) . (isset($append) ? $append : ''),
   );
   return drupal_render($form);
 }

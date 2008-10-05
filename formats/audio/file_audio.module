@@ -184,7 +184,7 @@ function file_audio_metadata_info() {
   $info = array();
   foreach (_file_audio_getid3() as $name => $data) {
     $info[$data['rdf']] = array('name' => t($data['name']));
-    if ($data['theme'])
+    if (isset($data['theme']))
       $info[$data['rdf']]['theme'] = $data['theme'];
   }
   return $info;
@@ -197,7 +197,6 @@ function file_audio_metadata_parse($filename, $mimetype) {
   if (!array_key_exists($mimetype, file_audio_mime_types()))
     return NULL;
 
-  // FIXME
   // Refactor when getid3 module is ported to D6
   $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3/getid3/getid3.php';
   if (!file_exists($getid3_path))
@@ -220,7 +219,7 @@ function file_audio_metadata_parse($filename, $mimetype) {
 
     $rdf_getid3 = array();
     foreach ($getid3 as $name => $data) {
-      if ($getid3_data[$name] && $element = file_get_recursive($info, $data['getid3'])) {
+      if (isset($getid3_data[$name]) && $element = file_get_recursive($info, $data['getid3'])) {
         switch ($data['type']) {
           case 'int' :
             $rdf_getid3[$data['rdf']] = array((int)$element);
@@ -244,9 +243,9 @@ function file_audio_metadata_parse($filename, $mimetype) {
  * Generates an audio_mp3 preview.
  */
 function file_audio_mp3_generate($file, $tier = NULL) {
-  if (isset($tier) && !in_array($file->handlers[$tier], is_array($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
+  if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
     file_get_converted($file, $tier);
-    if ($file->converted[$tier]) {
+    if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
       watchdog('file_audio', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
@@ -271,9 +270,9 @@ function file_audio_mp3_render($uri, $options = array()) {
  */
 function file_audio_rdf_namespaces() {
   return array(
-    'foaf'    => 'http://xmlns.com/foaf/0.1/',
+    //'foaf'    => 'http://xmlns.com/foaf/0.1/',
     'mo'      => 'http://purl.org/ontology/mo/',
-//    'wordnet' => 'http://xmlns.com/wordnet/1.6/',
+    //'wordnet' => 'http://xmlns.com/wordnet/1.6/',
   );
 }
 

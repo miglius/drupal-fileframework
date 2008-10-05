@@ -13,7 +13,6 @@
  * Renders a node's or comment's file attachments in a table layout.
  */
 function theme_file_attachments($files) {
-  //$header = array(t('Attachment'), t('Type'), t('Size'), t('Operations'));
   $header = array(t('Attachment'), t('Type'), t('Size'));
   $mime_types = file_get_mime_types();
   $rows = array();
@@ -53,7 +52,7 @@ function theme_file_attach_form_current(&$form) {
     $row[] = file_mime_icon_for($type) .' '. file_mime_description_for($type);
     $row[] = format_size($form[$key]['size']['#value']);
     $row[] = drupal_render($form[$key]['weight']);
-    $rows[] = array('data' => $row, 'class' => 'draggable'. ($form[$key]['list']['#value'] ? ' menu-enabled' : ' menu-disabled'));
+    $rows[] = array('data' => $row, 'class' => 'draggable'. (isset($form[$key]['list']['#value']) ? ' menu-enabled' : ' menu-disabled'));
   }
   return !empty($rows) ? theme('table', $header, $rows, array('id' => 'file-attachments')) : '';
 }
@@ -70,7 +69,7 @@ function theme_file_attach_form_new($form) {
  * Renders a block containing previews and generated files for one file.
  */
 function theme_file_attach_show($data) {
-  return $data ? '<div class="file-attach-container"><div class="file-attach-show">'. $data .'</div></div>' : '';
+  return !empty($data) ? '<div class="file-attach-container"><div class="file-attach-show">'. $data .'</div></div>' : '';
 }
 
 /**
@@ -82,7 +81,7 @@ function theme_file_attach_backreferences($nodes) {
     $output .= '<div class="item-list">';
     $output .= '<ul>';
     foreach ($nodes as $node) {
-      $output .= '<li>'. l($node->title, 'node/'. $node->nid, $node->cid ? array('fragment' => 'comment-'. $node->cid) : array()) .'</li>';
+      $output .= '<li>'. l($node->title, 'node/'. $node->nid, isset($node->cid) ? array('fragment' => 'comment-'. $node->cid) : array()) .'</li>';
     }
     $output .= '</ul>';
     $output .= '</div>';

@@ -94,7 +94,7 @@ function file_antivirus_scan_clamav($file) {
         return NULL;
       }
     }
-    $handler = fsockopen(FILE_ANTIVIRUS_CLAMAV_HOST, FILE_ANTIVIRUS_CLAMAV_PORT);
+    $handler = @fsockopen(FILE_ANTIVIRUS_CLAMAV_HOST, FILE_ANTIVIRUS_CLAMAV_PORT);
     if (!$handler) {
       watchdog('file_antivirus', 'The \'clamav-daemon\' is not running at %host host %port port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT), WATCHDOG_ERROR);
       return NULL;
@@ -125,17 +125,17 @@ function file_antivirus_scan_clamav($file) {
  * Clamav scanner check.
  */
 function _file_antivirus_check_clamav($data) {
-  if ($data['path']) {
+  if (isset($data['path'])) {
     // clamscan utility
     return exec(escapeshellcmd($data['path']) .' -V');
   }
-  if ($data['host'] && $data['port']) {
+  if (isset($data['host']) && isset($data['port'])) {
     // tcp connection
     $handler = @fsockopen($data['host'], $data['port']);
     if (!$handler) {
       return NULL;
     }
-    if ($data['version']) {
+    if (isset($data['version'])) {
       fwrite($handler, "VERSION\n");
       $content = fgets($handler);
       fclose($handler);

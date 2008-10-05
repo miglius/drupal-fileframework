@@ -77,15 +77,16 @@ function file_convert_menu() {
  */
 function file_get_mime_converters() {
   static $converters = array();
-  if (!$converters) {
+  if (empty($converters)) {
     $saved_converters = array();
     foreach (module_implements('mime_converters') as $module) {
       if (($types = module_invoke($module, 'mime_converters')) && is_array($types)) {
         foreach ($types as $from => $tos) {
           foreach ($tos as $to => $converter) {
-            if (!is_array($converter['handlers'])) $types[$from][$to]['handlers'] = array();
-              $types[$from][$to]['module'] = $module;
-              $types[$from][$to]['enabled'] = 1;
+            if (!isset($converter['handlers']))
+              $types[$from][$to]['handlers'] = array();
+            $types[$from][$to]['module'] = $module;
+            $types[$from][$to]['enabled'] = 1;
           }
         }
         $converters = array_merge_recursive($converters, $types);
@@ -161,7 +162,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
   $tmpdir  = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '/tmp';
   $options['tmpdir'] = $tmpdir;
   $file_convert = ($tier > 0) ? $file->converted[$tier - 1] : $file;
-  if ($file_convert->filepath) {
+  if (isset($file_convert->filepath)) {
     $in_file = $file_convert->filepath;
     $keep_in_file = TRUE;
   }
@@ -174,6 +175,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
     fclose($input);
     fclose($output);
     $in_file = $tmpfile;
+    $keep_in_file = FALSE;
   }
 
   if (!_file_convert_check_pipeline($pipeline)) {
@@ -183,7 +185,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
     return NULL;
   }
   foreach (explode('||', $pipeline) as $pipe) {
-    if ($out_file) {
+    if (isset($out_file)) {
       // Second and following pipes.
       if (!$keep_in_file)
         file_delete($in_file);
@@ -258,8 +260,7 @@ function _file_convert_check_command($command) {
       }
       else if (preg_match('/(\S+):(\d+)/', $function, $match)) {
         // network connection.
-        $fp = @fsockopen($match[1], $match[2], $errno, $errstr, 10);
-        if (!$fp) {
+        if (!($fp = @fsockopen($match[1], $match[2], $errno, $errstr, 10))) {
           return FALSE;
         }
         else {

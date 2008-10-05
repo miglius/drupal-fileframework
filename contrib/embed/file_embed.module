@@ -205,12 +205,12 @@ function file_embed_textarea_process($element) {
       /*
       static $counter = 0;
       if (++$counter == 1) {
-        $element['#suffix'] .= _file_embed_textarea_link($element, $type);
+        $element['#suffix'] = _file_embed_textarea_link($element, $type);
       }
       */
       // For the comment the textarea is proccesed twice, therefore commenting out
       // this section for now.
-      $element['#suffix'] .= _file_embed_textarea_link($element, $type);
+      $element['#suffix'] = _file_embed_textarea_link($element, $type);
     }
   }
   return $element;
@@ -234,7 +234,7 @@ function _file_embed_textarea_link($element, $type, $link = FILE_EMBED_BUTTON_TY
   list($width, $height) = explode('x', FILE_EMBED_POPUP_SIZE);
 
   $query = array('module' => 'file_embed', 'layout' => 'off', 'nid' => $type['nid'], 'textarea' => $id);
-  $query += is_numeric($type['cid']) ? array('cid' => $type['cid']) : array();
+  $query += isset($type['cid']) ? array('cid' => $type['cid']) : array();
   $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
 
   $url = array('url' => 'file_gallery', 'query' => array_merge(file_embed_file_gallery('query'), $query));
@@ -303,7 +303,7 @@ function file_embed_file_filter_process($matches) {
     }
 
     $options['file_html'] = file_wrapper_html($node, $options['handler'], array('container' => FALSE));
-    if ($options['link']) {
+    if (isset($options['link'])) {
       $options['file_html'] = l($options['file_html'], 'node/'. $node->nid, array('html' => TRUE));
     }
     return theme('file_embed_file', $options);
@@ -472,7 +472,7 @@ function file_embed_options($node) {
  */
 function _file_embed_attachments() {
   $nid = $_GET['nid'];
-  $cid = $_GET['cid'];
+  $cid = isset($_GET['cid']) ? $_GET['cid'] : NULL;
   if (!is_numeric($nid) || !user_access('view attached files'))
     return;
 
