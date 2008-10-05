@@ -186,37 +186,37 @@ function file_video_mime_converters() {
   return array(
     'video/quicktime' => array(
       'video/x-flv' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
     'video/mp4' => array(
       'video/x-flv' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
     'video/mpeg' => array(
       'video/x-flv' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
     'video/x-ms-wmv' => array(
       'video/x-flv' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
     'video/x-msvideo' => array(
       'video/x-flv' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].flv; {mv} [out_file].flv [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
     ),
     'video/x-flv' => array(
       'image/jpeg' => array(
-        'pipeline' => '{ffmpeg} -i [in_file] -y -ss 1 -r 1 -vframes 1 -an [tmpdir]/%d.jpg; {mv} [tmpdir]/1.jpg [out_file]',
+        'pipeline' => '{ffmpeg} -i "[in_file]" -y -ss 1 -r 1 -vframes 1 -an "[tmpdir]/%d.jpg"; {mv} "[tmpdir]/1.jpg" "[out_file]"',
         'handlers' => array('file_video_flash_image'),
       ),
     ),

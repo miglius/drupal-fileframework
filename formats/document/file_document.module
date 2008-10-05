@@ -44,58 +44,58 @@ function file_document_mime_converters() {
   return array(
     'text/rtf' => array(
       'text/plain'  => array(
-        'pipeline' => '{unrtf} --nopict --text [in_file] > [out_file]',
+        'pipeline' => '{unrtf} --nopict --text "[in_file]" > "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
     ),
     'application/rtf' => array(
       'text/plain'  => array(
-        'pipeline' => '{unrtf} --nopict --text [in_file] > [out_file]',
+        'pipeline' => '{unrtf} --nopict --text "[in_file]" > "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
     ),
     'application/vnd.oasis.opendocument.text' => array(
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].odt; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf [in_file].odt; {mv} [in_file].odt [in_file]; {mv} [in_file].pdf [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].odt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].odt"; {mv} "[in_file].odt" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.ms-word' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].odt; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f doc [in_file].odt; {mv} [in_file].odt [in_file]; {mv} [in_file].doc [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].odt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f doc "[in_file].odt"; {mv} "[in_file].odt" "[in_file]"; {mv} "[in_file].doc" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} [in_file].tmp; cd [in_file].tmp; {mv} [in_file] "[filename]"; {gzip} -c * > [out_file]; cd [tmpdir]; {touch} [in_file]; {rm} -rf [in_file].tmp',
+        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
     'text/vnd.ms-word' => array(
       'text/plain' => array(
-        'pipeline' => '{catdoc} [in_file] > [out_file]',
+        'pipeline' => '{catdoc} "[in_file]" > "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].doc; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf [in_file].doc; {mv} [in_file].doc [in_file]; {mv} [in_file].pdf [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].doc"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].doc"; {mv} "[in_file].doc" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.oasis.opendocument.text' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].doc; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f odt [in_file].doc; {mv} [in_file].doc [in_file]; {mv} [in_file].odt [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].doc"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f odt "[in_file].doc"; {mv} "[in_file].doc" "[in_file]"; {mv} "[in_file].odt" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} [in_file].tmp; cd [in_file].tmp; {mv} [in_file] "[filename]"; {gzip} -c * > [out_file]; cd [tmpdir]; {touch} [in_file]; {rm} -rf [in_file].tmp',
+        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
     'application/msword' => array(
       'text/plain' => array(
-        'pipeline' => '{catdoc} [in_file] > [out_file]',
+        'pipeline' => '{catdoc} "[in_file]" > "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].doc; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf [in_file].doc; {mv} [in_file].doc [in_file]; {mv} [in_file].pdf [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].doc"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].doc"; {mv} "[in_file].doc" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.oasis.opendocument.text' => array(
-        'pipeline' => '{localhost:8100}cd [tmpdir]; {mv} [in_file] [in_file].doc; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f odt [in_file].doc; {mv} [in_file].doc [in_file]; {mv} [in_file].odt [out_file]',
+        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].doc"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f odt "[in_file].doc"; {mv} "[in_file].doc" "[in_file]"; {mv} "[in_file].odt" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} [in_file].tmp; cd [in_file].tmp; {mv} [in_file] "[filename]"; {gzip} -c * > [out_file]; cd [tmpdir]; {touch} [in_file]; {rm} -rf [in_file].tmp',
+        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
   );

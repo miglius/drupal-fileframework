@@ -122,55 +122,55 @@ function file_audio_mime_converters() {
   return array(
     'audio/basic' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/midi' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/x-aiff' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/x-pn-realaudio' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/x-pn-realaudio-plugin' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/x-realaudio' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/vnd.rn-realaudio' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/x-wav' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),
     'audio/ogg' => array(
       'audio/mpeg' => array(
-        'pipeline' => '{ffmpeg} -y -i [in_file] -ar 22050 [out_file].mp3; {mv} [out_file].mp3 [out_file]',
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
         'handlers' => array('file_audio_mp3'),
       ),
     ),

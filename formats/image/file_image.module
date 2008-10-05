@@ -208,7 +208,7 @@ function file_image_mime_converters() {
   return array(
     'image/tiff' => array(
       'text/plain' => array(
-        'pipeline' => '{mv} [in_file] [in_file].tif; {tesseract} [in_file].tif [out_file]; {mv} [in_file].tif [in_file]; mv [out_file].txt [out_file]',
+        'pipeline' => '{mv} "[in_file]" "[in_file].tif"; {tesseract} "[in_file].tif" "[out_file]"; {mv} "[in_file].tif" "[in_file]"; mv "[out_file].txt" "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
     ),
@@ -312,9 +312,9 @@ function file_image_image_generate($file, $tier = NULL) {
   if (isset($tier))
     file_get_converted($file, $tier);
 
-  $width = isset($tier) ? $file->converted[$tier]->metadata['exif:width'][0] : $file->metadata['exif:width'][0];
-  $height = isset($tier) ? $file->converted[$tier]->metadata['exif:height'][0] : $file->metadata['exif:height'][0];
-  if (!$width || !$height || $width == 0 || $height == 0) {
+  $width = isset($tier) && isset($file->converted) && isset($file->converted[$tier]) ? $file->converted[$tier]->metadata['exif:width'][0] : (isset($file->metadata['exif:width']) ? $file->metadata['exif:width'][0] : NULL);
+  $height = isset($tier) && isset($file->converted) && isset($file->converted[$tier]) ? $file->converted[$tier]->metadata['exif:height'][0] : (isset($file->metadata['exif:height']) ? $file->metadata['exif:height'][0] : NULL);;
+  if (!isset($width) || !isset($height) || $width == 0 || $height == 0) {
     watchdog('file_image', 'A file %name, uri=%uri or it\'s derivative is an image with zero size.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR);
     return FALSE;
   }
