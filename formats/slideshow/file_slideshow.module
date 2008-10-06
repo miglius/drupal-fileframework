@@ -206,7 +206,7 @@ function file_slideshow_pdf_generate($file, $tier = NULL) {
     if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
-      watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
+      watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     }
   }
 

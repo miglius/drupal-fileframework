@@ -369,7 +369,7 @@ function file_cron() {
     $total = $files = $converted = $errors = 0;
     $byte_limit = FILE_CRON_LIMIT_SIZE * 1024 * 1024;
     $converted = $errors = $byte_counter = 0;
-    $result = db_query("SELECT f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d", $byte_limit);
+    $result = db_query("SELECT f.nid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d", $byte_limit);
     while (($file = db_fetch_object($result)) && $byte_counter <= $byte_limit) {
       $total++;
       file_generate_previews($file, TRUE);

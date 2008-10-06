@@ -326,7 +326,7 @@ function file_video_flash_swf_generate($file, $tier = NULL) {
     if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
-      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
+      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     }
   }
   return TRUE;
@@ -341,7 +341,7 @@ function file_video_flash_flv_generate($file, $tier = NULL) {
     if (isset($file->converted[$tier])) {
       if (!file_data_save($file, $tier))
         return FALSE;
-      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri));
+      watchdog('file_video', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     }
   }
 

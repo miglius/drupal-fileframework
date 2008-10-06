@@ -22,7 +22,7 @@
  */
 function file_node_save(&$node, $file) {
   if (!is_object($file)) {
-    watchdog('file', 'The file object is not passed to a file_node_save() function for the node with nid=%nid.', array('%nid' => $node->nid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $node->nid));
+    watchdog('file', 'The file object is not passed to a file_node_save() function for the node with nid=%nid.', array('%nid' => $node->nid), WATCHDOG_ERROR, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
     return FALSE;
   }
 
@@ -59,7 +59,7 @@ function file_node_save(&$node, $file) {
 
     // Generate and save the preview of the file.
     if (!isset($file->noconvert) && !file_generate_previews($file))
-      watchdog('file', 'At least one preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, isset($node->nid) ? l(t('edit'), 'node/'. $node->nid) : '');
+      watchdog('file', 'At least one preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : '');
 
     // Delete uploaded file.
     if (isset($file->filepath))
@@ -98,14 +98,14 @@ function file_data_save($file, $tier = NULL) {
 
   // Check the file size.
   if (isset($file_save->filepath) && file_exists($file_save->filepath) && !filesize($file_save->filepath)) {
-    watchdog('file', 'The file %name or it\'s derivative to %mime was not saved because it was empty.', array('%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
+    watchdog('file', 'The file %name or it\'s derivative to %mime was not saved because it was empty.', array('%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
 
   // Move the file to permanent storage, deleting the temporary file.
   bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   if (!($hash = bitcache_put_file(NULL, $file_save->filepath, isset($file->noconvert) ? TRUE : FALSE))) {
-    watchdog('file', 'The bitcache_put_file() function failed for the file or it\'s derivative from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
+    watchdog('file', 'The bitcache_put_file() function failed for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
 
@@ -121,7 +121,7 @@ function file_data_save($file, $tier = NULL) {
   if (!rdf_exists($uri)) {
     $metadata = isset($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
     if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
-      watchdog('file', 'The RDF data was not saved for the file or it\'s derivative from from uri=%uri, name=%name to %mime.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
+      watchdog('file', 'The RDF data was not saved for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       return FALSE;
     }
   }
@@ -595,14 +595,16 @@ function file_generate_previews($file, $cron = FALSE) {
 
   // Check if file exists in the bitcache.
   if (!bitcache_exists(file_get_hash($file->uri))) {
-    watchdog('file', 'The blob was not found in the bitcache for the uri=%uri.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+    watchdog('file', 'The blob was not found in the bitcache for the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
 
   //Extract metadata if it is missing and save to RDF.
   if (!rdf_exists($file->uri, 'wordnet:failed', 'metadata') && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed')) {
+    if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+      watchdog('file', 'The RDF data was not deleted for the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
-      watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
+      watchdog('file', 'The RDF data was not saved for the the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       return FALSE;
     }
   }
@@ -618,7 +620,7 @@ function file_generate_previews($file, $cron = FALSE) {
         // We delete the generated entry reference in the RDF
         // and the file will be converted again.
         if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
-          watchdog('file', 'The RDF data was not deleted for the uri=%uri.', array('%uri' => $uri), WATCHDOG_ERROR);
+          watchdog('file', 'The RDF data was not deleted for the %name missing derivative  uri=%uri.', array('%name' => $file->filename, '%uri' => $uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       }
       if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0]) {
         // Preview is already generated.
@@ -679,7 +681,7 @@ function file_generate_previews($file, $cron = FALSE) {
         if (isset($file->converted[0])) {
           if (!file_data_save($file, 0))
             $result = FALSE;
-          watchdog('file', 'The %mime preview was generated for the file uri=%uri, name=%name.', array('%mime' => $to, '%uri' => $file->uri, '%name' => $file->filename));
+          watchdog('file', 'The %mime preview was generated for the file %name, uri=%uri.', array('%name' => $file->filename, '%mime' => $to, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
         }
       }
 
@@ -745,7 +747,7 @@ function file_get_converted($file, $tier) {
     }
     else {
       $file->errorss++;
-      watchdog('file', 'File uri=%uri, name=%name was not converted to %mime by executing a pipeline %pipeline.', array('%uri' => $file->uri, '%name' => $file->filename, '%mime' => $file->mimes[$tier], '%pipeline' => $file->converters[$tier]['pipeline']), WATCHDOG_ERROR);
+      watchdog('file', 'File %name, uri=%uri was not converted to %mime by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file->mimes[$tier], '%pipeline' => $file->converters[$tier]['pipeline']), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     }
   }
 }

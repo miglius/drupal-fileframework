@@ -876,7 +876,7 @@ function _file_attach_save($node, $comment = NULL) {
     // will be required.
     if (!empty($file->remove) && is_numeric($file->nid)) {
       db_query("DELETE FROM {file_attachments} WHERE nid = %d AND vid = %d AND cid = %d AND fnid = %d", $node->nid, $node->vid, $cid, $file->nid);
-      watchdog('file_attach', 'The file attachment with the nid=%fnid was removed from the node nid=%nid, cid=%cid.', array('%fnid' => $file->nid, '%nid' => $node->nid, '%cid' => $cid), WATCHDOG_NOTICE);
+      watchdog('file_attach', 'The file attachment with the nid=%fnid was removed from the node nid=%nid, cid=%cid.', array('%fnid' => $file->nid, '%nid' => $node->nid, '%cid' => $cid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
       continue;
     }
 
@@ -890,7 +890,7 @@ function _file_attach_save($node, $comment = NULL) {
         _file_attach_propagate_terms($node, $file_node);
       $file_attachment = (object)array('fnid' => $file_node->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_attachment);
-      watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $file_node->nid, '%nid' => $node->nid), WATCHDOG_NOTICE);
+      watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $file_node->nid, '%nid' => $node->nid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
       continue;
     }
 

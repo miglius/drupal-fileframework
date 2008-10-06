@@ -9,8 +9,10 @@
 //////////////////////////////////////////////////////////////////////////////
 
 define('FILE_CONVERT_LIMIT_SIZE', (int)variable_get('file_convert_limit_size', 10));
+define('FILE_CONVERT_DEBUG',      variable_get('file_convert_debug', 0));
 
 define('FILE_CONVERT_TIER_LIMIT', 2);
+define('FILE_CONVERT_DEBUG_LINES', 5);
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -179,7 +181,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
   }
 
   if (!_file_convert_check_pipeline($pipeline)) {
-    watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
+    watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     if (!$keep_in_file)
       file_delete($in_file);
     return NULL;
@@ -195,7 +197,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
     }
     $out_file = tempnam($tmpdir, 'drupal_file_convert_');
     if (!_file_convert_execute_pipeline($in_file, $out_file, $pipe, $options)) {
-      watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR);
+      watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       return NULL;
     }
   }
@@ -203,11 +205,11 @@ function _file_convert($file, $pipeline, $tier, $options) {
     file_delete($in_file);
 
   if (filesize($out_file)) {
-    watchdog('file_convert', 'File %name, uri=%uri was converted by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline));
+    watchdog('file_convert', 'File %name, uri=%uri was converted by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return $out_file;
   }
   else {
-    watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline), WATCHDOG_ERROR);
+    watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     file_delete($out_file);
     return NULL;
   }
@@ -312,20 +314,26 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
     // php function.
     if (!eval($pipeline .'; return 1;')) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
-      return FALSE;
+      $result = FALSE;
     }
   }
   else {
     // shell command.
-    if (!exec($pipeline .'; /bin/echo "1"')) {
+    $out = array();
+    if (!exec($pipeline .'  2>&1', $out)) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
-      return FALSE;
+      $result = FALSE;
+    }
+    if (FILE_CONVERT_DEBUG) {
+    $out = array_slice($out, -FILE_CONVERT_DEBUG_LINES);
+      watchdog('file_convert', 'Debug: Last five lines of the output of the execution of pipeline %pipeline: %out', array('%pipeline' => $pipeline, '%out' => !empty($out) ? implode("\n", $out) : t('Output is empty.')), WATCHDOG_NOTICE);
     }
   }
   if (preg_match('/\$out_content/', $pipeline)) {
     // Save content to file.
     if (!file_put_contents($to, $out_content)) {
       watchdog('file_convert', 'Writting to a file %to failed.', array('%to' => $to), WATCHDOG_ERROR);
+      $result = FALSE;
     }
   }
   return $result;

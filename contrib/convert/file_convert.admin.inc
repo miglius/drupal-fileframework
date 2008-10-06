@@ -25,6 +25,12 @@ function file_convert_admin_settings() {
     '#size'          => 10,
     '#description'   => t('The size is in MB. If uploaded file is bigger than this value, then the conversion will be performed on cron run instead. This should allow avoiding page timeouts on the file uploads. Zero means that all files will be converted on the upload.'),
   );
+  $form['settings']['file_convert_debug'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Debug'),
+    '#description'   => t('Log several last lines of the output of the command line conversion to the watchdog.'),
+    '#default_value' => FILE_CONVERT_DEBUG,
+  );
 
   $form['submit'] = array(
     '#type'  => 'submit',
@@ -62,10 +68,12 @@ function file_convert_admin_settings_submit($form, &$form_state) {
   switch ($op) {
     case t('Save configuration'):
       variable_set('file_convert_limit_size', $values['file_convert_limit_size']);
+      variable_set('file_convert_debug', $values['file_convert_debug']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
       variable_del('file_convert_limit_size');
+      variable_del('file_convert_debug');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }
