@@ -561,7 +561,7 @@ function file_metadata_extract($filename, $mimetype) {
   }
   if (!$parsed)
     $result = array_merge($result, array('wordnet:failed' => 'metadata'));
-    
+
   return $result;
 }
 
@@ -908,10 +908,12 @@ function file_render_preview_for($file, $handler, $id) {
  *
  * @param $handler
  *   A preview handler associated with the file.
- * @param $hash
- *   A blob hash.
+ * @param $uri
+ *   A file uri.
  * @param $node
  *   A populated node object.
+ * @param $options
+ *   An array of additional options.
  * @param $type
  *   A return type. 'html' will output the html page, other values will result in javascript.
  *
@@ -919,6 +921,7 @@ function file_render_preview_for($file, $handler, $id) {
  *   A  or HTML or JSON data of the rendered HTML of the file preview.
  */
 function file_wrapper($handler, $uri, $node = NULL, $options = array(), $type = NULL) {
+  $output = '';
   if (array_key_exists($handler, file_get_mime_handlers()) && function_exists($handler .'_render')) {
     $handler_full = $handler .'_render';
     $output = $handler_full($uri, is_object($node) ? array_merge(array('nid' => isset($node->nid) ? $node->nid : NULL, 'vid' => isset($node->vid) ? $node->vid : NULL), $options) : $options);
@@ -934,12 +937,23 @@ function file_wrapper($handler, $uri, $node = NULL, $options = array(), $type = 
  *
  * @param $node
  *   A node object.
+ * @param $handler
+ *   A file handler to use for file rendering.
+ * @param $options
+ *   An array of additional options.
+ * @param $cached
+ *   A flag if the HTML will be displayed cached..
  *
  * @return
  *   A HTML data of the rendered HTML of the file preview.
  */
-function file_wrapper_html($node, $handler, $options = array()) {
+function file_wrapper_html($node, $handler, $options = array(), $cached = FALSE) {
   // Access control is done at the menu layer.
+  if (!isset($handler) || $handler == 'file') {
+    $node->file->name = $node->title;
+    return theme('file_render', $node->file, $cached ? array('show' => array(), 'info' => array(), 'metadata' => array()) : array());
+  }
+
   $handlers = file_handlers_for($node->file);
   return file_wrapper($handler, $handlers[$handler]['uri'], $node, $options, 'html');
 }
@@ -1233,7 +1247,7 @@ function file_get_image($file, $handler, $dimensions) {
   if (!isset($image) && preg_match('/^image\//', $file->type)) {
     $width = ($w = rdf_value($file->uri, rdf_qname_to_uri('exif:width'))) ? $w->value : 0;
     $height = ($h = rdf_value($file->uri, rdf_qname_to_uri('exif:height'))) ? $h->value : 0;
-    if ($width < $dimensions[0] && $height < $dimensions[1])
+    if ($width > 0 && $width < $dimensions[0] && $height > 0 && $height < $dimensions[1])
       $image = file_get_hash($file->uri);
   }
   return isset($image) ? '<img width="'. $width .'" height="'. $height .'" src="'. url('bitcache/'. $image, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;

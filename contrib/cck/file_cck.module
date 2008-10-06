@@ -313,16 +313,19 @@ function theme_file_cck_formatter_generic($element) {
       return theme('file_show', $data);
       break;
     case 'thumbnail':
-      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
+        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
       return isset($thumbnail) ? $thumbnail : t('no thumbnail');
       break;
     case 'thumbnail_open':
-      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
+        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
       $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
       return !empty($file->nid) ? l($thumbnail, 'node/'. $file->nid, array('html' => TRUE)) : $thumbnail;
       break;
     case 'thumbnail_download':
-      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
+        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
       $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
       return !empty($file->nid) ? l($thumbnail, 'file/'. $file->nid .'/download/'. $file->vid, array('html' => TRUE)) : $thumbnail;
       break;

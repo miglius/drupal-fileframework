@@ -292,6 +292,7 @@ function file_embed_file_filter_process($matches) {
     }
 
     // Set the default handler if not specified in the filter.
+    /*
     if (!isset($options['handler'])) {
       $file_handlers = file_handlers_for($node->file);
       foreach (file_get_mime_handlers() as $handler => $data) {
@@ -301,9 +302,11 @@ function file_embed_file_filter_process($matches) {
         }
       }
     }
+    */
+    $options['file_html'] = file_wrapper_html($node, isset($options['handler']) ? $options['handler'] : NULL, array('container' => FALSE), TRUE);
 
-    $options['file_html'] = file_wrapper_html($node, $options['handler'], array('container' => FALSE));
-    if (isset($options['link'])) {
+    $handlers = file_handlers_for($node->file);
+    if (isset($options['link']) && isset($options['handler']) && preg_match('/^image\//', $handlers[$options['handler']]['type'])) {
       $options['file_html'] = l($options['file_html'], 'node/'. $node->nid, array('html' => TRUE));
     }
     return theme('file_embed_file', $options);
@@ -355,6 +358,7 @@ function _file_embed_page_match($path) {
 function file_embed_options_form($form_state, $node) {
   $file = $node->file;
   if (!node_access('view', $node) || !is_object($file))
+    return;
 
   $options = array();
   $file_handlers = file_handlers_for($file);
@@ -363,6 +367,7 @@ function file_embed_options_form($form_state, $node) {
       $options[$handler] = $data['name'];
     }
   }
+  $options = array_merge($options, array('file' => t('File')));
 
   $form['embed'] = array('#type' => 'fieldset', '#title' => t('Embed options'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['embed']['caption'] = array(
@@ -455,7 +460,8 @@ function file_embed_options($node) {
   $script .= '</script>';
 
   $title = check_plain($node->title);
-  $preview = file_get_image($node->file, 'file_image_medium', explode('x', FILE_IMAGE_MEDIUM_RESOLUTION));
+  if (defined('FILE_IMAGE_MEDIUM_RESOLUTION'))
+    $preview = file_get_image($node->file, 'file_image_medium', explode('x', FILE_IMAGE_MEDIUM_RESOLUTION));
   $form = drupal_get_form('file_embed_options_form', $node);
 
   print theme('file_gallery_page', theme('file_embed_options', compact('script', 'title', 'preview', 'form')));

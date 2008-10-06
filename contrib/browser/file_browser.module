@@ -696,7 +696,8 @@ function file_browser_preview($node = NULL) {
   if (FILE_BROWSER_EMBED_PREVIEWS) {
     $file = $node->file;
     // Find a thumbnail for the file.
-    $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
+    if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
+      $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
     $thumbnail = isset($thumbnail) ? $thumbnail : '<br /><span class="no-thumbnail">'. t('No thumbnail') .'</span><br />';
   }
 
