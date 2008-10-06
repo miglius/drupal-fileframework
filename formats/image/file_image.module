@@ -94,8 +94,8 @@ function file_image_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $width = rdf_value($node->file->uri, rdf_qname_to_uri('exif:width'))->value;
-      $height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'))->value;
+      $width = ($width = rdf_value($node->file->uri, rdf_qname_to_uri('exif:width'))) ? $width->value : NULL;
+      $height = ($height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'))) ? $height->value : NULL;
       if (!empty($width) && !empty($height)) {
         $links['file_image_resolution'] = array(
           'title' => t('%resolution pixels', array('%resolution' => $width .'x'. $height)),

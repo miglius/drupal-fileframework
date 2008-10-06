@@ -48,6 +48,14 @@ function file_admin_settings() {
     '#description'   => t('Show a properties tab with a file\'s metadata.'),
     '#default_value' => FILE_PROPERTIES_TAB,
   );
+  $form['visibility']['file_popup_size'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Max size of thickbox popup previews'),
+    '#default_value' => FILE_POPUP_SIZE,
+    '#size'          => 10,
+    '#maxlength'     => 255,
+    '#description'   => t('The default size is 800x600.'),
+  );
 
   // Maintenance settings
   $form['maintenance'] = array('#type' => 'fieldset', '#title' => t('Maintenance settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -106,6 +114,18 @@ function file_admin_settings() {
     );
   }
 
+  $form['clear'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Clear data about failed conversions and metadata extractions'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('When a file conversion or metadata extraction fails, it is marked as such to make sure that the same conversion or metadata extraction is not performed on the same file again from the cron. Click "Clear" to delete all data about failures. This is usefull if a conversion utility is fixed or additional format module is enabled.'),
+  );
+  $form['clear']['clear'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Clear'),
+  );
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -147,6 +167,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_show_generated', $values['file_show_generated']);
       variable_set('file_view_link', $values['file_view_link']);
       variable_set('file_properties_tab', $values['file_properties_tab']);
+      variable_set('file_popup_size', $values['file_popup_size']);
       variable_set('file_cron', $values['file_cron']);
       variable_set('file_cron_limit_size', $values['file_cron_limit_size']);
       variable_set('file_mime_autodetection', $values['file_mime_autodetection']);
@@ -162,6 +183,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_show_generated');
       variable_del('file_view_link');
       variable_del('file_properties_tab');
+      variable_del('file_popup_size');
       variable_del('file_cron');
       variable_del('file_cron_limit_size');
       variable_del('file_mime_autodetection');
@@ -170,6 +192,12 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_og_browser_tab');
       variable_del('file_og_gallery_tab');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
+      break;
+    case t('Clear'):
+      if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY))) {
+        watchdog('file', 'The RDF data about failed conversions and metadata extraction was not deleted.', WATCHDOG_ERROR);
+      }
+      drupal_set_message(t('The data about failed conversions and metadata extraction have been cleared.'));
       break;
   }
 

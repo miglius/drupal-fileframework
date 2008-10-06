@@ -17,6 +17,7 @@ define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
 define('FILE_PROPERTIES_TAB',                variable_get('file_properties_tab', 1));
+define('FILE_POPUP_SIZE',                    variable_get('file_popup_size', '800x600'));
 define('FILE_CRON',                          variable_get('file_cron', 1));
 define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_size', 512));
 define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetection', 0));

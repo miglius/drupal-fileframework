@@ -60,6 +60,10 @@ function file_node_save(&$node, $file) {
     // Generate and save the preview of the file.
     if (!isset($file->noconvert) && !file_generate_previews($file))
       watchdog('file', 'At least one preview generation faild for the file %name.', array('%name' => $file->filename), WATCHDOG_ERROR, isset($node->nid) ? l(t('edit'), 'node/'. $node->nid) : '');
+
+    // Delete uploaded file.
+    if (isset($file->filepath))
+      file_delete($file->filepath);
   }
 
   // Create a file object for the node and saving it to the db.
@@ -86,7 +90,7 @@ function file_node_save(&$node, $file) {
 function file_data_save($file, $tier = NULL) {
   // File itself or derivative to be saved.
   $file_save = isset($tier) ? $file->converted[$tier] : $file;
-  $mime = isset($tier) ? $file->mimes[$tier] : $file->filemime;
+  $file_save->filemime = isset($tier) ? $file->mimes[$tier] : $file->filemime;
 
   // Is the file already in bitcache?
   if (isset($file_save->uri))
@@ -94,7 +98,7 @@ function file_data_save($file, $tier = NULL) {
 
   // Check the file size.
   if (isset($file_save->filepath) && file_exists($file_save->filepath) && !filesize($file_save->filepath)) {
-    watchdog('file', 'The file %name or it\'s derivative to %mime was not saved because it was empty.', array('%name' => $file->filename, '%mime' => $mime), WATCHDOG_ERROR);
+    watchdog('file', 'The file %name or it\'s derivative to %mime was not saved because it was empty.', array('%name' => $file->filename, '%mime' => $file_save->filemime), WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -285,7 +289,7 @@ function file_mime_types() {
  */
 function file_mime_description_for($type, $default = NULL) {
   $handlers = file_get_mime_types();
-  $description = is_array($handlers[$type]['name']) ? reset($handlers[$type]['name']) : $handlers[$type]['name'];
+  $description = isset($handlers[$type]) && isset($handlers[$type]['name']) ? $handlers[$type]['name'] : NULL;
   $default_mime_types = file_default_mime_types();
   return isset($description) ? $description :
     // If the exact mime type is not defined, we give a default description.
@@ -524,8 +528,7 @@ function file_get_metadata_info() {
     $result['dc:format'] = array('name' => t('MIME type'));
     $result['dc:extent'] = array('name' => t('Size'), 'theme' => 'file_metadata_size');
     foreach (module_implements('metadata_info') as $module) {
-      $info = module_invoke($module, 'metadata_info');
-      if (is_array($info))
+      if (($info = module_invoke($module, 'metadata_info')) && is_array($info))
         $result = array_merge($result, $info);
     }
   }
@@ -549,11 +552,16 @@ function file_metadata_extract($filename, $mimetype) {
     'dc:format' => array($mimetype),
     'dc:extent' => array(filesize($filename)),
   );
+  $parsed = FALSE;
   foreach (module_implements('metadata_parse') as $module) {
-    $metadata = module_invoke($module, 'metadata_parse', $filename, $mimetype);
-    if (is_array($metadata))
-      $result = array_merge($result, $metadata);
+    if (($metadata = module_invoke($module, 'metadata_parse', $filename, $mimetype)) && is_array($metadata)) {
+      $result = array_merge($result, $metadata, array('wordnet:metadata' => 'parsed'));
+      $parsed = TRUE;
+    }
   }
+  if (!$parsed)
+    $result = array_merge($result, array('wordnet:failed' => 'metadata'));
+    
   return $result;
 }
 
@@ -592,7 +600,7 @@ function file_generate_previews($file, $cron = FALSE) {
   }
 
   //Extract metadata if it is missing and save to RDF.
-  if (!rdf_exists($file->uri)) {
+  if (!rdf_exists($file->uri, 'wordnet:failed', 'metadata') && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed')) {
     if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
       watchdog('file', 'The RDF data was not saved for the node with nid=%nid, vid=%vid.', array('%nid' => $file->nid, '%vid' => $file->vid), WATCHDOG_ERROR, l(t('edit'), 'node/'. $file->nid));
       return FALSE;
@@ -625,7 +633,7 @@ function file_generate_previews($file, $cron = FALSE) {
 
   // Find all preview generation handlers for the MIME type and generate previews if they are not already generated.
   $mime_types = file_get_mime_types();
-  if (is_array($mime_types[$file->filemime]['handlers'])) {
+  if (($mime_types = file_get_mime_types()) && isset($mime_types[$file->filemime]) && is_array($mime_types[$file->filemime]['handlers'])) {
     foreach (array_diff($mime_types[$file->filemime]['handlers'], isset($file->previews[$file->filemime]) ? $file->previews[$file->filemime] : array()) as $handler) {
       if (in_array($handler, $file->handlers_enabled) && function_exists($full_handler = $handler .'_generate'))
         $result = $full_handler($file) && $result;
@@ -670,7 +678,7 @@ function file_generate_previews($file, $cron = FALSE) {
         file_get_converted($file, 0);
         if (isset($file->converted[0])) {
           if (!file_data_save($file, 0))
-            return FALSE;
+            $result = FALSE;
           watchdog('file', 'The %mime preview was generated for the file uri=%uri, name=%name.', array('%mime' => $to, '%uri' => $file->uri, '%name' => $file->filename));
         }
       }
@@ -681,11 +689,6 @@ function file_generate_previews($file, $cron = FALSE) {
       unset($file->converted);
     }
   }
-
-  // Delete uploaded file.
-  if (isset($file->filepath))
-    file_delete($file->filepath);
-
   return $result;
 }
 
@@ -779,7 +782,7 @@ function file_handlers_for($file) {
   }
 
   // Display a file when preview is absent.
-  if (isset($file->type) && is_array($mime_types[$file->type]['handlers'])) {
+  if (isset($file->type) && isset($mime_types[$file->type]) && isset($mime_types[$file->type]['handlers'])) {
     foreach (array_diff($mime_types[$file->type]['handlers'], array_keys($result)) as $handler) {
       $result[$handler] = array(
         'uri' => $file->uri,
@@ -1002,10 +1005,10 @@ function file_first_preview($file) {
     $uri = $file->uri;
   }
   foreach (array('exif', 'wordnet') as $name) {
-    $width += is_object(rdf_value($uri, rdf_qname_to_uri($name .':width'))) ? rdf_value($uri, rdf_qname_to_uri($name .':width'))->value : 0;
-    $height += is_object(rdf_value($uri, rdf_qname_to_uri($name .':height'))) ? rdf_value($uri, rdf_qname_to_uri($name .':height'))->value : 0;
+    $width += ($w = rdf_value($uri, rdf_qname_to_uri($name .':width'))) ? $w->value : 0;
+    $height += ($h = rdf_value($uri, rdf_qname_to_uri($name .':height'))) ? $h->value : 0;
   }
-  list($width_max, $height_max) = explode('x', FILE_GALLERY_POPUP_SIZE);
+  list($width_max, $height_max) = explode('x', FILE_POPUP_SIZE);
   $width = min($width, $width_max);
   $height = min($height, $height_max);
 
@@ -1221,15 +1224,15 @@ function file_get_image($file, $handler, $dimensions) {
       if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
         // We gave a generated image.
         $image = file_get_hash($uri);
-        $width = rdf_value($uri, rdf_qname_to_uri('exif:width'))->value;
-        $height = rdf_value($uri, rdf_qname_to_uri('exif:height'))->value;
+        $width = ($w = rdf_value($uri, rdf_qname_to_uri('exif:width'))) ? $w->value : 0;
+        $height = ($h = rdf_value($uri, rdf_qname_to_uri('exif:height'))) ? $h->value : 0;
         break;
       }
     }
   }
   if (!isset($image) && preg_match('/^image\//', $file->type)) {
-    $width = rdf_value($file->uri, rdf_qname_to_uri('exif:width'))->value;
-    $height = rdf_value($file->uri, rdf_qname_to_uri('exif:height'))->value;
+    $width = ($w = rdf_value($file->uri, rdf_qname_to_uri('exif:width'))) ? $w->value : 0;
+    $height = ($h = rdf_value($file->uri, rdf_qname_to_uri('exif:height'))) ? $h->value : 0;
     if ($width < $dimensions[0] && $height < $dimensions[1])
       $image = file_get_hash($file->uri);
   }
