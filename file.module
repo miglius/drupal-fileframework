@@ -723,7 +723,7 @@ function _file_block_properties() {
         foreach ($predicates as $predicate => $objects) {
           foreach ($objects as $object) {
             $rdf = rdf_uri_to_qname($predicate, $namespaces, FALSE);
-            if (isset($info[$rdf]) && $name = $info[$rdf]['name']) {
+            if (isset($info[$rdf]) && ($name = $info[$rdf]['name'])) {
               $metadata[] = array($name, isset($info[$rdf]['theme']) ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
             }
           }

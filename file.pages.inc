@@ -33,7 +33,7 @@ function file_page_metadata($node) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
         $rdf = rdf_uri_to_qname($predicate, $namespaces, FALSE);
-        if ($name = $info[$rdf]['name']) {
+        if (isset($info[$rdf]) && ($name = $info[$rdf]['name'])) {
           db_query("INSERT INTO file_properties (name, value) VALUES ('%s', '%s')", $name, isset($info[$rdf]['theme']) ? theme($info[$rdf]['theme'], is_object($object) ? $object->value : $object) : theme('rdf_value', $object));
         }
       }
