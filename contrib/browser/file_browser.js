@@ -121,6 +121,7 @@ Drupal.file_browserGetWindowHeight = function() {
  */
 Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg, nodename) {
   var folder = 'file-folder-' + (ptid == 0 ? 'v' + vid : 't' + ptid) + '-g' + gid + '-b' + block;
+  var term = 'file-folder-t' + tid + '-g' + gid + '-b' + block;
   var check = 0;
   var child = 0;
   $('#' + folder).children().each(function() {
@@ -147,10 +148,12 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
   }
   // remove the term if the folder is not expanded
   if (!$('#' + folder).is('.expanded')) {
-    $('#file-folder-t' + tid + '-b' + block).remove();
+    $('#' + term).remove();
     // now expand the parent shelf
-    $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+    $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, term) });
   }
+  // select the newly created folder
+  $('#' + term + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
   Drupal.file_browserSetMsg(msg);
   $('#file-browser-newterm-form input#newterm-name').val(''); // resetting the value in the text field
 }
@@ -255,7 +258,7 @@ Drupal.file_browserSelectRow = function(obj, id, folder, link) {
  * Expands or collapses the folder that was selected based on the current DOM information
  * @param {Object} obj The folder object that was clicked on
  */
-Drupal.file_browserFolderClick = function(obj) {
+Drupal.file_browserFolderClick = function(obj, term) {
   var parent = obj.parentNode;
   var id = parent.id;
   var block = id.match(/-b([^-]+)/)[1];
@@ -295,6 +298,10 @@ Drupal.file_browserFolderClick = function(obj) {
 	$('a.file-metadata').cluetip({arrows: true});
       }
       $('#' + id + '-spinner').hide();
+      if (typeof(term != undefined)) {
+        // click the folder
+        $('#' + term + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+      }
     });
   } else {
     // shelf is open hence remove all the children except the shelf name
