@@ -46,16 +46,13 @@ function file_audio_xspf($nid, $vid, $hash) {
   $output .= '  <trackList>'."\n";
   $output .= '    <track>'."\n";
   $output .= '      <location>'. url('bitcache/'. $hash, array('query' => array('vid' => $vid), 'absolute' => true)) .'</location>'."\n";
-  if ($artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0]) {
+  if (isset($item[$uri][rdf_qname_to_uri('foaf:made')]) && $artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0])
     $output .= '      <creator>'. $artist .'</creator>'."\n";
-  }
-  if ($album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0]) {
+  if (isset($item[$uri][rdf_qname_to_uri('wordnet:album')]) && $album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0])
     $output .= '      <album>'. $album .'</album>'."\n";
-  }
-  if ($title = $item[$uri][rdf_qname_to_uri('dc:title')][0]) {
+  if (isset($item[$uri][rdf_qname_to_uri('dc:title')]) && $title = $item[$uri][rdf_qname_to_uri('dc:title')][0])
     $output .= '      <title>'. $title .'</title>'."\n";
-  }
-  if ($length = $item[$uri][rdf_qname_to_uri('wordnet:length')][0]) {
+  if (isset($item[$uri][rdf_qname_to_uri('wordnet:length')]) && $length = $item[$uri][rdf_qname_to_uri('wordnet:length')][0]) {
     list($m, $s) = split(':', $length);
     $length = (int)(($m * 60 + $s) * 1000);
     $output .= '      <duration>'. $length .'</duration>'."\n";

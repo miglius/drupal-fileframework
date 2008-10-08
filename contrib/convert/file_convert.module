@@ -136,7 +136,7 @@ function file_convert($file, $pipeline, $tier, $handlers = array(), $options = a
     return NULL;
 
   $status = _file_convert($file, $pipeline, $tier, $options);
-  if (!$status) {
+  if (!isset($status) || $status === FALSE) {
     foreach ($handlers as $handler) {
       _file_convert_failure_log($file, $handler);
     }
@@ -184,21 +184,23 @@ function _file_convert($file, $pipeline, $tier, $options) {
     watchdog('file_convert', 'Utilities for the pipeline %pipeline are not installed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     if (!$keep_in_file)
       file_delete($in_file);
-    return NULL;
+    return FALSE;
   }
   foreach (explode('||', $pipeline) as $pipe) {
     if (isset($out_file)) {
       // Second and following pipes.
       if (!$keep_in_file)
         file_delete($in_file);
-
       $keep_in_file = FALSE;
       $in_file = $out_file;
     }
     $out_file = tempnam($tmpdir, 'drupal_file_convert_');
     if (!_file_convert_execute_pipeline($in_file, $out_file, $pipe, $options)) {
-      watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-      return NULL;
+      watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Execution of the pipeline failed.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+      if (!$keep_in_file)
+        file_delete($in_file);
+      file_delete($out_file);
+      return FALSE;
     }
   }
   if (!$keep_in_file)
@@ -211,7 +213,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
   else {
     watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Converted file was empty.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipeline), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     file_delete($out_file);
-    return NULL;
+    return FALSE;
   }
 }
 
@@ -320,7 +322,7 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
   else {
     // shell command.
     $out = array();
-    if (!exec($pipeline .'  2>&1', $out)) {
+    if (!exec($pipeline .'; echo "End of the output."  2>&1', $out)) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
       $result = FALSE;
     }

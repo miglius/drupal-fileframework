@@ -677,8 +677,7 @@ function file_generate_previews($file, $cron = FALSE) {
 
       // Save the file if there is no convertion handlers defined.
       if (empty($converter['handlers']) && !in_array('no_handler', isset($file->previews[$to]) ? $file->previews[$to]: array())) {
-        file_get_converted($file, 0);
-        if (isset($file->converted[0])) {
+        if (file_get_converted($file, 0)) {
           if (!file_data_save($file, 0))
             $result = FALSE;
           watchdog('file', 'The %mime preview was generated for the file %name, uri=%uri.', array('%name' => $file->filename, '%mime' => $to, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
@@ -729,27 +728,43 @@ function file_generate_secondary_previews($file, $tier) {
  *   A tier level.
  */
 function file_get_converted($file, $tier) {
-  if ($tier >= 0 && !isset($file->converted[$tier])) {
-    if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
-      foreach ($generated as $uri => $data) {
-        if (isset($file->handlers[$tier]) && rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $file->handlers[$tier]))) {
-          $file->converted[$tier] = (object)array('uri' => $uri);
-          $file->converted[$tier]->metadata = file_metadata_normalize(rdf_normalize(rdf_query($uri)));
-          return;
-        }
+  // When $tier is negative we have reached the original file.
+  if ($tier < 0 || isset($file->converted[$tier]))
+    return TRUE;
+
+  // Do we have converted file in the bitcache?
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+    foreach ($generated as $uri => $data) {
+      if (isset($file->handlers[$tier]) && rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $file->handlers[$tier]))) {
+        $file->converted[$tier] = (object)array('uri' => $uri);
+        $file->converted[$tier]->metadata = file_metadata_normalize(rdf_normalize(rdf_query($uri)));
+        return TRUE;
       }
     }
-    file_get_converted($file, $tier - 1);
-    if (module_exists('file_convert') && ($converted = file_convert($file, $file->converters[$tier]['pipeline'], $tier, isset($file->handlers[$tier]) ? array($file->handlers[$tier]) : array(), isset($file->converters[$tier]['options']) ? $file->converters[$tier]['options'] : array()))) {
-      $file->converted[$tier] = (object)array('filepath' => $converted);
-      $file->converted[$tier]->metadata = array_merge(file_metadata_extract($converted, $file->mimes[$tier]), isset($file->handlers[$tier]) ? array('dc:creator' => array($file->handlers[$tier])) : array());
-      $file->converts++;
-    }
-    else {
-      $file->errorss++;
-      watchdog('file', 'File %name, uri=%uri was not converted to %mime by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file->mimes[$tier], '%pipeline' => $file->converters[$tier]['pipeline']), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-    }
   }
+
+  // We cannot do anything more if file_convert is disabled.
+  if (!module_exists('file_convert'))
+    return FALSE;
+
+  // Let's go one level up then and bring in the file to convert from.
+  if (!file_get_converted($file, $tier - 1))
+    return FALSE;
+
+  // We have to convert the file.
+  if ($converted = file_convert($file, $file->converters[$tier]['pipeline'], $tier, isset($file->handlers[$tier]) ? array($file->handlers[$tier]) : array(), isset($file->converters[$tier]['options']) ? $file->converters[$tier]['options'] : array())) {
+    $file->converted[$tier] = (object)array('filepath' => $converted);
+    $file->converted[$tier]->metadata = array_merge(file_metadata_extract($converted, $file->mimes[$tier]), isset($file->handlers[$tier]) ? array('dc:creator' => array($file->handlers[$tier])) : array());
+    $file->converts++;
+    return TRUE;
+  }
+
+  // Log that conversion has failed.
+  if ($converted === FALSE) {
+    $file->errors++;
+    watchdog('file', 'File %name, uri=%uri was not converted to %mime by executing a pipeline %pipeline.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file->mimes[$tier], '%pipeline' => $file->converters[$tier]['pipeline']), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+  }
+  return FALSE;
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -115,6 +115,7 @@ Drupal.file_browserGetWindowHeight = function() {
  * @param tid {Integer} term which we add
  * @param ptid {Integer} parent term to which we are appending the new node under
  * @param vid {Integer} if parent term is 0 then insert node under the correct vocabulary
+ * @param gid {Integer} a og_vocab group id or 0
  * @param node {String} html representation of the node
  * @param title {String} message to display on screen to the user
  * @param nodename {String} name of the new node being created
@@ -127,7 +128,7 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
   $('#' + folder).children().each(function() {
     if (this.id.match(/file-folder-/)) {
       var name = $(this).find('.file-title').text();
-      if (name > nodename && check == 0) {
+      if (name.toLowerCase() > nodename.toLowerCase() && check == 0) {
         check = 1;
         $(node).insertBefore($(this));
       };
@@ -162,17 +163,18 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
  * Dynamically add the new node to the DOM in the correct location
  * @param block {String} browser id
  * @param nid {Integer} term which we add
- * @param ptid {Integer} parent term where the new node is being inserted into
+ * @param tid {Integer} parent term where the new node is being inserted into
  * @param node {String} html representation of the node
  * @param title {String} message to display on screen to the user
  */
 Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, nodename) {
   var folder = 'file-folder-t' + ptid + '-g' + gid + '-b' + block;
+  var file = 'file-node-t' + ptid + '-n' + nid + '-b' + block;
   var check = 0;
   $('#' + folder).children().each(function() {
     if (this.id.match(/file-node-/)) {
       var name = $(this).find('.title').text();
-      if (name > nodename && check == 0) {
+      if (name.toLowerCase() > nodename.toLowerCase() && check == 0) {
 	check = 1;
         $(node).insertBefore($(this));
       };
@@ -188,10 +190,12 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
   }
   // hide the term if the folder is not expanded
   if (!$('#' + folder).is('.expanded')) {
-    $('#file-node-t-n' + nid + '-b' + block).remove();
+    $('#' + file).remove();
     // now expand the parent shelf
-    $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+    $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, file) });
   }
+  // select the newly created folder
+  $('#' + file + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
   Drupal.file_browserSetMsg(msg);
   // resetting the form for file upload back to its original state
   if ($('#file_browser').find('input:file').size() > 1) {
@@ -238,10 +242,10 @@ Drupal.file_browserNoticeMsg = function(msg) {
 
 /**
  * Highlights the selected row and adds necessary css classes to the pertinent rows
- * @param {Object} obj DOM object that was clicked on
- * @param {String} id  Parent id of the selected DOM object
- * @param {Boolean} folder Is it a folder {true = folder, false = not a folder}
- * @param {Boolean} link Is it a link {true = link, false = not a link}
+ * @param obj {Object} DOM object that was clicked on
+ * @param id {String} Parent id of the selected DOM object
+ * @param folder {Boolean} Is it a folder {true = folder, false = not a folder}
+ * @param link {Boolean} Is it a link {true = link, false = not a link}
  */
 Drupal.file_browserSelectRow = function(obj, id, folder, link) {
   if (id != Drupal.file_browserVars.selected)
@@ -254,11 +258,12 @@ Drupal.file_browserSelectRow = function(obj, id, folder, link) {
     $(obj).parent().toggleClass('expanded');
 }
 
-/**
+/*
  * Expands or collapses the folder that was selected based on the current DOM information
- * @param {Object} obj The folder object that was clicked on
+ * @param obj {Object} The folder object that was clicked on
+ * @param elm {String} The id of the element to click on the folder expand
  */
-Drupal.file_browserFolderClick = function(obj, term) {
+Drupal.file_browserFolderClick = function(obj, elm) {
   var parent = obj.parentNode;
   var id = parent.id;
   var block = id.match(/-b([^-]+)/)[1];
@@ -298,9 +303,12 @@ Drupal.file_browserFolderClick = function(obj, term) {
 	$('a.file-metadata').cluetip({arrows: true});
       }
       $('#' + id + '-spinner').hide();
-      if (typeof(term != undefined)) {
-        // click the folder
-        $('#' + term + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+      if (typeof(elm) != 'undefined') {
+        // click the element
+        if (elm.match(/file-folder/))
+	  $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+        else
+	  $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
       }
     });
   } else {
@@ -317,7 +325,7 @@ Drupal.file_browserFolderClick = function(obj, term) {
 
 /**
  * Handle operations when one of the file rows is clicked
- * @param {Object} obj File Object that holds a file which was clicked
+ * @param obj {Object} File Object that holds a file which was clicked
  */
 Drupal.file_browserFileClick = function(obj) {
   Drupal.file_browserVars.currentItem = 'f';
@@ -390,7 +398,7 @@ Drupal.file_browserUpdateTerm = function(id, size, files) {
 
 /**
  * Handle operations when file upload is clicked
- * @param {Object} obj File Upload Object <a> tag
+ * @param obj {Object} File Upload Object <a> tag
  */
 Drupal.file_browserFileUploadClick = function(obj) {
   $('#file-upload-spinner').show();

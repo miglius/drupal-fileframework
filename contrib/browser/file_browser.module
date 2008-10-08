@@ -573,7 +573,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
       $file_node = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
 
       // theme the node so we can display it on the screen to the user
-      $output = _file_browser_node('page', $file_node, TRUE, TRUE, TRUE);
+      $output = _file_browser_node('page', $tid, $file_node, TRUE, TRUE, TRUE);
       preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $output, $matches);
       $output = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $output);
 
@@ -801,7 +801,7 @@ function _file_browser_ajax_term($block, $t, $columns) {
 
   foreach (_file_browser_term_nodes($t, $t, 0) as $node) {
     if (is_object($node)) {
-      $output .= _file_browser_node($block, $node, FALSE, $columns);
+      $output .= _file_browser_node($block, $t->tid, $node, FALSE, $columns);
     }
   }
 
@@ -862,11 +862,11 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
  * @return
  *   The HTML block for a requested node.
  */
-function _file_browser_node($block, $node, $visible = TRUE, $columns = TRUE, $iframe = FALSE) {
+function _file_browser_node($block, $tid, $node, $visible = TRUE, $columns = TRUE, $iframe = FALSE) {
   $title = check_plain($node->title);
   $file = $node->file;
   $file->name = $node->title;
-  $id = 't'. (isset($node->tid) ? $node->tid : 0) .'-n'. $file->nid .'-b'. $block;
+  $id = 't'. $tid .'-n'. $file->nid .'-b'. $block;
   $icon = file_mime_icon_for($file->type, file_mime_description_for($file->type));
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);

@@ -173,12 +173,11 @@ function file_text_metadata_parse($filename, $mimetype) {
  */
 function file_text_text_generate($file, $tier = NULL) {
   if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-    file_get_converted($file, $tier);
-    if (isset($file->converted[$tier])) {
-      if (!file_data_save($file, $tier))
-        return FALSE;
-      watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-    }
+    if (!file_get_converted($file, $tier))
+      return FALSE;
+    if (!file_data_save($file, $tier))
+      return FALSE;
+    watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
   }
 
   if (!isset($tier) && FILE_TEXT_CODE) {
@@ -187,14 +186,13 @@ function file_text_text_generate($file, $tier = NULL) {
     $file->handlers[$tier] = 'file_text_code';
     $file->mimes[$tier] = 'text/html';
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-      file_get_converted($file, $tier);
-      if (isset($file->converted[$tier])) {
-        if (!file_data_save($file, $tier))
-          return FALSE;
-        watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-        file_delete($file->converted[$tier]->filepath);
-        unset($file->converted[$tier]);
-      }
+      if (!file_get_converted($file, $tier))
+        return FALSE;
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_text', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+      file_delete($file->converted[$tier]->filepath);
+      unset($file->converted[$tier]);
     }
   }
   return TRUE;

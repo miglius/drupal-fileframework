@@ -368,12 +368,12 @@ function file_cron() {
     // Repair fingerprints, file paths, and metadata for local files
     $total = $files = $converted = $errors = 0;
     $byte_limit = FILE_CRON_LIMIT_SIZE * 1024 * 1024;
-    $converted = $errors = $byte_counter = 0;
+    $converts = $errors = $byte_counter = 0;
     $result = db_query("SELECT f.nid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d", $byte_limit);
     while (($file = db_fetch_object($result)) && $byte_counter <= $byte_limit) {
       $total++;
       file_generate_previews($file, TRUE);
-      $converted += isset($file->converts) ? $file->converts : 0;
+      $converts += isset($file->converts) ? $file->converts : 0;
       $errors += isset($file->errors) ? $file->errors : 0;
       $byte_counter += $file->size;
     }
@@ -382,7 +382,7 @@ function file_cron() {
     // occurred. Note that if any problems were encountered, file_repair()
     // will have already logged them on its part.
     if ($total > 0) {
-      watchdog('file', 'On a cron run %total file(s), %size were inspected. %converted conversion(s) were performed with %errors error(s).', array('%total' => $total, '%converted' => (int)$converted, '%errors' => (int)$errors, '%size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+      watchdog('file', 'On a cron run @total file(s), @size were inspected. @converts conversion(s) were performed with @errors error(s).', array('@total' => $total, '@converts' => $converts, '@errors' => $errors, '@size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
     }
   }
 

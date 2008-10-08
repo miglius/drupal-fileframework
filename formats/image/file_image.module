@@ -309,23 +309,20 @@ function file_image_metadata_parse($filename, $mimetype) {
  */
 function file_image_image_generate($file, $tier = NULL) {
   // We need converted file's metadata.
-  if (isset($tier))
-    file_get_converted($file, $tier);
+  if (isset($tier) && !file_get_converted($file, $tier))
+    return FALSE;
 
-  $width = isset($tier) && isset($file->converted) && isset($file->converted[$tier]) ? $file->converted[$tier]->metadata['exif:width'][0] : (isset($file->metadata['exif:width']) ? $file->metadata['exif:width'][0] : NULL);
-  $height = isset($tier) && isset($file->converted) && isset($file->converted[$tier]) ? $file->converted[$tier]->metadata['exif:height'][0] : (isset($file->metadata['exif:height']) ? $file->metadata['exif:height'][0] : NULL);;
+  $width = isset($tier) ? $file->converted[$tier]->metadata['exif:width'][0] : (isset($file->metadata['exif:width']) ? $file->metadata['exif:width'][0] : NULL);
+  $height = isset($tier) ? $file->converted[$tier]->metadata['exif:height'][0] : (isset($file->metadata['exif:height']) ? $file->metadata['exif:height'][0] : NULL);;
   if (!isset($width) || !isset($height) || $width == 0 || $height == 0) {
     watchdog('file_image', 'A file %name, uri=%uri or it\'s derivative is an image with zero size.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
 
   if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-    file_get_converted($file, $tier);
-    if (isset($file->converted[$tier])) {
-      if (!file_data_save($file, $tier))
-        return FALSE;
-      watchdog('file_image', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-    }
+    if (!file_data_save($file, $tier))
+      return FALSE;
+    watchdog('file_image', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
   }
 
   $handlers = array();
@@ -364,14 +361,13 @@ function file_image_image_generate($file, $tier = NULL) {
     $file->handlers[$tier] = $data['handler'];
     $file->mimes[$tier] = $mime;
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-      file_get_converted($file, $tier);
-      if (isset($file->converted[$tier])) {
-        if (!file_data_save($file, $tier))
-          return FALSE;
-        watchdog('file_image', 'The %mime preview %handler was generated for the file %name, uri=%uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-        file_delete($file->converted[$tier]->filepath);
-        unset($file->converted[$tier]);
-      }
+      if (!file_get_converted($file, $tier))
+        return FALSE;
+      if (!file_data_save($file, $tier))
+        return FALSE;
+      watchdog('file_image', 'The %mime preview %handler was generated for the file %name, uri=%uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+      file_delete($file->converted[$tier]->filepath);
+      unset($file->converted[$tier]);
     }
   }
   return TRUE;
