@@ -126,6 +126,18 @@ function file_admin_settings() {
     '#value' => t('Clear'),
   );
 
+  $form['check'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Find missing bitstreams in the bitcache'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#description' => t('Sanity check. Click "Check" to find out if all file nodes have a corresponding bitstreams saved in the bitcache.'),
+  );
+  $form['check']['check'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Check'),
+  );
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -198,6 +210,18 @@ function file_admin_settings_submit($form, &$form_state) {
         watchdog('file', 'The RDF data about failed conversions and metadata extraction was not deleted.', WATCHDOG_ERROR);
       }
       drupal_set_message(t('The data about failed conversions and metadata extraction have been cleared.'));
+      break;
+    case t('Check'):
+      $result = db_query("SELECT f.nid, f.uri, n.title FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid");
+      $counter = 0;
+      while ($row = db_fetch_object($result)) {
+        if (!bitcache_exists(file_get_hash($row->uri))) {
+          drupal_set_message(t('A file node !file is missing a bitstream %uri.', array('!file' => l($row->title, 'node/'. $row->nid), '%uri' => file_get_hash($row->uri))), 'warning');
+          $counter++;
+        }
+      }
+      if ($counter == 0)
+        drupal_set_message(t('All file nodes have a coresponding bitsreams.'));
       break;
   }
 
