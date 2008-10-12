@@ -92,8 +92,11 @@ function file_cck_admin_settings_submit($form, &$form_state) {
     case t('Save configuration'):
       variable_set('file_cck_vocabularies_all', $values['file_cck_vocabularies_all']);
       variable_set('file_cck_vocabularies', $values['file_cck_vocabularies']);
-      variable_set('file_cck_og_inheritance', $values['file_cck_og_inheritance']);
-      variable_set('file_cck_og_vocabularies', $values['file_cck_og_vocabularies']);
+      if (module_exists('og')) {
+        variable_set('file_cck_og_inheritance', $values['file_cck_og_inheritance']);
+        if (module_exists('og_vocab'))
+          variable_set('file_cck_og_vocabularies', $values['file_cck_og_vocabularies']);
+      }
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):

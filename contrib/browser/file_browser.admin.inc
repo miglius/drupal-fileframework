@@ -149,12 +149,17 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_set('file_browser_hide_empty', $values['file_browser_hide_empty']);
       variable_set('file_browser_embed_previews', $values['file_browser_embed_previews']);
       variable_set('file_browser_folder_properties', $values['file_browser_folder_properties']);
-      variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
-      variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
-      variable_set('file_browser_og_preview', $values['file_browser_og_preview']);
-      variable_set('file_browser_og_unfiled', $values['file_browser_og_unfiled']);
-      variable_set('file_browser_og_create', $values['file_browser_og_create']);
-      variable_set('file_browser_location_preview', $values['file_browser_location_preview']);
+      if (module_exists('og')) {
+        variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
+        variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
+        variable_set('file_browser_og_preview', $values['file_browser_og_preview']);
+        if (module_exists('og_vocab')) {
+          variable_set('file_browser_og_unfiled', $values['file_browser_og_unfiled']);
+          variable_set('file_browser_og_create', $values['file_browser_og_create']);
+        }
+      }
+      if (module_exists('location'))
+        variable_set('file_browser_location_preview', $values['file_browser_location_preview']);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):

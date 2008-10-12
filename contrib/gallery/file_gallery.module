@@ -387,6 +387,14 @@ function _file_gallery_node($node, $options = array(), $module = NULL) {
   $title = check_plain($node->title);
   $title_short = drupal_strlen($title) > FILE_GALLERY_TITLE_LENGTH_SHORT ? drupal_substr($title, 0, FILE_GALLERY_TITLE_LENGTH_SHORT - 3) .'...' : $title;
 
+  static $initialized = FALSE;
+  if (!$initialized) {
+    $initialized = TRUE;
+    $url_js = isset($module) ? module_invoke($module, 'file_gallery', 'node_js') : NULL;
+    if (isset($url_js))
+      drupal_add_js($url_js, 'inline');
+  }
+
   return theme('file_gallery_node', compact('file', 'thumbnail', 'title', 'title_short', 'url_preview', 'url_open', 'width_preview', 'height_preview', 'file_links', 'thickbox'), $options);
 }
 

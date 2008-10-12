@@ -152,31 +152,6 @@ function file_embed_elements() {
 }
 
 /**
- * Implementation of hook_file_gallery().
- */
-function file_embed_file_gallery($op) {
-  $args = array_slice(func_get_args(), 1); // skip $op.
-  switch ($op) {
-    case 'query':
-      $query = $_GET;
-      unset($query['q']);
-      unset($query['page']);
-      return $query;
-    case 'node_link': return array('link' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])));
-    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
-    case 'pager': return FILE_EMBED_POPUP_PER_PAGE;
-    case 'thickbox': return FALSE;
-    case 'filter': return TRUE;
-    case 'navigation': return TRUE;
-    case 'show_tabs': return TRUE;
-    case 'tabs': return ($nodes = _file_embed_attachments()) && !empty($nodes) ? array('attach' => t('Attachments')) : NULL;
-    case 'nodes': return ($action = array_shift($args)) && $action == 'attach' ? _file_embed_attachments() : NULL;
-    case 'breadcrumb_home': return FALSE;
-    case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
-  }
-}
-
-/**
  * Alters textarea element and adds embed links.
  *
  * @param $element
@@ -465,6 +440,34 @@ function file_embed_options($node) {
   $form = drupal_get_form('file_embed_options_form', $node);
 
   print theme('file_gallery_page', theme('file_embed_options', compact('script', 'title', 'preview', 'form')));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// File gallery integration
+
+/**
+ * Implementation of hook_file_gallery().
+ */
+function file_embed_file_gallery($op) {
+  $args = array_slice(func_get_args(), 1); // skip $op.
+  switch ($op) {
+    case 'query':
+      $query = $_GET;
+      unset($query['q']);
+      unset($query['page']);
+      return $query;
+    case 'node_link': return array('link' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])));
+    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
+    case 'pager': return FILE_EMBED_POPUP_PER_PAGE;
+    case 'thickbox': return FALSE;
+    case 'filter': return TRUE;
+    case 'navigation': return TRUE;
+    case 'show_tabs': return TRUE;
+    case 'tabs': return ($nodes = _file_embed_attachments()) && !empty($nodes) ? array('attach' => t('Attachments')) : NULL;
+    case 'nodes': return ($action = array_shift($args)) && $action == 'attach' ? _file_embed_attachments() : NULL;
+    case 'breadcrumb_home': return FALSE;
+    case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

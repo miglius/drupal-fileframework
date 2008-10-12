@@ -97,6 +97,27 @@ function file_attach_admin_settings() {
     }
   }
 
+  if (file_exists('file_gallery')) {
+    // Popup settings
+    $form['popup'] = array('#type' => 'fieldset', '#title' => t('Popup settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    $form['popup']['file_attach_popup_size'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Size of file gallery selector popup window'),
+      '#default_value' => FILE_ATTACH_POPUP_SIZE,
+      '#size'          => 10,
+      '#maxlength'     => 255,
+      '#description'   => t('The default size is 590x500.'),
+    );
+    $form['popup']['file_attach_popup_per_page'] = array(
+      '#type'          => 'textfield',
+      '#title'         => t('Files per page'),
+      '#default_value' => FILE_ATTACH_POPUP_PER_PAGE,
+      '#size'          => 3,
+      '#maxlength'     => 255,
+      '#description'   => t('Sets the number of files to be displayed on a gallery page.'),
+    );
+  }
+
   $form['submit'] = array(
     '#type'  => 'submit',
     '#value' => t('Save configuration'),
@@ -114,8 +135,15 @@ function file_attach_admin_settings() {
  */
 function file_attach_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      if (file_exists('file_gallery')) {
+        $size = $values['file_attach_popup_size'];
+        if (empty($size) || !preg_match('/^[0-9]+x[0-9]+$/', $size)) {
+          form_set_error('file_attach_popup_size', t('Invalid value %value specified for popup size.', array('%value' => $size)));
+        }
+      }
       break;
   }
 }
@@ -135,8 +163,15 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_set('file_attach_show_generated', $values['file_attach_show_generated']);
       variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
       variable_set('file_attach_vocabularies', $values['file_attach_vocabularies']);
-      variable_set('file_attach_og_inheritance', $values['file_attach_og_inheritance']);
-      variable_set('file_attach_og_vocabularies', $values['file_attach_og_vocabularies']);
+      if (module_exists('og')) {
+        variable_set('file_attach_og_inheritance', $values['file_attach_og_inheritance']);
+        if (module_exists('og_vocab'))
+          variable_set('file_attach_og_vocabularies', $values['file_attach_og_vocabularies']);
+      }
+      if (module_exists('file_gallery')) {
+        variable_set('file_attach_popup_size', $values['file_attach_popup_size']);
+        variable_set('file_attach_popup_per_page', $values['file_attach_popup_per_page']);
+      }
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
@@ -149,6 +184,8 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_del('file_attach_vocabularies');
       variable_del('file_attach_og_inheritance');
       variable_del('file_attach_og_vocabularies');
+      variable_del('file_attach_popup_size');
+      variable_del('file_attach_popup_per_page');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }

@@ -17,6 +17,8 @@ define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_al
 define('FILE_ATTACH_VOCABULARIES',     serialize(variable_get('file_attach_vocabularies', array())));
 define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance', 0));
 define('FILE_ATTACH_OG_VOCABULARIES',  variable_get('file_attach_og_vocabularies', 0));
+define('FILE_ATTACH_POPUP_SIZE',       variable_get('file_attach_popup_size', '590x500'));
+define('FILE_ATTACH_POPUP_PER_PAGE',   variable_get('file_attach_popup_per_page', '6'));
 
 define('FILE_ATTACH_TITLE_LENGTH', 50);
 
@@ -50,6 +52,10 @@ function file_attach_theme() {
     ),
     'file_attach_autocomplete' => array(
       'arguments' => array('matches' => NULL),
+      'file' => 'file_attach.theme.inc'
+    ),
+    'file_attach_textfield_link' => array(
+      'arguments' => array('data' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
   );
@@ -274,7 +280,7 @@ function _file_attach_form_fieldset(&$form, $object) {
     return;
 
   if (!FILE_ATTACH_METHOD) {
-    drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
+    drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach_onsave.js');
     drupal_add_js(array(
       'file_attach' => array(
         'max' => FILE_ATTACH_MAX_FILES,
@@ -385,6 +391,13 @@ function _file_attach_form($object) {
         $form['files_new'] += _file_attach_more_form($i);
       }
     }
+
+    drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
+    list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
+    $query = array('module' => 'file_attach', 'layout' => 'off');
+    $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
+    $url = array('url' => 'file_gallery', 'query' => array_merge(file_attach_file_gallery('query'), $query));
+
     $form['attach_saved'] = array(
       '#type' => 'textfield',
       '#title' => t('Attach existing file'),
@@ -392,6 +405,16 @@ function _file_attach_form($object) {
       '#autocomplete_path' => 'file_attach/autocomplete',
       '#maxlength' => 255,
     );
+
+    if (file_exists('file_gallery')) {
+      drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
+      list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
+      $query = array('module' => 'file_attach', 'layout' => 'off');
+      $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
+      $url = array('url' => 'file_gallery', 'query' => array_merge(file_attach_file_gallery('query'), $query));
+      $form['attach_saved']['#description'] .= t(' You can also click on "select file" to choose a file.');
+      $form['attach_saved']['#suffix'] = theme('file_attach_textfield_link', array('url' => $url));
+    }
   }
   return $form;
 }
@@ -983,5 +1006,32 @@ function _file_attach_load_backreferences() {
     }
   }
   return theme('file_attach_backreferences', $nodes);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// File gallery integration
+
+/**
+ * Implementation of hook_file_gallery().
+ */
+function file_attach_file_gallery($op) {
+  $args = array_slice(func_get_args(), 1); // skip $op.
+  switch ($op) {
+    case 'query':
+      $query = $_GET;
+      unset($query['q']);
+      unset($query['page']);
+      return $query;
+    case 'node_link': return array('link' => 'file_attach/'. array_shift($args), 'attributes' => array('class' => 'file-attach-node'));
+    case 'node_js': return "$(document).ready(function() { $('a.file-attach-node').click(function() { var nid = String(this).match(/\/([\d]+)$/)[1]; window.parent.Drupal.file_attachInsert(nid); window.parent.tb_remove(); return false; }); });";
+    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'attach' => array('title' => t('Attach'), 'href' => 'file_attach/'. array_shift($args), 'attributes' => array('title' => t('Attach file to the node.'), 'class' => 'file-attach-node')));
+    case 'pager': return FILE_ATTACH_POPUP_PER_PAGE;
+    case 'thickbox': return FALSE;
+    case 'filter': return TRUE;
+    case 'navigation': return TRUE;
+    case 'show_tabs': return TRUE;
+    case 'breadcrumb_home': return FALSE;
+    case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
+  }
 }
 

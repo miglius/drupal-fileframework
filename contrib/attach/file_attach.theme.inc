@@ -104,3 +104,31 @@ function theme_file_attach_autocomplete($matches) {
   return $output;
 }
 
+/**
+ * Outputs textfield links.
+ */
+function theme_file_attach_textfield_link($data) {
+  extract($data, EXTR_SKIP);
+
+  static $initialized = FALSE;
+  if (!$initialized) {
+    $initialized = TRUE;
+
+    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+    // Cluetip for metadata.
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+
+    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+  }
+
+  $output = '<div class="file-attach-actions">';
+  $output .= l(t('select file'), $url['url'], array('html' => TRUE, 'query' => $url['query'], 'attributes' => array('class' => 'file-attach-select')));
+  $output .= '</div>';
+  return $output;
+}
+

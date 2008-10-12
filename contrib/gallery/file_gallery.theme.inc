@@ -64,7 +64,7 @@ function theme_file_gallery_node($data, $options) {
     $id .= mt_rand(0, 9);
 
   $output = '<li class="file-gallery" id="file-'. $file->nid .'" style="width: '. ((int)$max_width) .'px; height: '. ((int)$max_height) .'px;">';
-  $output .= !empty($url_preview) ? l(isset($thumbnail) ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => isset($thumbnail) ? TRUE : FALSE, 'query' => $url_preview['query'], 'attributes' => array('onclick' => isset($url_preview['onclick']) ? $url_preview['onclick'] : NULL, 'title' => $title, 'id' => 'file-'. $file->nid .'-'. $id))) : (isset($thumbnail) ? $thumbnail : t('No thumbnail'));
+  $output .= !empty($url_preview) ? l(isset($thumbnail) ? $thumbnail : t('No thumbnail'), $url_preview['link'], array('html' => isset($thumbnail) ? TRUE : FALSE, 'query' => isset($url_preview['query']) ? $url_preview['query'] : NULL, 'attributes' => array_merge(array('title' => $title, 'id' => 'file-'. $file->nid .'-'. $id), isset($url_preview['attributes']) ? $url_preview['attributes'] : array()))) : (isset($thumbnail) ? $thumbnail : t('No thumbnail'));
   $output .= $thickbox ? '<script type=\'text/javascript\'>tb_init(\'#file-'. $file->nid .'-'. $id .'\');</script>' : '';
   $file->name = $title_short;
   $output .= '<br />'. theme('file_render', $file, $file_links);

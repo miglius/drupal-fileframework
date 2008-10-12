@@ -2,10 +2,6 @@
 
 Drupal.behaviors.file_embed = function(context) {
   // Body field text links
-  $('a.file-embed-upload').click(function() {
-    Drupal.file_embedPopup(this.href, 'Embed an attachment');
-    return false;
-  });
   $('a.file-embed-select').click(function() {
     Drupal.file_embedPopup(this.href, 'Embed an existing file');
     return false;
