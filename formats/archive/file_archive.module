@@ -55,6 +55,7 @@ function file_archive_mime_types() {
     ),
     'application/x-gzip' => array(
       'name' => t('Gzip archive'),
+      'extensions' => array('gzip', 'gz'), // this is not defined in mime.types
       'icon' => 'zip.gif',
     ),
     'application/x-stuffit' => array(

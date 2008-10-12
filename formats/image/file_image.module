@@ -177,6 +177,7 @@ function file_image_mime_types() {
     'image/pjpeg' => array(
       'name' => t('JPEG image'),
       'handlers' => array('file_image_image'),
+      'extensions' => array('pjpeg', 'pjpg'), // this is not defined in mime.types
     ),
     'image/jp2' => array(
       'name' => t('JPEG2000 image'),
