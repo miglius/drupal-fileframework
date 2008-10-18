@@ -26,6 +26,21 @@ function file_node_save(&$node, $file) {
     return FALSE;
   }
 
+  if (isset($file->uri)) {
+    // Sanity check if we are saving a file which is already put in bitcche.
+
+    $file->filename = isset($file->filename) ? $file->filename : $node->title;
+
+    // Check if file exists in the bitcache.
+    if (!bitcache_exists(file_get_hash($file->uri))) {
+      watchdog('file', 'The blob was not found in the bitcache for the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+      return FALSE;
+    }
+
+    $file->size = isset($file->size) ? $file->size : bitcache_get(file_get_hash($file->uri))->size;
+    $file->type = isset($file->type) ? $file->type : bitcache_get(file_get_hash($file->uri))->type;
+  }
+
   if (!isset($file->uri)) {
     // Note that at this point, we have a transient file object with a path,
     // MIME type and file size. The file is still located in the temporary

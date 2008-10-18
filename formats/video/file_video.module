@@ -83,11 +83,11 @@ function file_video_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^video\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $width = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:width'))->value;
-      $height = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:height'))->value;
-      if (!empty($width) && !empty($height)) {
-        $links['file_video_resolution'] = array(
-          'title' => t('%resolution pixels', array('%resolution' => $width .'x'. $height)),
+      $playtime = ($playtime = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:playtime_string'))) ? $playtime : NULL;
+      $a = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:playtime_string'));
+      if (!empty($playtime)) {
+        $links['file_video_playtime'] = array(
+          'title' => t('Length @playtime', array('@playtime' => $playtime)),
           'html'  => TRUE,
         );
       }

@@ -98,7 +98,7 @@ function file_image_link($type, $node = NULL, $teaser = FALSE) {
       $height = ($height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'))) ? $height->value : NULL;
       if (!empty($width) && !empty($height)) {
         $links['file_image_resolution'] = array(
-          'title' => t('%resolution pixels', array('%resolution' => $width .'x'. $height)),
+          'title' => t('@resolution pixels', array('@resolution' => $width .'x'. $height)),
           'html'  => TRUE,
         );
       }
@@ -372,6 +372,14 @@ function file_image_image_generate($file, $tier = NULL) {
     }
   }
   return TRUE;
+}
+
+/**
+ * Implements image image handler.
+ */
+function file_image_image_render($uri, $options = array()) {
+  $options = array_merge($options, _file_image_render_options($uri, $options));
+  return theme('file_image_image_render', $options);
 }
 
 /**

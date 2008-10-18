@@ -42,6 +42,18 @@ function file_admin_settings() {
     '#description'   => t('Show a "view" link next to "download" link. Clicking the view link will bring the file with a headder content-disposition set to inline.'),
     '#default_value' => FILE_VIEW_LINK,
   );
+  $form['visibility']['file_info_link'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Info link'),
+    '#description'   => t('Show an "info" link next to "download" link. Clicking the info link will bring the information about who and when created a file node.'),
+    '#default_value' => FILE_INFO_LINK,
+  );
+  $form['visibility']['file_properties_link'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Properties link'),
+    '#description'   => t('Show an "properties" link next to "download" link. Clicking the properties link will bring the file metadata.'),
+    '#default_value' => FILE_PROPERTIES_LINK,
+  );
   $form['visibility']['file_properties_tab'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Properties tab'),
@@ -178,6 +190,8 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_handler_autoload', $values['file_handler_autoload']);
       variable_set('file_show_generated', $values['file_show_generated']);
       variable_set('file_view_link', $values['file_view_link']);
+      variable_set('file_info_link', $values['file_info_link']);
+      variable_set('file_properties_link', $values['file_properties_link']);
       variable_set('file_properties_tab', $values['file_properties_tab']);
       variable_set('file_popup_size', $values['file_popup_size']);
       variable_set('file_cron', $values['file_cron']);
@@ -194,6 +208,8 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_handler_autoload');
       variable_del('file_show_generated');
       variable_del('file_view_link');
+      variable_del('file_info_link');
+      variable_del('file_properties_link');
       variable_del('file_properties_tab');
       variable_del('file_popup_size');
       variable_del('file_cron');

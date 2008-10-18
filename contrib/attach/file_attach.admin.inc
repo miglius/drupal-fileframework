@@ -49,12 +49,6 @@ function file_attach_admin_settings() {
     '#description'   => t('Show the available generated previews for the attached files.'),
     '#default_value' => FILE_ATTACH_SHOW_PREVIEWS,
   );
-  $form['visibility']['file_attach_show_generated'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Generated (converted) files'),
-    '#description'   => t('Show a list of the avialable converted attachments in other MIME types. The list is also available as a block.'),
-    '#default_value' => FILE_ATTACH_SHOW_GENERATED,
-  );
 
   // Vocabulary settings.
   $options = array();
@@ -97,7 +91,7 @@ function file_attach_admin_settings() {
     }
   }
 
-  if (file_exists('file_gallery')) {
+  if (module_exists('file_gallery')) {
     // Popup settings
     $form['popup'] = array('#type' => 'fieldset', '#title' => t('Popup settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
     $form['popup']['file_attach_popup_size'] = array(
@@ -160,7 +154,6 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_set('file_attach_max_files', $values['file_attach_max_files']);
       variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
       variable_set('file_attach_show_previews', $values['file_attach_show_previews']);
-      variable_set('file_attach_show_generated', $values['file_attach_show_generated']);
       variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
       variable_set('file_attach_vocabularies', $values['file_attach_vocabularies']);
       if (module_exists('og')) {
@@ -179,7 +172,6 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_del('file_attach_max_files');
       variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
-      variable_del('file_attach_show_generated');
       variable_del('file_attach_vocabularies_all');
       variable_del('file_attach_vocabularies');
       variable_del('file_attach_og_inheritance');

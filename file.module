@@ -16,6 +16,8 @@ define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
+define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
+define('FILE_PROPERTIES_LINK',               variable_get('file_properties_link', 1));
 define('FILE_PROPERTIES_TAB',                variable_get('file_properties_tab', 1));
 define('FILE_POPUP_SIZE',                    variable_get('file_popup_size', '800x600'));
 define('FILE_CRON',                          variable_get('file_cron', 1));
@@ -359,6 +361,7 @@ function file_link($type, $node = NULL, $teaser = FALSE) {
 function file_cron() {
   // Only run if automatic maintenance has been enabled by the administrator
   if (FILE_CRON) {
+    $time = time();
 
     // If PHP is not in 'safe mode', increase the maximum execution time:
     if (!ini_get('safe_mode')) {
@@ -382,7 +385,7 @@ function file_cron() {
     // occurred. Note that if any problems were encountered, file_repair()
     // will have already logged them on its part.
     if ($total > 0) {
-      watchdog('file', 'On a cron run @total file(s), @size were inspected. @converts conversion(s) were performed with @errors error(s).', array('@total' => $total, '@converts' => $converts, '@errors' => $errors, '@size' => format_size($byte_counter)), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
+      watchdog('file', 'On a cron run @total file(s), @size were inspected. @converts conversion(s) were performed with @errors error(s). It took @seconds second(s).', array('@total' => $total, '@converts' => $converts, '@errors' => $errors, '@size' => format_size($byte_counter), '@seconds' => time() - $time), $errors > 0 ? WATCHDOG_WARNING : WATCHDOG_NOTICE);
     }
   }
 

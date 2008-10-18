@@ -12,7 +12,6 @@ define('FILE_ATTACH_METHOD',           variable_get('file_attach_method', 1));
 define('FILE_ATTACH_MAX_FILES',        variable_get('file_attach_max_files', 5));
 define('FILE_ATTACH_SHOW_ATTACHMENTS', variable_get('file_attach_show_attachments', 1));
 define('FILE_ATTACH_SHOW_PREVIEWS',    variable_get('file_attach_show_previews', 1));
-define('FILE_ATTACH_SHOW_GENERATED',   variable_get('file_attach_show_generated', 1));
 define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_all', 1));
 define('FILE_ATTACH_VOCABULARIES',     serialize(variable_get('file_attach_vocabularies', array())));
 define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance', 0));
@@ -858,18 +857,20 @@ function _file_attach_view($object) {
     }
     // Add attachment previews. We need to ensure that each file on each
     // commnet gets a unique id to make sure jquery is not confused.
-    $id = 0;
-    foreach ($files as $file) {
-      $data = array(
-        'preview' => FILE_ATTACH_SHOW_PREVIEWS ? file_render_previews($file, 'files-'. $pid .'-'. $id) : '',
-        'generated' => FILE_ATTACH_SHOW_GENERATED ? file_render_generated($file, 'files-'. $pid .'-'. $id) : '',
-        'file' => theme('file_render', $file),
-      );
-      $content['files_'. $pid .'_'. $id] = array(
-        '#value' => theme('file_attach_show', theme('file_show', $data)),
-        '#weight' => $id + 2,
-      );
-      $id++;
+    if (FILE_ATTACH_SHOW_PREVIEWS) {
+      $id = 0;
+      foreach ($files as $file) {
+        $data = array(
+          'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files-'. $pid .'-'. $id) : '',
+          'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files-'. $pid .'-'. $id) : '',
+          'file' => theme('file_render', $file),
+        );
+        $content['files_'. $pid .'_'. $id] = array(
+          '#value' => theme('file_attach_show', theme('file_show', $data)),
+          '#weight' => $id + 2,
+        );
+        $id++;
+      }
     }
   }
   return isset($content) ? $content : array();

@@ -97,9 +97,10 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   $links['download'] = array('title' => t('Download'), 'attributes' => array('title' => t('Download file.')));
   $links['download']['href'] = $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
   $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'download');
-  if ($is_node)
+  if (FILE_INFO_LINK && $is_node)
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
-  $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
+  if (FILE_PROPERTIES_LINK)
+    $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
   $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . (isset($file->desc) ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) .' <span class="title">'. (isset($file->name) ? check_plain($file->name) : '') . (isset($file->name) && isset($file->desc) ? ' - ' : '') . (isset($file->desc) ? $file->desc : '') .'</span></span>'. $links .'</span></span>';
   if ($is_node)
