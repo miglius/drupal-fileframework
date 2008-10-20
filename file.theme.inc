@@ -88,7 +88,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
 
   // Find a first enabled handler for the file.
   if ($is_node && ($preview = file_first_preview($file)))
-    $links['show'] = array('title' => t('Show'), 'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']), 'attributes' => array('title' => t('Show file in the thickbox.'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id));
+    $links['show'] = array('title' => t('Preview'), 'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']), 'attributes' => array('title' => t('Show file in the thickbox.'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id));
   if (FILE_VIEW_LINK) {
     $links['view'] = array('title' => t('View'), 'attributes' => array('title' => t('View file inline in the browser.')));
     $links['view']['href'] = $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
