@@ -34,7 +34,6 @@ function file_attach_uninstall() {
   variable_del('file_attach_max_files');
   variable_del('file_attach_show_attachments');
   variable_del('file_attach_show_previews');
-  variable_del('file_attach_show_generated');
   variable_del('file_attach_vocabularies_all');
   variable_del('file_attach_vocabularies');
   variable_del('file_attach_og_inheritance');

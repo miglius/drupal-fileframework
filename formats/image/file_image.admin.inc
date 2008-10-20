@@ -18,6 +18,14 @@
 function file_image_admin_settings() {
   $form = array();
 
+  // Processing settings
+  $form['process'] = array('#type' => 'fieldset', '#title' => t('Processing settings'), '#description' => t('Image Magic "convert" utility !installed installed in the system.', array('!installed' => exec('which convert 2>/dev/null') ? t('is') : t('is not'))), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['process']['file_image_use_image_magic'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Use Image Magic'),
+    '#default_value' => FILE_IMAGE_USE_IMAGE_MAGIC,
+    '#description'   => t('Use command line Image Magic program "convert" to scale images instead of php extensions. This might be slower, but will not consume php memory.'),
+  );
   // Preview settings
   $form['preview'] = array('#type' => 'fieldset', '#title' => t('Preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['preview']['file_image_preview_resolution'] = array(
@@ -108,6 +116,9 @@ function file_image_admin_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      if ($values['file_image_use_image_magic'] && !exec('which convert 2>/dev/null')) {
+        form_set_error('file_image_use_image_magic', t('Image Magic utility "convert" is not installed.'));
+      }
       $preview_resolution = $values['file_image_preview_resolution'];
       if (empty($preview_resolution) || !preg_match('/^[0-9]+x[0-9]+$/', $preview_resolution)) {
         form_set_error('file_image_preview_resolution', t('Invalid value %value specified for embedded image preview resolution.', array('%value' => $preview_resolution)));
@@ -150,6 +161,7 @@ function file_image_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_image_use_image_magic', $values['file_image_use_image_magic']);
       variable_set('file_image_preview_resolution', $values['file_image_preview_resolution']);
       variable_set('file_image_medium_resolution', $values['file_image_medium_resolution']);
       variable_set('file_image_thumbnail_resolution', $values['file_image_thumbnail_resolution']);
@@ -165,6 +177,7 @@ function file_image_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_image_use_image_magic');
       variable_del('file_image_preview_resolution');
       variable_del('file_image_medium_resolution');
       variable_del('file_image_thumbnail_resolution');

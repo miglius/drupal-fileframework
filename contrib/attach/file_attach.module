@@ -405,7 +405,7 @@ function _file_attach_form($object) {
       '#maxlength' => 255,
     );
 
-    if (file_exists('file_gallery')) {
+    if (module_exists('file_gallery')) {
       drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
       list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
       $query = array('module' => 'file_attach', 'layout' => 'off');

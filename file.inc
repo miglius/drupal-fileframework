@@ -133,12 +133,17 @@ function file_data_save($file, $tier = NULL) {
   $parent = isset($tier) ? array('dc:source' => array($file->uri)) : array();
 
   // Save metadata information to the RDF.
-  if (!rdf_exists($uri)) {
-    $metadata = isset($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
-    if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
-      watchdog('file', 'The RDF data was not saved for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
-      return FALSE;
-    }
+  $metadata = isset($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
+  foreach (file_metadata_normalize(rdf_normalize(rdf_query($file_save->uri))) as $p => $o) {
+    $metadata[$uri][$p] = isset($metadata[$uri][$p]) ? $metadata[$uri][$p] : $o;
+  }
+  if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
+    watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
+    return FALSE;
+  }
+  else if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
+    watchdog('file', 'The RDF data was not saved for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+    return FALSE;
   }
   return TRUE;
 }
@@ -570,12 +575,12 @@ function file_metadata_extract($filename, $mimetype) {
   $parsed = FALSE;
   foreach (module_implements('metadata_parse') as $module) {
     if (($metadata = module_invoke($module, 'metadata_parse', $filename, $mimetype)) && is_array($metadata)) {
-      $result = array_merge($result, $metadata, array('wordnet:metadata' => 'parsed'));
+      $result = array_merge($result, $metadata, array('wordnet:metadata' => array('parsed')));
       $parsed = TRUE;
     }
   }
   if (!$parsed)
-    $result = array_merge($result, array('wordnet:failed' => 'metadata'));
+    $result = array_merge($result, array('wordnet:failed' => array('metadata')));
 
   return $result;
 }
@@ -1076,7 +1081,7 @@ function file_bitcache($op, $id, $stream = NULL) {
     case 'download':
       // Determine additional HTTP headers for the bitstream download
       $disposition = isset($_GET['disposition']) ? $_GET['disposition'] : 'attachment';
-      if (isset($node->nid)) {
+      if (isset($node->nid) && $node->file->uri == 'bitcache://'. $id) {
         $counter = $disposition == 'inline' ? 'views' : 'downloads';
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }

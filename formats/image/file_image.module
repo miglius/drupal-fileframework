@@ -8,6 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+define('FILE_IMAGE_USE_IMAGE_MAGIC',      variable_get('file_image_use_image_magic', 0));
 define('FILE_IMAGE_PREVIEW_RESOLUTION',   variable_get('file_image_preview_resolution', '640x640'));
 define('FILE_IMAGE_MEDIUM_RESOLUTION',    variable_get('file_image_medium_resolution', '300x300'));
 define('FILE_IMAGE_THUMBNAIL_RESOLUTION', variable_get('file_image_thumbnail_resolution', '120x120'));
@@ -162,10 +163,6 @@ function file_image_mime_handlers() {
  */
 function file_image_mime_types() {
   return array(
-    'image/bmp' => array(
-      'name' => t('Bitmap image'),
-      'handlers' => array('file_image_image'),
-    ),
     'image/gif' => array(
       'name' => t('GIF image'),
       'handlers' => array('file_image_image'),
@@ -189,15 +186,19 @@ function file_image_mime_types() {
     ),
     'image/svg+xml' => array(
       'name' => t('SVG image'),
-      'handlers' => array('file_image_image'),
     ),
     'image/tiff' => array(
       'name' => t('TIFF image'),
-      'handlers' => array('file_image_image'),
     ),
     'image/x-icon' => array(
       'name' => t('Icon file'),
       'handlers' => array('file_image_image'),
+    ),
+    'image/bmp' => array(
+      'name' => t('Bitmap image'),
+    ),
+    'image/x-ms-bmp' => array(
+      'name' => t('Bitmap image'),
     ),
   );
 }
@@ -208,9 +209,31 @@ function file_image_mime_types() {
 function file_image_mime_converters() {
   return array(
     'image/tiff' => array(
+      'image/jpeg' => array(
+        'pipeline' => '{mv} "[in_file]" "[in_file].tif"; {convert} "[in_file].tif" "[out_file].jpg"; {mv} "[in_file].tif" "[in_file]"; mv "[out_file].jpg" "[out_file]"',
+        'handlers' => array('file_image_image'),
+      ),
       'text/plain' => array(
         'pipeline' => '{mv} "[in_file]" "[in_file].tif"; {tesseract} "[in_file].tif" "[out_file]"; {mv} "[in_file].tif" "[in_file]"; mv "[out_file].txt" "[out_file]"',
         'handlers' => array('file_text_text'),
+      ),
+    ),
+    'image/svg+xml' => array(
+      'image/jpeg' => array(
+        'pipeline' => '{mv} "[in_file]" "[in_file].svg"; {convert} "[in_file].svg" "[out_file].jpg"; {mv} "[in_file].svg" "[in_file]"; mv "[out_file].jpg" "[out_file]"',
+        'handlers' => array('file_image_image'),
+      ),
+    ),
+    'image/bmp' => array(
+      'image/jpeg' => array(
+        'pipeline' => '{mv} "[in_file]" "[in_file].bmp"; {convert} "[in_file].bmp" "[out_file].jpg"; {mv} "[in_file].bmp" "[in_file]"; mv "[out_file].jpg" "[out_file]"',
+        'handlers' => array('file_image_image'),
+      ),
+    ),
+    'image/x-ms-bmp' => array(
+      'image/jpeg' => array(
+        'pipeline' => '{mv} "[in_file]" "[in_file].bmp"; {convert} "[in_file].bmp" "[out_file].jpg"; {mv} "[in_file].bmp" "[in_file]"; mv "[out_file].jpg" "[out_file]"',
+        'handlers' => array('file_image_image'),
       ),
     ),
   );
@@ -316,7 +339,7 @@ function file_image_image_generate($file, $tier = NULL) {
   $width = isset($tier) ? $file->converted[$tier]->metadata['exif:width'][0] : (isset($file->metadata['exif:width']) ? $file->metadata['exif:width'][0] : NULL);
   $height = isset($tier) ? $file->converted[$tier]->metadata['exif:height'][0] : (isset($file->metadata['exif:height']) ? $file->metadata['exif:height'][0] : NULL);;
   if (!isset($width) || !isset($height) || $width == 0 || $height == 0) {
-    watchdog('file_image', 'A file %name, uri=%uri or it\'s derivative is an image with zero size.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+    watchdog('file_image', 'A file %name, uri=%uri or it\'s derivative is an image with zero width or height.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_WARNING, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
 
@@ -358,7 +381,7 @@ function file_image_image_generate($file, $tier = NULL) {
     $ratio = min($max_width / $width, $max_height / $height);
     list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
 
-    $file->converters[$tier] = array('pipeline' => "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", 'options' => array('resize' => 'resize', 'width' => $width, 'height' => $height));
+    $file->converters[$tier] = array('pipeline' => FILE_IMAGE_USE_IMAGE_MAGIC ? '{convert} -geometry [width]x[height] "[in_file]" "[out_file]"' : "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", 'options' => array('resize' => 'resize', 'width' => $width, 'height' => $height));
     $file->handlers[$tier] = $data['handler'];
     $file->mimes[$tier] = $mime;
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {

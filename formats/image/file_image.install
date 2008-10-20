@@ -25,6 +25,7 @@ function file_image_install() {}
  * Implementation of hook_uninstall().
  */
 function file_image_uninstall() {
+  variable_del('file_image_use_image_magic');
   variable_del('file_image_preview_resolution');
   variable_del('file_image_medium_resolution');
   variable_del('file_image_thumbnail_resolution');

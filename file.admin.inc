@@ -76,7 +76,7 @@ function file_admin_settings() {
     '#title'         => t('Perform automatic maintenance on cron runs'),
     '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#default_value' => FILE_CRON,
-    '#description'   => t('Enables automatic sanity checks and repairs for file paths, fingerprints, metadata and indexing. Normally you would always want to have this enabled, but in cases where you still want to maintain some legacy file data with old modules, you may not want this poking and changing that.'),
+    '#description'   => t('Enables automatic sanity checks and repairs for the converted files and metadata extraction. Normally you would always want to have this enabled.'),
   );
   $form['maintenance']['file_cron_limit_size'] = array(
     '#type'          => 'select',
@@ -84,6 +84,13 @@ function file_admin_settings() {
     '#default_value' => FILE_CRON_LIMIT_SIZE,
     '#options'       => drupal_map_assoc(array(16, 32, 64, 128, 256, 512, 1024, 2048, 4096)),
     '#description'   => t('The cron job will proccess uploaded files and create missing previews or files in other MIME types. The maximum amount of megabytes that will be processed in one cron run. Set this number lower if your cron is timing out or if PHP is running out of memory. Note that individual files larger than this limit will never be processed.'),
+  );
+  $form['maintenance']['file_cron_limit_total'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Files to inspect per cron run'),
+    '#default_value' => FILE_CRON_LIMIT_TOTAL,
+    '#size'          => 6,
+    '#description'   => t('The cron job will inspect only chosen number of files per run. Set it to zero to make it unlimited.'),
   );
 
   // MIME type autodetection
@@ -167,12 +174,16 @@ function file_admin_settings() {
  */
 function file_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $mime_path = $form_state['values']['file_mime_registry_path'];
+      $mime_path = $values['file_mime_registry_path'];
       $mime_file = $mime_path .'/mime.types';
       if (!empty($mime_path) && (!file_exists($mime_file) || !is_readable($mime_file))) {
         form_set_error('file_file_mime_registry_path', t('A file %file does not exists or is not readable by the web server.', array('%file' => $mime_file)));
+      }
+      if (!is_numeric($values['file_cron_limit_total'])) {
+        form_set_error('file_cron_limit_total', t('A total number should be numeric.'));
       }
       break;
   }
@@ -196,6 +207,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_popup_size', $values['file_popup_size']);
       variable_set('file_cron', $values['file_cron']);
       variable_set('file_cron_limit_size', $values['file_cron_limit_size']);
+      variable_set('file_cron_limit_total', $values['file_cron_limit_total']);
       variable_set('file_mime_autodetection', $values['file_mime_autodetection']);
       variable_set('file_mime_autodetection_conditions', $values['file_mime_autodetection_conditions']);
       variable_set('file_mime_registry_path', $values['file_mime_registry_path']);
@@ -214,6 +226,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_popup_size');
       variable_del('file_cron');
       variable_del('file_cron_limit_size');
+      variable_del('file_cron_limit_total');
       variable_del('file_mime_autodetection');
       variable_del('file_mime_autodetection_conditions');
       variable_del('file_mime_registry_path');
