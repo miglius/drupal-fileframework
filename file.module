@@ -392,8 +392,8 @@ function file_cron() {
       $total++;
       file_generate_previews($file, TRUE);
       $converts += isset($file->converts) ? $file->converts : 0;
+      $byte_counter = isset($file->converts) ? $byte_counter + $file->size : $byte_counter;
       $errors += isset($file->errors) ? $file->errors : 0;
-      $byte_counter = isset($file->errors) ? $byte_counter + $file->size : $byte_counter;
     }
     if (isset($file) && FILE_CRON_LIMIT_TOTAL > 0)
       variable_set('file_cron_last_nid', isset($file->nid) && ($total == FILE_CRON_LIMIT_TOTAL) ? $file->nid : 0);
