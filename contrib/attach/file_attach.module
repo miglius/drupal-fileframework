@@ -53,10 +53,6 @@ function file_attach_theme() {
       'arguments' => array('matches' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
-    'file_attach_textfield_link' => array(
-      'arguments' => array('data' => NULL),
-      'file' => 'file_attach.theme.inc'
-    ),
   );
 }
 
@@ -410,9 +406,25 @@ function _file_attach_form($object) {
       list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
       $query = array('module' => 'file_attach', 'layout' => 'off');
       $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
-      $url = array('url' => 'file_gallery', 'query' => array_merge(file_attach_file_gallery('query'), $query));
-      $form['attach_saved']['#description'] .= t(' You can also click on "select file" to choose a file.');
-      $form['attach_saved']['#suffix'] = theme('file_attach_textfield_link', array('url' => $url));
+      $query = array_merge(file_attach_file_gallery('query'), $query);
+      $form['attach_saved']['#description'] .= t(' You can also click on "Browse..." to choose a file.');
+
+      $form['attach_browse'] = array(
+        '#type'  => 'submit',
+        '#value' => t('Browse...'),
+      );
+      $form['attach_browse_url'] = array('#type' => 'hidden', '#value' => url('file_gallery', array('query' => $query)));
+
+      // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+      drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+      // Cluetip for metadata.
+      drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+
+      drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
     }
   }
   return $form;

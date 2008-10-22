@@ -6,6 +6,10 @@ Drupal.behaviors.file_attach = function(context) {
     Drupal.file_attachPopup(this.href, 'Attach an existing file');
     return false;
   });
+  $('#edit-attach-browse').click(function() {
+    Drupal.file_attachPopup($('#edit-attach-browse-url').val(), 'Attach an existing file');
+    return false;
+  });
 };	
 
 Drupal.file_attachPopup = function(url, title) {

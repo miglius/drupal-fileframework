@@ -134,14 +134,19 @@ function file_data_save($file, $tier = NULL) {
 
   // Save metadata information to the RDF.
   $metadata = isset($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
+
+  // A generated file can have several parent filess, for instance the same
+  // video file with different audio codecs will have the same image preview.
   foreach (file_metadata_normalize(rdf_normalize(rdf_query($file_save->uri))) as $p => $o) {
-    $metadata[$uri][$p] = isset($metadata[$uri][$p]) ? $metadata[$uri][$p] : $o;
+    if (in_array($p, array('dc:source', 'dc:creator'))) {
+      $metadata[$uri][$p] = array_unique(array_merge($o, isset($metadata[$uri][$p]) ? $metadata[$uri][$p] : array()));
+    }
   }
   if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
     watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
     return FALSE;
   }
-  else if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
+  if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
     watchdog('file', 'The RDF data was not saved for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
@@ -192,23 +197,36 @@ function file_node_create($node = array()) {
  */
 function file_node_delete_node($file) {
   if (!empty($file->uri)) {
-    bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
     $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
 
     // File object passed from cron has a created property.
     if ((!isset($file->created) && $count == 1) || (isset($file->created) && $count == 0)) {
+      bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
+
       // The last reference to the blob. Search for a previews.
       if ($derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
         // Delete all previews.
-        foreach ($derived as $key => $data) {
-          // Check if derived is not referenced in the table.
-          if (db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $key)) == 0) {
-            if (!rdf_delete($key, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
-              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
+        foreach ($derived as $uri => $data) {
+          $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+
+          $db_cont = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $uri));
+          $parent_count = count($item[$uri][rdf_qname_to_uri('dc:source')]);
+
+          // Delete if derived is not referenced in the {file_nodes} table
+          // or it is not also a preview for other uploaded file.
+          if ($db_cont > 0 || $parent_count > 1) {
+            if (!rdf_delete($uri, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))
+              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
+            if ($parent_count == 1 && !rdf_delete($uri, rdf_qname_to_uri('dc:creator'), NULL, array('repository' => FILE_RDF_REPOSITORY)))
+              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
+          }
+          else {
+            if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
 
             // Delete from a bitcache.
-            if (!bitcache_delete(file_get_hash($key)))
-              watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $key), WATCHDOG_ERROR);
+            if (!bitcache_delete(file_get_hash($uri)))
+              watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $uri), WATCHDOG_ERROR);
           }
         }
       }
