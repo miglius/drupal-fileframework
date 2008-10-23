@@ -187,3 +187,27 @@ function file_schema() {
   );
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Upgrades
+
+function file_update_6000() {
+  $ret = array();
+  if (!is_dir(BITCACHE_ROOT .'/file')) {
+    bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.'));
+    file_init();
+    rdf_init();
+
+    $uris = array();
+    $result = db_query("SELECT DISTINCT uri FROM {file_nodes}");
+    while ($row = db_fetch_object($result)) {
+      $uris[] = $row->uri;
+      if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $row->uri)))
+        $uris = array_merge($uris, array_keys($generated));
+    }
+    $uris = array_unique($uris);
+    foreach ($uris as $uri)
+      rename(BITCACHE_ROOT .'/'. file_get_hash($uri), BITCACHE_ROOT .'/file/'. file_get_hash($uri));
+  }
+  return $ret;
+}
+

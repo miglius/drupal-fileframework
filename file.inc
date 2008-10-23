@@ -1131,7 +1131,7 @@ function file_bitcache($op, $id, $stream = NULL) {
  * @return
  *   A file hash.
  */
-function file_get_hash(&$file) {
+function file_get_hash($file) {
   return is_object($file) ? drupal_substr($file->uri, -FILE_HASH_SIZE) : drupal_substr($file, -FILE_HASH_SIZE);
 }
 
