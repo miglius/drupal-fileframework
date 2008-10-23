@@ -20,7 +20,7 @@
  * @return
  *   SAVED_NEW or SAVED_UPDATED on success or FALSE on failure.
  */
-function file_node_save(&$node, $file) {
+function file_node_save($node, $file) {
   if (!is_object($file)) {
     watchdog('file', 'The file object is not passed to a file_node_save() function for the node with nid=%nid.', array('%nid' => $node->nid), WATCHDOG_ERROR, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
     return FALSE;
