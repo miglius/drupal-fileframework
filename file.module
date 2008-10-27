@@ -29,8 +29,8 @@ define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_pa
 define('FILE_OG_BROWSER_TAB',                variable_get('file_og_browser_tab', 1));
 define('FILE_OG_GALLERY_TAB',                variable_get('file_og_gallery_tab', 1));
 
-define('FILE_HASH_SIZE',                     variable_get('file_hash_size', 40));
-define('FILE_TMP_KEEP',                      variable_get('file_tmp_keep', 86400)); // 24x60x60s
+define('FILE_HASH_SIZE', 40);
+define('FILE_TMP_KEEP',  86400); // 24x60x60s
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -101,7 +101,7 @@ function file_theme() {
  * Implementation of hook_init().
  */
 function file_init() {
-  require_once drupal_get_path('module', 'file') .'/file.inc';
+  module_load_include('inc', 'file');
   drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
   drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
 }
@@ -177,7 +177,7 @@ function file_menu() {
       'title' => 'File download',
       'type' => MENU_CALLBACK,
       'page callback' => 'file_serve',
-      'page arguments' => array(1, 3, 'download'),
+      'page arguments' => array(1, 3, 'attachment'),
       'access callback' => 'node_access',
       'access arguments' => array('view', 1),
       'file' => 'file.pages.inc',
@@ -409,10 +409,10 @@ function file_cron() {
   // Delete temporal files when user navigated away before saving.
   $time = time();
   $result = db_query('SELECT *  FROM {file_tmp} WHERE created <= %d', $time - FILE_TMP_KEEP);
-  while ($row = db_fetch_object($result)) {
+  while ($file = db_fetch_object($result)) {
     if (!db_result(db_query('SELECT uri FROM {file_tmp} WHERE created > %d', $time - FILE_TMP_KEEP))) {
-      file_node_delete_node($row);
-      db_query("DELETE FROM {file_tmp} WHERE uri = '%s' AND created = %d", $row->uri, $row->created);
+      file_node_delete_node($file);
+      db_query("DELETE FROM {file_tmp} WHERE uri = '%s' AND created = %d", $file->uri, $file->created);
     }
   }
 }
@@ -580,11 +580,11 @@ function file_node_update($node) {
  */
 function file_node_delete($node) {
   module_invoke_all('file', 'delete', $node);
-  $result = db_query('SELECT uri FROM {file_nodes} WHERE nid = %d', $node->nid);
-  while ($uri = db_fetch_object($result)) {
-    file_node_delete_node($uri);
+  $result = db_query('SELECT * FROM {file_nodes} WHERE nid = %d', $node->nid);
+  while ($file = db_fetch_object($result)) {
+    db_query('DELETE FROM {file_nodes} WHERE nid = %d AND vid = %d', $node->nid, $file->vid);
+    file_node_delete_node($file);
   }
-  db_query('DELETE FROM {file_nodes} WHERE nid = %d', $node->nid);
 }
 
 /**

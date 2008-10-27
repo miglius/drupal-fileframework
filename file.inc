@@ -84,13 +84,21 @@ function file_node_save($node, $file) {
   // Create a file object for the node and saving it to the db.
   $node->file = (object)array('nid' => isset($node->nid) ? $node->nid : NULL, 'vid' => isset($node->vid) ? $node->vid : NULL, 'uri' => $file->uri, 'size' => isset($file->filesize) ? $file->filesize : $file->size, 'type' => isset($file->filemime) ? $file->filemime : $file->type, 'name' => isset($file->filename) ? $file->filename : (isset($file->name) ? $file->name : NULL));
   if (isset($node->nid) && !isset($node->nosave)) {
-    return drupal_write_record('file_nodes', $node->file, empty($node->is_new) && empty($node->revision) ? array('nid', 'vid') : array());
+    if ($no_revision = (empty($node->is_new) && empty($node->revision)))
+      $uri_old = db_result(db_query('SELECT fn.uri FROM {file_nodes} fn JOIN {node} n ON fn.nid = n.nid AND fn.vid = n.vid WHERE fn.nid = %d', $node->nid));
+    $return = drupal_write_record('file_nodes', $node->file, $no_revision ? array('nid', 'vid') : array());
   }
   else {
     global $user;
     $file_tmp = (object)array('uid' => $user->uid, 'uri' => $file->uri, 'created' => time());
-    return drupal_write_record('file_tmp', $file_tmp);
+    $return = drupal_write_record('file_tmp', $file_tmp);
   }
+
+  // Delete old file blob.
+  if (isset($no_revision) && $no_revision)
+    file_node_delete_node((object)array('uri' => $uri_old));
+
+  return $return;
 }
 
 /**
@@ -196,49 +204,44 @@ function file_node_create($node = array()) {
  *
  */
 function file_node_delete_node($file) {
-  if (!empty($file->uri)) {
-    $count = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri));
+  if (!empty($file->uri) && db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == 0) {
+    bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
 
-    // File object passed from cron has a created property.
-    if ((!isset($file->created) && $count == 1) || (isset($file->created) && $count == 0)) {
-      bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
+    // The last reference to the blob. Search for a previews.
+    if ($derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
+      // Delete all previews.
+      foreach ($derived as $uri => $data) {
+        $item = rdf_normalize(rdf_query($uri, NULL, NULL));
 
-      // The last reference to the blob. Search for a previews.
-      if ($derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri))) {
-        // Delete all previews.
-        foreach ($derived as $uri => $data) {
-          $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+        $db_cont = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $uri));
+        $parent_count = count($item[$uri][rdf_qname_to_uri('dc:source')]);
 
-          $db_cont = db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $uri));
-          $parent_count = count($item[$uri][rdf_qname_to_uri('dc:source')]);
+        // Delete if derived is not referenced in the {file_nodes} table
+        // or it is not also a preview for other uploaded file.
+        if ($db_cont > 0 || $parent_count > 1) {
+          if (!rdf_delete($uri, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))
+            watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
+          if ($parent_count == 1 && !rdf_delete($uri, rdf_qname_to_uri('dc:creator'), NULL, array('repository' => FILE_RDF_REPOSITORY)))
+            watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
+        }
+        else {
+          if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+            watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
 
-          // Delete if derived is not referenced in the {file_nodes} table
-          // or it is not also a preview for other uploaded file.
-          if ($db_cont > 0 || $parent_count > 1) {
-            if (!rdf_delete($uri, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))
-              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
-            if ($parent_count == 1 && !rdf_delete($uri, rdf_qname_to_uri('dc:creator'), NULL, array('repository' => FILE_RDF_REPOSITORY)))
-              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
-          }
-          else {
-            if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
-              watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
-
-            // Delete from a bitcache.
-            if (!bitcache_delete(file_get_hash($uri)))
-              watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $uri), WATCHDOG_ERROR);
-          }
+          // Delete from a bitcache.
+          if (!bitcache_delete(file_get_hash($uri)))
+            watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $uri), WATCHDOG_ERROR);
         }
       }
-
-      // Delete from the RDF.
-      if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
-        watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
-
-      // Delete from a bitcache.
-      if (!bitcache_delete(file_get_hash($file)))
-        watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
     }
+
+    // Delete from the RDF.
+    if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+      watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
+
+    // Delete from a bitcache.
+    if (!bitcache_delete(file_get_hash($file)))
+      watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
   }
 }
 
@@ -1099,8 +1102,8 @@ function file_bitcache($op, $id, $stream = NULL) {
     case 'download':
       // Determine additional HTTP headers for the bitstream download
       $disposition = isset($_GET['disposition']) ? $_GET['disposition'] : 'attachment';
-      if (isset($node->nid) && $node->file->uri == 'bitcache://'. $id) {
-        $counter = $disposition == 'inline' ? 'views' : 'downloads';
+      if (isset($node->nid) && isset($_GET['op']) && in_array($_GET['op'], array('view', 'download'))) {
+        $counter = $_GET['op'] .'s';
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
       $extensions = file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL));
@@ -1112,12 +1115,14 @@ function file_bitcache($op, $id, $stream = NULL) {
       }
       $ext = !empty($extensions) && !isset($extension_correct) ? '.'. reset($extensions) : '';
       $title = isset($node->title) ? $node->title : 'file';
-      return array(
-        'Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"',
-        'Content-Type' => rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format')),
+      $mime = rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'));
+      // http://www.adobe.com/devnet/flashplayer/articles/fplayer10_security_changes_02.html#head32
+      $headers = ($mime == 'application/x-shockwave-flash') ? array() : array('Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"');
+      return array_merge($headers, array(
+        'Content-Type' => $mime,
         'Content-Length' => rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:extent'))->value,
         'Last-Modified' => gmdate('D, d M Y H:i:s', isset($node->changed) ? $node->changed : time()) .' GMT',
-      );
+      ));
       break;
   }
 }
@@ -1250,7 +1255,7 @@ function file_metadata_normalize($data) {
       }
     }
   }
-  return is_array($metadata[$subject]) ? $metadata[$subject] : array();
+  return isset($subject) && isset($metadata[$subject]) ? $metadata[$subject] : array();
 }
 
 /**

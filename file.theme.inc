@@ -75,7 +75,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
 
     // Cluetip for metadata.
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
     drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); });', 'inline');
 
@@ -92,11 +92,11 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
   if (FILE_VIEW_LINK) {
     $links['view'] = array('title' => t('View'), 'attributes' => array('title' => t('View file inline in the browser.')));
     $links['view']['href'] = $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
-    $links['view']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'inline');
+    $links['view']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'inline', 'op' => 'view');
   }
   $links['download'] = array('title' => t('Download'), 'attributes' => array('title' => t('Download file.')));
   $links['download']['href'] = $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
-  $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'download');
+  $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'attachment', 'op' => 'download');
   if (FILE_INFO_LINK && $is_node)
     $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
   if (FILE_PROPERTIES_LINK)

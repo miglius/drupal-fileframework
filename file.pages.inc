@@ -96,7 +96,7 @@ function file_embed($node, $handler) {
  * @param $disposition
  *   Disposition of the file. Might be 'download' or 'inline'.
  */
-function file_serve($node, $vid, $disposition = 'download') {
+function file_serve($node, $vid, $disposition = 'attachment') {
   if (isset($vid) && $node->vid != $vid) {
     $node = node_load($node->nid, $vid);
   }
@@ -105,7 +105,7 @@ function file_serve($node, $vid, $disposition = 'download') {
     return;
   }
   $href = bitcache_resolve_uri('bitcache://'. file_get_hash($node->file));
-  $query = array('vid' => isset($vid) ? $vid : $node->vid, 'disposition' => $disposition);
+  $query = array('vid' => isset($vid) ? $vid : $node->vid, 'disposition' => $disposition, 'op' => ($disposition == 'attachment') ? 'download' : 'view');
   drupal_goto($href, $query);
 }
 
@@ -183,7 +183,7 @@ function file_metadata($uri, $nid) {
 function file_og_browser($node, $vid) {
   drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File browser') .')');
   if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if (isset($vid) && is_object($vocabs[$vid])) {
+    if (isset($vid) && isset($vocabs[$vid])) {
       return file_browser_page($vid);
     }
     else {
@@ -211,7 +211,7 @@ function file_og_browser($node, $vid) {
 function file_og_gallery($node, $vid, $tid, $filter) {
   drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File gallery') .')');
   if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if (isset($vid) && is_object($vocabs[$vid])) {
+    if (isset($vid) && isset($vocabs[$vid])) {
       return file_gallery_page($vid, $tid, $filter, 'file');
     }
     else {
