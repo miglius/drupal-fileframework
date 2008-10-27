@@ -189,11 +189,19 @@ function file_video_mime_converters() {
         'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
+      ),
     ),
     'video/mp4' => array(
       'video/x-flv' => array(
         'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
+      ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
       ),
     ),
     'video/mpeg' => array(
@@ -201,11 +209,19 @@ function file_video_mime_converters() {
         'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
+      ),
     ),
     'video/x-ms-wmv' => array(
       'video/x-flv' => array(
         'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
+      ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
       ),
     ),
     'video/x-msvideo' => array(
@@ -213,11 +229,19 @@ function file_video_mime_converters() {
         'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].flv"; {mv} "[out_file].flv" "[out_file]"',
         'handlers' => array('file_video_flash_flv'),
       ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
+      ),
     ),
     'video/x-flv' => array(
       'image/jpeg' => array(
         'pipeline' => '{ffmpeg} -i "[in_file]" -y -ss 1 -r 1 -vframes 1 -an "[tmpdir]/%d.jpg"; {mv} "[tmpdir]/1.jpg" "[out_file]"',
         'handlers' => array('file_video_flash_image'),
+      ),
+      'audio/mpeg' => array(
+        'pipeline' => '{ffmpeg} -y -i "[in_file]" -ar 22050 "[out_file].mp3"; {mv} "[out_file].mp3" "[out_file]"',
+        'handlers' => array('file_audio_mp3'),
       ),
     ),
   );
