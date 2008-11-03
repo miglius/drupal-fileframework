@@ -142,8 +142,9 @@ function theme_file_previews($data) {
     if (!isset($nid)) {
       drupal_add_js('$(document).ready(function() { $(\'#file-preview-notice-'. $id .'\').hide(); });', 'inline');
     }
+    drupal_add_js('$(document).ready(function() { $(\'#file-preview-'. $id .' .file-preview-toggle\').each(function() { $(this).mousedown(function() { $(\'#file-preview-'. $id .' .file-preview-toggle\').each(function() { $(this).removeClass("active"); }); $(this).addClass("active"); }); }); });', 'inline');
     drupal_add_js('$(document).ready(function() { $(\'#file-preview-'. $id .'\').append(\' | <a href="'. base_path() .'" id="file-preview-hide-'. $id .'" >'. t('hide') .'</a>\'); });', 'inline');
-    drupal_add_js('$(document).ready(function() { $(\'#file-preview-hide-'. $id .'\').click(function() { $(\'#file-preview-container-'. $id .'\').html(\'\'); return false; }); });', 'inline');
+    drupal_add_js('$(document).ready(function() { $(\'#file-preview-hide-'. $id .'\').click(function() { $(\'#file-preview-'. $id .' .file-preview-toggle\').each(function() { $(this).removeClass("active"); }); $(\'#file-preview-container-'. $id .'\').html(\'\'); return false; }); });', 'inline');
     if (FILE_HANDLER_AUTOLOAD) {
       drupal_add_js('$(document).ready(function() { $(\'#'. $handler_first .'-'. $id .'\').trigger(\'mousedown\'); });', 'inline');
     }
