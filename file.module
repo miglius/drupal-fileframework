@@ -460,11 +460,11 @@ function file_node_info() {
 function file_node_access($op, $node, $account) {
   switch ($op) {
     case 'create':
-      return user_access('create file content', $account);
+      return user_access('create file content', $account) && $account->uid ? TRUE : NULL;
     case 'update':
-      return user_access('edit any file content', $account) || user_access('edit own file content', $account) && ($account->uid == $node->uid);
+      return user_access('edit any file content', $account) || (user_access('edit own file content', $account) && ($node->uid == $account->uid)) ? TRUE : NULL;
     case 'delete':
-      return user_access('delete any file content', $account) || user_access('delete own file content', $account) && ($account->uid == $node->uid);
+      return user_access('delete any file content', $account) || (user_access('delete own file content', $account) && ($node->uid == $account->uid)) ? TRUE : NULL;
   }
 }
 
