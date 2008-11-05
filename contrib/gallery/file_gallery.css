@@ -37,6 +37,7 @@ ul.file-gallery li.file-gallery {
   border-radius: 5px;
   border: 1px #ccc solid;
   padding: 5pt 0pt 0pt 0pt;
+  margin: 5px 10px 5px 0;
 }
 
 ul.file-gallery li a {
@@ -68,5 +69,10 @@ div.file-gallery-nav, div.file-gallery-nav a {
 
 #tabs-wrapper.file-gallery{
   margin: 0px;
+}
+
+#section-file_gallery #level0 #level1 #main #level2 #level3 #content ul.pager { 
+  padding-top: 20px; 
+  clear: left; 
 }
 

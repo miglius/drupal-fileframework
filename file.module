@@ -15,6 +15,7 @@ define('FILE_BITCACHE_REPOSITORY', 'file');
 define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 1));
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
+define('FILE_SHOW_FILE',                     variable_get('file_show_file', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
 define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
 define('FILE_PROPERTIES_LINK',               variable_get('file_properties_link', 1));
@@ -682,9 +683,9 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
     $data = array(
       'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file) : '',
       'generated' => FILE_SHOW_GENERATED ? file_render_generated($file) : '',
+      'file' => FILE_SHOW_FILE ? theme('file_render', $file) : '',
     );
   }
-  $data = array_merge($data, array('file' => theme('file_render', $file)));
   $output = theme('file_show', $data);
 
   // For browsers with javascript disabled.

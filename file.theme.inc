@@ -113,7 +113,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
  * Theme for showing previews and generated files.
  */
 function theme_file_show($data) {
-  $output = implode('<br />', array_filter($data, create_function('$a', 'return !empty($a);')));
+  $output = implode('<br />', array_filter($data));
   return !empty($output) ? '<div class="file-show">'. $output .'</div>'."\n" : '';
 }
 
@@ -227,10 +227,10 @@ function theme_file_info($node) {
 function theme_file_block_properties($metadata) {
   if (!empty($metadata)) {
     foreach ($metadata as $data) {
-      $fields[] = '<span class="metadata-name"><strong>'. $data[0] .':</strong></span><br />&nbsp;&nbsp;<span class="metadata-value">'. $data[1] .'</span>';
+      $fields[] = '<tr><td><span class="metadata-name"><strong>'. $data[0] .':</strong></span></td><td><span class="metadata-value">'. $data[1] .'</span></td></tr>';
     }
     if (!empty($fields)) {
-      return '<div id="file-block-properties">'. implode('<br />', $fields) .'</div>';
+      return '<div id="file-block-properties"><table><tbody>'. implode('', $fields) .'</tbody></table></div>';
     }
   }
 }

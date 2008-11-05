@@ -34,6 +34,7 @@ function file_uninstall() {
   variable_del('file_show_previews');
   variable_del('file_handler_autoload');
   variable_del('file_show_generated');
+  variable_del('file_show_file');
   variable_del('file_view_link');
   variable_del('file_info_link');
   variable_del('file_properties_link');

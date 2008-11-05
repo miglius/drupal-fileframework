@@ -13,14 +13,18 @@
  * Renders a node's or comment's file attachments in a table layout.
  */
 function theme_file_attachments($files) {
-  $header = array(t('Attachment'), t('Type'), t('Size'));
+  $header = array(
+    t('Attachment'),
+    t('Type'),
+    t('Size')
+  );
   $mime_types = file_get_mime_types();
   $rows = array();
   $id = 0;
   foreach ($files as $file) {
     $file->name = drupal_strlen($file->name) > FILE_ATTACH_TITLE_LENGTH ? drupal_substr($file->name, 0, FILE_ATTACH_TITLE_LENGTH - 3) .'...' : $file->name;
     $rows[] = array(
-      theme('file_render', $file),
+      l(t('Download'), 'file/'. $file->nid .'/download/'. $file->vid, array('attributes' => array('class' => 'file-attach-download-button'))) . l(t('Preview'), '', array('attributes' => array('id' => 'preview-'. $file->nid, 'class' => 'file-attach-preview-button'))) . theme('file_render', $file, array('download' => array(), 'show' => array())),
       file_mime_description_for($file->type),
       format_size($file->size),
     );
@@ -28,7 +32,21 @@ function theme_file_attachments($files) {
   }
 
   $output = '<div class="file-attachments">';
-  $output .= !empty($rows) ? theme('table', $header, $rows, array('id' => 'attachments')) : '';
+  if (!empty($rows)) {
+    $output .= theme('table', $header, $rows, array('id' => 'attachments'));
+    $js = "$(document).ready(function() {
+      $('.file-attach-container').hide();
+      $('a.file-attach-preview-button').click(function() {
+	var id = $(this).attr('id').substr(8);
+        $('.file-attach-container').hide();
+        $('.file-attach-preview-button').removeClass('active');
+        $('#file-attach-' + id).show();
+        $(this).addClass('active');
+        return false;
+      });
+    });";
+    drupal_add_js($js, 'inline');
+  }
   $output .= '</div>';
   return $output;
 }
@@ -68,8 +86,8 @@ function theme_file_attach_form_new($form) {
 /**
  * Renders a block containing previews and generated files for one file.
  */
-function theme_file_attach_show($data) {
-  return !empty($data) ? '<div class="file-attach-container"><div class="file-attach-show">'. $data .'</div></div>' : '';
+function theme_file_attach_show($id, $data) {
+  return !empty($data) ? '<div id="file-attach-'. $id .'" class="file-attach-container"><div class="file-attach-show">'. $data .'</div></div>' : '';
 }
 
 /**

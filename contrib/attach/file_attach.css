@@ -12,3 +12,7 @@ div.file-attach-show {
   border: 1px solid grey;
 }
 
+a.file-attach-download-button, a.file-attach-preview-button {
+  margin-right: 5px;
+}
+

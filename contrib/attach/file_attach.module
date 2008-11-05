@@ -42,7 +42,7 @@ function file_attach_theme() {
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_show' => array(
-      'arguments' => array('data' => NULL),
+      'arguments' => array('id' => NULL, 'data' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_backreferences' => array(
@@ -875,12 +875,18 @@ function _file_attach_view($object) {
         $data = array(
           'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files-'. $pid .'-'. $id) : '',
           'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files-'. $pid .'-'. $id) : '',
-          'file' => theme('file_render', $file),
+          'file' => FILE_SHOW_FILE ? theme('file_render', $file) : '',
         );
-        $content['files_'. $pid .'_'. $id] = array(
-          '#value' => theme('file_attach_show', theme('file_show', $data)),
-          '#weight' => $id + 2,
-        );
+        $data = theme('file_show', $data);
+        if (!empty($data)) {
+          $content['files_'. $pid .'_'. $id] = array(
+            '#value' => theme('file_attach_show', $file->nid, $data),
+            '#weight' => $id + 2,
+          );
+        }
+        else {
+          drupal_add_js('$(document).ready(function() { $("td #preview-'. $file->nid .'").addClass("disabled"); });', 'inline');
+        }
         $id++;
       }
     }

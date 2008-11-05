@@ -36,6 +36,12 @@ function file_admin_settings() {
     '#description'   => t('Show a list of the avialable converted files in other MIME types. The list is also available as a block.'),
     '#default_value' => FILE_SHOW_GENERATED,
   );
+  $form['visibility']['file_show_file'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('File'),
+    '#description'   => t('Show a file with a drop-down contextual menu.'),
+    '#default_value' => FILE_SHOW_FILE,
+  );
   $form['visibility']['file_view_link'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('View link'),
@@ -200,6 +206,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_show_previews', $values['file_show_previews']);
       variable_set('file_handler_autoload', $values['file_handler_autoload']);
       variable_set('file_show_generated', $values['file_show_generated']);
+      variable_set('file_show_file', $values['file_show_file']);
       variable_set('file_view_link', $values['file_view_link']);
       variable_set('file_info_link', $values['file_info_link']);
       variable_set('file_properties_link', $values['file_properties_link']);
@@ -219,6 +226,7 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_show_previews');
       variable_del('file_handler_autoload');
       variable_del('file_show_generated');
+      variable_del('file_show_file');
       variable_del('file_view_link');
       variable_del('file_info_link');
       variable_del('file_properties_link');
