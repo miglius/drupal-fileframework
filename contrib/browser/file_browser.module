@@ -525,6 +525,9 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   // retrieve the new term from the system
   $term = taxonomy_get_term($form_state['values']['tid']);
   $term = clone($term);
+  $vocabularies = taxonomy_get_vocabularies('file');
+  $voc = $vocabularies[$term->vid];
+  taxonomy_check_vocabulary_hierarchy((array)$voc, (array)$term);
   $childterms = taxonomy_get_tree($term->vid, $term->tid, -1, NULL);
   foreach ($childterms as $childterm) {
     if (is_object($childterm)) {
@@ -1044,11 +1047,11 @@ function _file_browser_allow_hierarchy($vid, $tid = 0, $gid = 0) {
   // check that the vocabulary that it is being created under allows hierarchy
   $vocabularies = taxonomy_get_vocabularies('file');
   $voc = $vocabularies[$vid];
-  if ($tid > 0 && ($voc->tags == 1 || $voc->hierarchy == 0)) {
-    return t('Permission denied. Vocabulary does not support hierarchies');
+  if ($tid > 0 && $voc->tags == 1) {
+    return t('Permission denied. You cannot create subfolders in a Tags vocabulary.');
   }
   if ($gid > 0 && !$tid && !FILE_BROWSER_OG_CREATE) {
-    return t('Permission denied. You may only create new folders under Home Folder');
+    return t('Permission denied. You cannot create new folders at root level.');
   }
 }
 
