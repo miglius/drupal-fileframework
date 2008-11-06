@@ -1292,7 +1292,7 @@ function file_get_recursive($data, $template) {
  * @return
  *   A HTML output of the image or NULL if it is not available.
  */
-function file_get_image($file, $handler, $dimensions) {
+function file_get_image($file, $handler, $dimensions = array(0, 0)) {
   if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
     foreach ($generated as $uri => $data) {
       if (rdf_value($uri, rdf_qname_to_uri('dc:creator')) == $handler) {
