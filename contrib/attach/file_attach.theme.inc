@@ -37,11 +37,20 @@ function theme_file_attachments($files) {
     $js = "$(document).ready(function() {
       $('.file-attach-container').hide();
       $('a.file-attach-preview-button').click(function() {
-	var id = $(this).attr('id').substr(8);
-        $('.file-attach-container').hide();
-        $('.file-attach-preview-button').removeClass('active');
-        $('#file-attach-' + id).show();
-        $(this).addClass('active');
+        if($(this).hasClass('active')) {
+          $('.file-attach-preview-button').text('". t('Preview') ."');
+          $('.file-attach-preview-button').removeClass('active');
+          $('.file-attach-container').hide();
+        }
+        else {
+          $('.file-attach-preview-button').text('". t('Preview') ."');
+          $(this).text('". t('Hide') ."');
+          var id = $(this).attr('id').substr(8);
+          $('.file-attach-container').hide();
+          $('.file-attach-preview-button').removeClass('active');
+          $('#file-attach-' + id).show();
+          $(this).addClass('active');
+        }
         return false;
       });
     });";
