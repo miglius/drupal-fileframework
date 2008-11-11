@@ -74,6 +74,18 @@ function file_archive_mime_types() {
       'name' => t('RAR archive'),
       'icon' => 'zip.gif',
     ),
+    'application/bzip2' => array(
+      'name' => t('Bzip2 archive'),
+      'icon' => 'zip.gif',
+    ),
+    'application/x-bz2' => array(
+      'name' => t('Bzip2 archive'),
+      'icon' => 'zip.gif',
+    ),
+    'application/x-lzma' => array(
+      'name' => t('LZMA archive'),
+      'icon' => 'zip.gif',
+    ),
   );
 }
 

@@ -23,7 +23,7 @@ function theme_file_gallery_page($content, $options = array()) {
   $output .= drupal_get_css();
   $output .= drupal_get_js();
   $output .= '</head>';
-  $output .= '<body style="background-color: #fff; color: #000; margin: 10px;">';
+  $output .= '<body style="min-width: 0; background-color: #fff; color: #000; margin: 10px;">';
   if (isset($breadcrumb) && $breadcrumb) {
     $output .= '<div id="wrapper" class="gallery"><div id="container"><div class="breadcrumb gallery">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
   }

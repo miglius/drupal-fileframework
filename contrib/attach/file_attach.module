@@ -292,7 +292,6 @@ function _file_attach_form_fieldset(&$form, $object) {
     '#title'       => t('File attachments'),
     '#collapsible' => TRUE,
     '#collapsed'   => empty($object->files),
-    '#description' => t('Changes made to the attachments are not permanent until you save this post. "Delete" only removes the attachment from the node, but does not delete the attached file. The first "listed" file will be included in RSS feeds.'),
     '#prefix'      => '<div class="attachments">',
     '#suffix'      => '</div>',
     '#weight'      => 1,
@@ -363,7 +362,7 @@ function _file_attach_form($object) {
       );
       $form['file_attach_more']['attach'] = array(
         '#type' => 'submit',
-        '#value' => t('Attach'),
+        '#value' => t('Update attachments'),
         '#name' => 'attach',
         '#ahah' => array(
           'path' => 'file_attach/js',
@@ -371,6 +370,8 @@ function _file_attach_form($object) {
           'progress' => array('type' => 'bar', 'message' => t('Please wait...')),
         ),
         '#submit' => array('node_form_submit_build_node'),
+        '#prefix' => '<div id="file-attach-update-attachments">',
+        '#suffix' => '</div>',
       );
     }
     else {
@@ -393,10 +394,13 @@ function _file_attach_form($object) {
     $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
     $url = array('url' => 'file_gallery', 'query' => array_merge(file_attach_file_gallery('query'), $query));
 
-    $form['attach_saved'] = array(
-      '#type' => 'textfield',
+    $form['attach_saved_description'] = array(
+      '#type' => 'item',
       '#title' => t('Attach existing file'),
       '#description' => t('Put a file node id in square brackets, like [123], or type in a file name for the selection.'),
+    );
+    $form['attach_saved'] = array(
+      '#type' => 'textfield',
       '#autocomplete_path' => 'file_attach/autocomplete',
       '#maxlength' => 255,
     );
@@ -407,7 +411,7 @@ function _file_attach_form($object) {
       $query = array('module' => 'file_attach', 'layout' => 'off');
       $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
       $query = array_merge(file_attach_file_gallery('query'), $query);
-      $form['attach_saved']['#description'] .= t(' You can also click on "Browse..." to choose a file.');
+      $form['attach_saved_description']['#description'] .= t(' You can also click on "Browse..." to choose a file.');
 
       $form['attach_browse'] = array(
         '#type'  => 'submit',
@@ -443,7 +447,7 @@ function _file_attach_more_form($delta) {
   return array(
     'upload_'. $delta => array(
       '#type' => 'file',
-      '#title' => t('Attach new file'),
+      '#title' => t('Attach'),
       '#size' => 40,
     ),
   );
