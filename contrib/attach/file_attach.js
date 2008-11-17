@@ -22,7 +22,3 @@ Drupal.file_attachPopup = function(url, title) {
   tb_show(title || 'Add files', url, false);
 }
 
-Drupal.file_attachInsert = function(nid) {
-  $('#edit-attach-saved').val('[' + nid + ']');
-}
-

@@ -467,6 +467,7 @@ function file_embed_file_gallery($op) {
     case 'nodes': return ($action = array_shift($args)) && $action == 'attach' ? _file_embed_attachments() : NULL;
     case 'breadcrumb_home': return FALSE;
     case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
+    case 'page_js': return "$(document).ready(function() { parent.$('#file-embed-edit-body a.file-embed-select').attr('href', String(parent.$('#file-embed-edit-body a.file-embed-select').attr('href')).replace(/(file_gallery.*)\?/, String(location.href).match(/(file_gallery.*)\?/)[1] + '?')); });";
   }
 }
 

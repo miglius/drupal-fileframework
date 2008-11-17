@@ -168,7 +168,7 @@ function theme_file_generated($data) {
   if (!empty($entries)) {
     $output .= '<div class="file-formats" id="file-formats-'. $id .'">';
     $output .= t('Other available formats') .': ';
-    $output .= implode(' ', $entries);
+    $output .= implode('&nbsp;&nbsp;', $entries);
     $output .= '</div>';
   }
   return $output;

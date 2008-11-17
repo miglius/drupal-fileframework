@@ -634,6 +634,9 @@ function file_browser_upload_form_submit($form, &$form_state) {
 function file_browser_move_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
+  if (!node_access('update', $node))
+    exit;
+
   unset($node->taxonomy[$values['tid']]);
   $term = taxonomy_get_term($values['tid_new']);
   $node->taxonomy[$values['tid_new']] = $term;
@@ -655,7 +658,6 @@ function file_browser_move_form_submit($form, &$form_state) {
     print _file_browser_update_term($term);
   }
   print "</script>";
-
   exit;
 }
 
@@ -751,7 +753,7 @@ function file_browser_preview($node = NULL, $tid = 0) {
   }
 
   // Move to other folder form.
-  $form = drupal_get_form('file_browser_move_form', $node->nid, $tid);
+  $form = node_access('update', $node) ? drupal_get_form('file_browser_move_form', $node->nid, $tid) : NULL;
 
   print theme('file_browser_preview', compact('node', 'groups', 'location', 'thumbnail', 'url_preview', 'nodes', 'form'));
   exit;

@@ -273,7 +273,7 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   }
   $output .= '</div>'; // file-gallery-body
 
-  _file_gallery_add_footers($module);
+  $output .= _file_gallery_add_footers($module);
   return $output;
 }
 
@@ -495,8 +495,13 @@ function _file_gallery_add_footers($module = NULL) {
   if (!$initialized) {
     $initialized = TRUE;
 
+    $js = isset($module) && ($page_js = module_invoke($module, 'file_gallery', 'page_js')) ? $page_js : NULL;
+    $output = isset($js) ? "<script type='text/javascript'>". $js ."</script>" : NULL;
+
     //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({activation: \'click\', arrows: true}); });', 'inline');
     //drupal_add_js('$(document).ready(function() { $(\'a.file-metadata\').cluetip({arrows: true}); });', 'inline');
+
+    return $output;
   }
 }
 

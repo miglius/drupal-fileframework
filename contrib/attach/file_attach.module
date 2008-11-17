@@ -621,6 +621,10 @@ function file_attach_js() {
     '#tree' => FALSE,
     '#parents' => array(),
   );
+
+  // Remember file gallery page.w
+  $form['attach_browse_url']['#value'] = $form_state['values']['attach_browse_url'];
+
   drupal_alter('form', $form, array(), 'file_attach_js');
   $form_state = array('submitted' => FALSE);
   $form = form_builder('file_attach_js', $form, $form_state);
@@ -1047,7 +1051,7 @@ function file_attach_file_gallery($op) {
       unset($query['page']);
       return $query;
     case 'node_link': return array('link' => 'file_attach/'. array_shift($args), 'attributes' => array('class' => 'file-attach-node'));
-    case 'node_js': return "$(document).ready(function() { $('a.file-attach-node').click(function() { var nid = String(this).match(/\/([\d]+)$/)[1]; window.parent.Drupal.file_attachInsert(nid); window.parent.tb_remove(); return false; }); });";
+    case 'node_js': return "$(document).ready(function() { $('a.file-attach-node').click(function() { parent.$('#edit-attach-saved').val('[' + String(this).match(/\/([\d]+)$/)[1] + ']'); window.parent.tb_remove(); return false; }); });";
     case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'attach' => array('title' => t('Attach'), 'href' => 'file_attach/'. array_shift($args), 'attributes' => array('title' => t('Attach file to the node.'), 'class' => 'file-attach-node')));
     case 'pager': return FILE_ATTACH_POPUP_PER_PAGE;
     case 'thickbox': return FALSE;
@@ -1056,6 +1060,7 @@ function file_attach_file_gallery($op) {
     case 'show_tabs': return TRUE;
     case 'breadcrumb_home': return FALSE;
     case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
+    case 'page_js': return "$(document).ready(function() { parent.$('#edit-attach-browse-url').val(String(parent.$('#edit-attach-browse-url').val()).replace(/(file_gallery.*)\?/, String(location.href).match(/(file_gallery.*)\?/)[1] + '?')); });";
   }
 }
 
