@@ -452,6 +452,31 @@ function file_browser_upload_form($form_state, $gid) {
   return $form;
 }
 
+/**
+ * Creats a file move form.
+ */
+function file_browser_move_form($form_state, $nid, $tid) {
+  $term = taxonomy_get_term($tid);
+  $form['tid_new'] = _taxonomy_term_select(t('Folder'), NULL, array($tid), $term->vid, t('Move file to a selected folder.'), FALSE, NULL, array($tid));
+  $form['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => $nid,
+  );
+  $form['tid'] = array(
+    '#type' => 'hidden',
+    '#value' => $tid,
+  );
+  $form['move_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Move'),
+    '#name' => 'file-move-submit',
+  );
+  $form['#attributes']['target'] = 'file_browser-move-submission-frame';
+
+  return $form;
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Submit handlers
 
@@ -571,22 +596,12 @@ function file_browser_upload_form_submit($form, &$form_state) {
   $og_public = module_exists('og_access') && !$form_state['values']['og_public'] ? FALSE : TRUE;
 
   $i = 0;
+  print "<script type='text/javascript'>";
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
       $file_node = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
-
-      // theme the node so we can display it on the screen to the user
-      $output = _file_browser_node('page', $tid, $file_node, TRUE, TRUE, TRUE);
-      preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $output, $matches);
-      $output = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $output);
-
-      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file_node->title)) .'</div>';
-      print "<script type='text/javascript'>";
-      print "parent.Drupal.file_browserDisplayNode('page', '". $file_node->nid ."','". $tid ."','". $gid ."','". $output ."','". $msg ."', '". check_plain($file_node->title) ."');";
-      print 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
-      print implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
-      print "</script>";
-
+      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $ifile_node->title)) .'</div>';
+      print _file_browser_display_file($file_node, $term, $msg);
     }
     $i++;
   } while (array_key_exists('upload_'. $i, $_FILES['files']['name']));
@@ -594,30 +609,52 @@ function file_browser_upload_form_submit($form, &$form_state) {
   // sending the notice message back if any occurred
   $notmsg = drupal_get_messages('notice');
   if (!empty($notmsg['notice'])) {
-    print "<script type='text/javascript'>parent.Drupal.file_browserNoticeMsg('".'<div>'. implode('</div><div>', $notmsg['notice']) .'</div>'."');</script>";
+    print "parent.Drupal.file_browserNoticeMsg('".'<div>'. implode('</div><div>', $notmsg['notice']) .'</div>'."');";
   }
 
   // sending the error message back if any occurred
   $errmsg = drupal_get_messages('error');
   if (!empty($errmsg['error'])) {
-    print "<script type='text/javascript'>parent.Drupal.file_browserErrorMsg('".'<div>'. implode('</div><div>', $errmsg['error']) .'</div>'."');</script>";
+    print "parent.Drupal.file_browserErrorMsg('".'<div>'. implode('</div><div>', $errmsg['error']) .'</div>'."');";
   }
 
   if (FILE_BROWSER_FOLDER_PROPERTIES) {
-    // Update term and all parent terms.
-    $parents = taxonomy_get_parents_all($tid);
-    foreach ($parents as $parent) {
-      $data = _file_browser_term_data($term->vid, $parent->tid);
-      print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-t". $parent->tid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
-    }
-
-    // Update the vocabulary data.
-    $data = _file_browser_term_data($term->vid, 0);
-    print "<script type='text/javascript'>parent.Drupal.file_browserUpdateTerm('file-folder-v". $term->vid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');</script>";
+    print _file_browser_update_term($term);
   }
 
   // Clean up the file upload widget.
-  print "<script type='text/javascript'>parent.Drupal.file_browserDelFileWidget();</script>";
+  print "parent.Drupal.file_browserDelFileWidget();";
+  print "</script>";
+  exit;
+}
+
+/**
+ * Handle submission of the file move form
+ */
+function file_browser_move_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $node = node_load($values['nid']);
+  unset($node->taxonomy[$values['tid']]);
+  $term = taxonomy_get_term($values['tid_new']);
+  $node->taxonomy[$values['tid_new']] = $term;
+  taxonomy_node_save($node, $node->taxonomy);
+  print "<script type='text/javascript'>";
+  print "
+    var id = '#file-node-t". $values['tid'] ."-n". $values['nid'] ."-bpage';
+    var i = 0;
+    parent.$(id).siblings().each(function() { i++; });
+    if (i == 1) {
+      parent.$(id).parent().toggleClass('expanded').toggleClass('empty');
+    }
+    parent.$(id).remove();
+  ";
+  $msg = t('File %file has been moved to %term.', array('%file' => $node->title, '%term' => $term->name));
+  print _file_browser_display_file($node, $term, $msg);
+  if (FILE_BROWSER_FOLDER_PROPERTIES) {
+    print _file_browser_update_term(taxonomy_get_term($values['tid']));
+    print _file_browser_update_term($term);
+  }
+  print "</script>";
 
   exit;
 }
@@ -676,7 +713,7 @@ function _file_browser_block($vid, $expanded_tids = array()) {
  * @param $node
  *   A node object.
  */
-function file_browser_preview($node = NULL) {
+function file_browser_preview($node = NULL, $tid = 0) {
   _file_browser_add_headers();
 
   // Integration with og.module
@@ -713,7 +750,10 @@ function file_browser_preview($node = NULL) {
     }
   }
 
-  print theme('file_browser_preview', compact('node', 'groups', 'location', 'thumbnail', 'url_preview', 'nodes'));
+  // Move to other folder form.
+  $form = drupal_get_form('file_browser_move_form', $node->nid, $tid);
+
+  print theme('file_browser_preview', compact('node', 'groups', 'location', 'thumbnail', 'url_preview', 'nodes', 'form'));
   exit;
 }
 
@@ -1081,5 +1121,58 @@ function _file_browser_term_data($vid, $tid) {
   $size = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? $node->file->size : 0;'), $t->nodes));
   $count = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $t->nodes));
   return array('size' => format_size($size), 'count' => $count);
+}
+
+/**
+ * Builds a js to update term and it's parents.
+ *
+ * @param $term
+ *   A term object.
+ *
+ * @return
+ *   A js code.
+ */
+function _file_browser_update_term($term) {
+  $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
+  $parents = taxonomy_get_parents_all($term->tid);
+  $output = '';
+  foreach ($parents as $parent) {
+    $data = _file_browser_term_data($term->vid, $parent->tid);
+    $output .= "parent.Drupal.file_browserUpdateTerm('file-folder-t". $parent->tid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');";
+  }
+
+  // Update the vocabulary data.
+  $data = _file_browser_term_data($term->vid, 0);
+  $output .= "parent.Drupal.file_browserUpdateTerm('file-folder-v". $term->vid ."-g". $gid ."-bpage', '". $data['size'] ."', '". $data['count'] ."');";
+
+  return $output;
+}
+
+/**
+ * Builds a js to add a file in the browser.
+ *
+ * @param $node
+ *   A file node object.
+ * @param $term
+ *   A term object.
+ * @param $msg
+ *   A message to be displayed.
+ *
+ * @return
+ *   A js code.
+ */
+function _file_browser_display_file($node, $term, $msg) {
+  $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
+
+  // Theme the node so we can display it on the screen.
+  $tmp = _file_browser_node('page', $term->tid, $node, TRUE, TRUE, TRUE);
+  preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $tmp, $matches);
+  $tmp = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $tmp);
+
+  $output = "parent.Drupal.file_browserDisplayNode('page', '". $node->nid ."','". $term->tid ."','". $gid ."','". $tmp ."','". $msg ."', '". check_plain($node->title) ."');";
+  $output .= 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
+  $output .= implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
+
+  return $output;
 }
 

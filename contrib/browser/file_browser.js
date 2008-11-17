@@ -332,6 +332,7 @@ Drupal.file_browserFileClick = function(obj) {
   var id = obj.parentNode.id;
   var nid = id.match(/-n([\d]+)/)[1]; // node id
   var block = id.match(/-b([^-]+)/)[1];
+  var tid = id.match(/-t([\d]+)/)[1]; // term id
   // highlighting the row that was selected
   Drupal.file_browserSelectRow(obj, id, false, false);
   // hide the create term block since they have clicked on a file
@@ -340,7 +341,7 @@ Drupal.file_browserFileClick = function(obj) {
   // show preview
   $('#file-preview').hide();
   $('#file-preview-spinner').show();
-  $.get($('#file-preview-url').val() + '/' + nid, function(result) {
+  $.get($('#file-preview-url').val() + '/' + nid + '/' + tid, function(result) {
     $('#file-preview-spinner').hide();
     $('#file-preview').html(result).show();
     if (typeof collapseAutoAttach != 'undefined') {

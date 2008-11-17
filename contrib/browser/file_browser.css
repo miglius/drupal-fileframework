@@ -151,11 +151,11 @@ div#file-preview-spinner {
   text-align: center;
 }
 
-div#file-preview {
+div#file-preview-info {
   text-align: center;
 }
 
-div#file-preview th {
+div#file-preview-info th {
   background: none;
   text-align: right;
   vertical-align: top;
@@ -164,7 +164,7 @@ div#file-preview th {
   color: black;
 }
 
-div#file-preview td {
+div#file-preview-info td {
   text-align: left;
 }
 

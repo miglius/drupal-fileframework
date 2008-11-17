@@ -15,7 +15,7 @@
 function theme_file_attachments($files) {
   $header = array(
     t('Attachment'),
-    t('Type'),
+    t('Kind'),
     t('Size')
   );
   $mime_types = file_get_mime_types();

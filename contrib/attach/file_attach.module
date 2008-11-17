@@ -292,6 +292,7 @@ function _file_attach_form_fieldset(&$form, $object) {
     '#title'       => t('File attachments'),
     '#collapsible' => TRUE,
     '#collapsed'   => empty($object->files),
+    //'#description' => t('Changes made to the attachments are not permanent until you save this post. "Delete" only removes the attachment from the node, but does not delete the attached file. The first "listed" file will be included in RSS feeds.'),
     '#prefix'      => '<div class="attachments">',
     '#suffix'      => '</div>',
     '#weight'      => 1,

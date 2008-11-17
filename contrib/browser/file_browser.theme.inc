@@ -109,10 +109,10 @@ function theme_file_browser_preview($data) {
       $output .= '<tr><th>'. t('Longitude:') .'</th><td>'. $location['longitude'] .'</td></tr>';
     }
     $output .= '</table>';
-    $output .= '</div>';
     $output .= '<script type=\'text/javascript\'>$(\'#file-preview-info\').find(\'span.file.with-menu\').click(function(event) { $(this).toggleClass(\'active\'); $(this).find(\'ul\').toggle(); });</script>';
     $output .= isset($url_preview) ? l($thumbnail, $url_preview, array('html' => TRUE, 'attributes' => array('title' => check_plain($node->title)))) : $thumbnail;
     $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
+    $output .= '</div>';
 
     // Backreferences
     if (!empty($nodes)) {
@@ -127,7 +127,17 @@ function theme_file_browser_preview($data) {
       $output .= '</div>';
     }
   }
+
   $output .= '</div>'; // id=file-preview
+
+  // File move form.
+  if (isset($form)) {
+    $output .= '<div id="file-move">';
+    $output .= $form;
+    $output .= '</div>';
+    $output .= '<iframe src="javascript:;" id="file_browser-move-submission-frame" name="file_browser-move-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
+  }
+
   return $output;
 }
 
