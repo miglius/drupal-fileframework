@@ -384,7 +384,6 @@ function file_browser_upload_form($form_state, $gid) {
   $form['link'] = array(
     '#type' => 'markup',
     '#value' => '<a href="javascript:Drupal.file_browserAddFileWidget();">'. t('Add File') .'</a>',
-    '#suffix' => '<div class="file-block-scroll">',
   );
   if (FILE_BROWSER_OG_UPLOAD && module_exists('og')) {
     global $user;
@@ -399,6 +398,8 @@ function file_browser_upload_form($form_state, $gid) {
         '#options' => $groups,
         '#default_value' => array($gid),
         '#description' => t('Show this post in these groups.'),
+        '#prefix' => '<div class="file-block-scroll">',
+        '#suffix' => '</div>',
       );
       if ($gid)
         $form['og_groups']['#suffix'] = '<script type=\'text/javascript\'>$(document).ready(function() { $("#edit-og-groups-'. $gid .'").attr("disabled", true); });</script>';
@@ -444,7 +445,6 @@ function file_browser_upload_form($form_state, $gid) {
     '#value' => t('Upload'),
     '#name' => 'file-upload-submit',
     '#attributes' => array('disabled' => 'disabled', 'onClick' => 'return Drupal.file_browserFileUploadClick(this);'),
-    '#prefix' => '</div>',
   );
   $form['#attributes']['enctype'] = 'multipart/form-data';
   $form['#attributes']['target'] = 'file_browser-upload-submission-frame';

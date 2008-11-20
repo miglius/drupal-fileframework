@@ -622,7 +622,7 @@ function file_attach_js() {
     '#parents' => array(),
   );
 
-  // Remember file gallery page.w
+  // Remember file gallery page.
   $form['attach_browse_url']['#value'] = $form_state['values']['attach_browse_url'];
 
   drupal_alter('form', $form, array(), 'file_attach_js');

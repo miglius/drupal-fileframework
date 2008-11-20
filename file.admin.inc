@@ -258,7 +258,7 @@ function file_admin_settings_submit($form, &$form_state) {
         }
       }
       if ($counter == 0)
-        drupal_set_message(t('All file nodes have a coresponding bitsreams.'));
+        drupal_set_message(t('All file nodes have coresponding bitstreams.'));
       break;
   }
 
