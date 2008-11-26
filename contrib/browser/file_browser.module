@@ -60,6 +60,10 @@ function file_browser_theme() {
       'arguments' => array('form' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
+    'file_browser_term_render' => array(
+      'arguments' => array('term' => NULL, 'links_add' => NULL),
+      'file' => 'file_browser.theme.inc'
+    ),
   );
 }
 
@@ -878,7 +882,6 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
     }
   }
 
-  $name = check_plain($term->name);
   $size = array_sum(array_map(create_function('$node', 'return isset($node->file) ? $node->file->size : 0;'), $term->nodes));
   $size = FILE_BROWSER_FOLDER_PROPERTIES ? format_size($size) : '&mdash;';
   $is_vocab = isset($term->tid) ? FALSE : TRUE;
@@ -889,7 +892,7 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
   $hierarchy = _file_browser_allow_hierarchy($term->vid, isset($term->tid) ? $term->tid : 0, $gid) ? FALSE : TRUE;
 
-  return theme('file_browser_term', compact('size', 'count_files', 'count_terms', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'name', 'visibile', 'expanded', 'columns'));
+  return theme('file_browser_term', compact('term', 'size', 'count_files', 'count_terms', 'is_vocab', 'xhtml_id', 'xhtml_class', 'hierarchy', 'visibile', 'expanded', 'columns'));
 }
 
 /**

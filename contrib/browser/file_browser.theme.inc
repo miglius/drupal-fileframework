@@ -34,7 +34,7 @@ function theme_file_browser_term($data) {
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
   $output .= '<div class="file-icon"></div>';
-  $output .= '<div class="file-title">'. $name .'</div>';
+  $output .= '<div class="file-title">'. theme('file_browser_term_render', $term) .'</div>';
   $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $count_files .'</div>';
@@ -177,6 +177,17 @@ function theme_file_browser_upload($form) {
   $output .= $form;
   $output .= '</div>';
   $output .= '<iframe src="javascript:;" id="file_browser-upload-submission-frame" name="file_browser-upload-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
+  return $output;
+}
+
+/**
+ * Theme for showing a term with a links.
+ */
+function theme_file_browser_term_render($term, $links_add = array()) {
+  $links['show'] = array('title' => t('Show'), 'href' => 'file_gallery/'. $term->vid . (isset($term->tid) ? '/'. $term->tid : ''), 'attributes' => array('title' => t('Show files in the gallery.')));
+  $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
+  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. $term->name .'" class="name"> <span class="title">'. check_plain($term->name) .'</span></span>'. $links .'</span></span>';
+  $output = preg_replace("/\n/", '', $output);
   return $output;
 }
 
