@@ -33,7 +33,6 @@ function theme_file_browser_term($data) {
   $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
-  $output .= '<div class="file-icon"></div>';
   $output .= '<div class="file-title">'. theme('file_browser_term_render', $term) .'</div>';
   $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
@@ -186,7 +185,7 @@ function theme_file_browser_upload($form) {
 function theme_file_browser_term_render($term, $links_add = array()) {
   $links['show'] = array('title' => t('Show'), 'href' => 'file_gallery/'. $term->vid . (isset($term->tid) ? '/'. $term->tid : ''), 'attributes' => array('title' => t('Show files in the gallery.')));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
-  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. $term->name .'" class="name"> <span class="title">'. check_plain($term->name) .'</span></span>'. $links .'</span></span>';
+  $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. $term->name .'" class="name">'. theme('image', drupal_get_path('module', 'file_browser') .'/icons/folder.png') .' <span class="title" style="vertical-align: top;">'. check_plain($term->name) .'</span></span>'. $links .'</span></span>';
   $output = preg_replace("/\n/", '', $output);
   return $output;
 }

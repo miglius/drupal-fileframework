@@ -55,10 +55,6 @@ div.file-folder div.file-cells div.file-toggle {
   width: 16px;
 }
 
-div.file-folder div.file-cells div.file-icon {
-  background: url(icons/folder.png) no-repeat left top;
-}
-
 div.file-folder div.file-cells div.file-spinner {
   float: left;
   width: 24px;
