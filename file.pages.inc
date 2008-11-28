@@ -181,7 +181,7 @@ function file_metadata($uri, $nid) {
  *   Browser html page
  */
 function file_og_browser($node, $vid) {
-  drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File browser') .')');
+  drupal_set_title(check_plain($node->title));
   if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
     if (isset($vid) && isset($vocabs[$vid])) {
       return file_browser_page($vid);
@@ -209,7 +209,7 @@ function file_og_browser($node, $vid) {
  *   Browser html page
  */
 function file_og_gallery($node, $vid, $tid, $filter) {
-  drupal_set_title(t('Group') .': '. check_plain($node->title) .' ('. t('File gallery') .')');
+  drupal_set_title(check_plain($node->title));
   if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
     if (isset($vid) && isset($vocabs[$vid])) {
       return file_gallery_page($vid, $tid, $filter, 'file');
