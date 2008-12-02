@@ -62,7 +62,7 @@ function file_browser_admin_settings() {
   );
   $form['display']['file_browser_folder_links'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Show floder\'s contextual menu'),
+    '#title'         => t('Show folder\'s contextual menu'),
     '#default_value' => FILE_BROWSER_FOLDER_LINKS,
     '#description'   => t('Show a contextual menu for a folder.'),
   );
