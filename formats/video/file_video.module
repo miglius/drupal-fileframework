@@ -8,12 +8,13 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_VIDEO_GETID3',            variable_get('file_audio_getid3', 1));
-define('FILE_VIDEO_MODULE_PATH',       drupal_get_path('module', 'file_video'));
-define('FILE_VIDEO_QUICKTIME_LINK',    'http://www.apple.com/quicktime/download');
-define('FILE_VIDEO_WINDOWSMEDIA_LINK', 'http://windowsupdate.microsoft.com');
-define('FILE_VIDEO_REALMEDIA_LINK',    'http://www.real.com');
-define('FILE_VIDEO_FLASH_LINK',        'http://www.adobe.com/products/flashplayer');
+define('FILE_VIDEO_FLOWPLAYER_VERSION', variable_get('file_video_flowplayer_version', '3.0.0'));
+define('FILE_VIDEO_GETID3',             variable_get('file_video_getid3', 1));
+define('FILE_VIDEO_MODULE_PATH',        drupal_get_path('module', 'file_video'));
+define('FILE_VIDEO_QUICKTIME_LINK',     'http://www.apple.com/quicktime/download');
+define('FILE_VIDEO_WINDOWSMEDIA_LINK',  'http://windowsupdate.microsoft.com');
+define('FILE_VIDEO_REALMEDIA_LINK',     'http://www.real.com');
+define('FILE_VIDEO_FLASH_LINK',         'http://www.adobe.com/products/flashplayer');
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks

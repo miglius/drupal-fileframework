@@ -33,7 +33,8 @@ function theme_file_browser_term($data) {
   $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
-  $output .= '<div class="file-title">'. theme('file_browser_term_render', $term) .'</div>';
+  $output .= FILE_BROWSER_FOLDER_LINKS ? '' : '<div class="file-icon"></div>';
+  $output .= '<div class="file-title">'. (FILE_BROWSER_FOLDER_LINKS ? theme('file_browser_term_render', $term) : check_plain($term->name)) .'</div>';
   $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $count_files .'</div>';

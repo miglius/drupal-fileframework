@@ -18,6 +18,17 @@
 function file_video_admin_settings() {
   $form = array();
 
+  // Flowplayer ettings
+  $form['flowplayer'] = array('#type' => 'fieldset', '#title' => t('Flowplayer settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['flowplayer']['file_video_flowplayer_version'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Flowplayer version'),
+    '#default_value' => FILE_VIDEO_FLOWPLAYER_VERSION,
+    '#size'          => 10,
+    '#maxlength'     => 255,
+    '#description'   => t('Specify version of the installed !flowplayer player. The version should be 3.0.0 or above. It is recommended that you install this player in order to play video files in the browser. To install, !download the latest version of the player and unzip it to !path under the Drupal directory.', array('!flowplayer' => l('Flowplayer', 'http://flowplayer.org/'), '!download' => l(t('download'), 'http://flowplayer.org/download.html'), '!path' => drupal_get_path('module', 'file') .'/vendor/flowplayer/')),
+  );
+
   // getID3 settings
   $form['getid3'] = array('#type' => 'fieldset', '#title' => t('getID3 settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['getid3']['file_video_getid3'] = array(
@@ -76,6 +87,7 @@ function file_video_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_video_flowplayer_version', $values['file_video_flowplayer_version']);
       variable_set('file_video_getid3', $values['file_video_getid3']);
       $getid3 = _file_video_getid3();
       $getid3_data = array();
@@ -86,6 +98,7 @@ function file_video_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_video_flowplayer_version');
       variable_del('file_video_getid3');
       variable_del('file_video_getid3_data');
       drupal_set_message(t('The configuration options have been reset to their default values.'));

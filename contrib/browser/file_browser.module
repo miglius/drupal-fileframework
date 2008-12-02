@@ -11,6 +11,7 @@
 define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', 0));
 define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', 1));
 define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', 1));
+define('FILE_BROWSER_FOLDER_LINKS',      variable_get('file_browser_folder_links', 1));
 define('FILE_BROWSER_VOCABULARIES_ALL',  variable_get('file_browser_vocabularies_all', 1));
 define('FILE_BROWSER_VOCABULARIES',      serialize(variable_get('file_browser_vocabularies', array())));
 define('FILE_BROWSER_OG_VOCABULARIES',   variable_get('file_browser_og_vocabularies', 0));
@@ -911,7 +912,7 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
  *   The HTML block for a requested node.
  */
 function _file_browser_node($block, $tid, $node, $visible = TRUE, $columns = TRUE, $iframe = FALSE) {
-  $title = check_plain($node->title);
+  $title = $node->title;
   $file = $node->file;
   $file->name = $node->title;
   $id = 't'. $tid .'-n'. $file->nid .'-b'. $block;

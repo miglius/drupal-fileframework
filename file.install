@@ -76,11 +76,11 @@ function file_requirements($phase) {
     );
 
     $flowplayer_path = drupal_get_path('module', 'file') .'/vendor/flowplayer';
-    $flowplayer = file_exists($flowplayer_path .'/FlowPlayerClassic.swf') ? TRUE : FALSE;
+    $flowplayer = defined('FILE_VIDEO_FLOWPLAYER_VERSION') && file_exists($flowplayer_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf') ? TRUE : FALSE;
     $status['flowplayer'] = array(
       'title' => $t('Flowplayer'),
-      'value' => $flowplayer ? $t('Installed') : $t('Not installed'),
-      'description' => $flowplayer ? '' : $t('<a href="@flowplayer">Flowplayer</a> is not available. It is recommended that you install this player in order to play video files in the browser. To install, <a href="@download">download</a> the latest version of the player and unzip it to %path under the Drupal directory.', array('@flowplayer' => 'http://flowplayer.org/', '@download' => 'http://flowplayer.org/download.html', '%path' => $flowplayer_path .'/')),
+      'value' => $flowplayer ? FILE_VIDEO_FLOWPLAYER_VERSION : $t('Not installed'),
+      'description' => $flowplayer ? '' : $t('<a href="@flowplayer">Flowplayer</a> is not available. It is recommended that you install this player in order to play video files in the browser. To install, <a href="@download">download</a> the latest version of the player, unzip it to %path under the Drupal directory and <a href="@set">set</a> player\'s version.', array('@flowplayer' => 'http://flowplayer.org/', '@download' => 'http://flowplayer.org/download.html', '%path' => $flowplayer_path .'/', '@set' => url('admin/settings/file/format/video'))),
       'severity' => $flowplayer ? REQUIREMENT_OK : REQUIREMENT_WARNING,
     );
 
