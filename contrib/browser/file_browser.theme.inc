@@ -30,11 +30,12 @@ function theme_file_browser_term($data) {
   extract($data, EXTR_SKIP);
 
   $count = $count_terms + $count_files;
+  $path = ($gid > 0) ? 'node/'. $gid .'/gallery/' : 'file_gallery/';
   $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
   $output .= FILE_BROWSER_FOLDER_LINKS ? '' : '<div class="file-icon"></div>';
-  $output .= '<div class="file-title">'. (FILE_BROWSER_FOLDER_LINKS ? theme('file_browser_term_render', $term) : check_plain($term->name)) .'</div>';
+  $output .= '<div class="file-title">'. (FILE_BROWSER_FOLDER_LINKS ? theme('file_browser_term_render', $term, $path) : check_plain($term->name)) .'</div>';
   $output .= '<div id ="'. $xhtml_id .'-spinner" class="file-spinner" style="display: none;"></div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $count_files .'</div>';
@@ -183,8 +184,8 @@ function theme_file_browser_upload($form) {
 /**
  * Theme for showing a term with a links.
  */
-function theme_file_browser_term_render($term, $links_add = array()) {
-  $links['show'] = array('title' => t('Show'), 'href' => 'file_gallery/'. $term->vid . (isset($term->tid) ? '/'. $term->tid : ''), 'attributes' => array('title' => t('Show files in the gallery.')));
+function theme_file_browser_term_render($term, $path, $links_add = array()) {
+  $links['show'] = array('title' => t('Show'), 'href' => $path . $term->vid . (isset($term->tid) ? '/'. $term->tid : ''), 'attributes' => array('title' => t('Show files in the gallery.')));
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
   $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. $term->name .'" class="name">'. theme('image', drupal_get_path('module', 'file_browser') .'/icons/folder.png') .' <span class="title" style="vertical-align: top;">'. check_plain($term->name) .'</span></span>'. $links .'</span></span>';
   $output = preg_replace("/\n/", '', $output);
