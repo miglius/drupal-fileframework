@@ -26,7 +26,7 @@ function file_video_admin_settings() {
     '#default_value' => FILE_VIDEO_FLOWPLAYER_VERSION,
     '#size'          => 10,
     '#maxlength'     => 255,
-    '#description'   => t('Specify version of the installed !flowplayer player. The version should be 3.0.0 or above. It is recommended that you install this player in order to play video files in the browser. To install, !download the latest version of the player and unzip it to !path under the Drupal directory.', array('!flowplayer' => l('Flowplayer', 'http://flowplayer.org/'), '!download' => l(t('download'), 'http://flowplayer.org/download.html'), '!path' => drupal_get_path('module', 'file') .'/vendor/flowplayer/')),
+    '#description'   => t('Specify version of the installed !flowplayer player. It is recommended that you install this player in order to play video files in the browser. To install, !download the latest version of the player and unzip it to !path under the Drupal directory.', array('!flowplayer' => l('Flowplayer', 'http://flowplayer.org/'), '!download' => l(t('download'), 'http://flowplayer.org/download.html'), '!path' => drupal_get_path('module', 'file') .'/vendor/flowplayer/')),
   );
 
   // getID3 settings
