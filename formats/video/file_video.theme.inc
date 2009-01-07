@@ -107,20 +107,38 @@ function theme_file_video_flash_flv_render($options = array()) {
 
   $output = '';
 
-  static $initialized = FALSE;
-  if (!$initialized) {
-    $initialized = TRUE;
-    $output .= '<script src="'. $player_path .'/example/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.min.js"></script>';
+  // Check player version.
+  if (drupal_substr(FILE_VIDEO_FLOWPLAYER_VERSION, 0, 1) == '2') {
+    $output .= '<embed ';
+    $output .= 'id="FlowPlayer" ';
+    $output .= 'width="'. ($width > $width_min ? $width : $width_min) .'" ';
+    $output .= 'height="'. $height .'" ';
+    $output .= 'flashvars="config={ playList: [ { url: \''. $image .'\', type: \'jpg\' }, { url: \''. $src .'\' } ], fullScreenScriptURL: \''. $player_path .'/html/fullscreen.js\', autoPlay: true, showPlayListButtons: false, showMenu: false, loop: false, initialScale: \'orig\', autoBuffering: false, useNativeFullScreen: true }" ';
+    $output .= 'allowfullscreen="true" ';
+    $output .= 'allowscriptaccess="sameDomain" ';
+    $output .= 'quality="high" ';
+    $output .= 'bgcolor="#ffffff" ';
+    $output .= 'name="FlowPlayer" ';
+    $output .= 'src="'. $player_path .'/FlowPlayerClassic.swf" ';
+    $output .= 'type="application/x-shockwave-flash" ';
+    $output .= '/>';
   }
+  else {
+    static $initialized = FALSE;
+    if (!$initialized) {
+      $initialized = TRUE;
+      $output .= '<script src="'. $player_path .'/example/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.min.js"></script>';
+    }
 
-  $id = '';
-  for ($i = 0; $i < 8; $i++)
-    $id .= mt_rand(0, 9);
+    $id = '';
+    for ($i = 0; $i < 8; $i++)
+      $id .= mt_rand(0, 9);
 
-  $output .= '<div id="file-player-'. $nid .'-'. $id .'" style="width: '. ($width > $width_min ? $width : $width_min) .'px; height: '. $height .'px;"></div>';
-  $output .= '<script language="JavaScript">';
-  $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ { url: "'. $image .'", type: "jpg" }, { url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\')';
-  $output .= '</script>';
+    $output .= '<div id="file-player-'. $nid .'-'. $id .'" style="width: '. ($width > $width_min ? $width : $width_min) .'px; height: '. $height .'px;"></div>';
+    $output .= '<script language="JavaScript">';
+    $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ { url: "'. $image .'", type: "jpg" }, { url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\')';
+    $output .= '</script>';
+  }
 
   return theme('file_video_render_player', $options, $output, FILE_VIDEO_FLASH_LINK, t('Download the latest Adobe Flash Player'));
 }
