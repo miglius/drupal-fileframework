@@ -18,6 +18,7 @@ define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance'
 define('FILE_ATTACH_OG_VOCABULARIES',  variable_get('file_attach_og_vocabularies', 0));
 define('FILE_ATTACH_POPUP_SIZE',       variable_get('file_attach_popup_size', '590x500'));
 define('FILE_ATTACH_POPUP_PER_PAGE',   variable_get('file_attach_popup_per_page', '6'));
+define('FILE_ATTACH_REUSE_NODES',      variable_get('file_attach_reuse_nodes', '0'));
 
 define('FILE_ATTACH_TITLE_LENGTH', 50);
 
@@ -329,7 +330,7 @@ function _file_attach_form($object) {
   );
 
   if (!empty($object->files)) {
-    foreach ($object->files as $fid =>  $file) {
+    foreach ($object->files as $fid => $file) {
       $file = (object)$file;
 
       // Nodes and comments are cached differently. Nodes
@@ -919,6 +920,13 @@ function _file_attach_save($node, $comment = NULL) {
     return;
   }
 
+  // An array of the file node nids currently attached to the node.
+  $node_files = array();
+  $result = db_query('SELECT fa.fnid FROM {file_attachments} fa WHERE fa.nid = %d AND fa.vid = %d AND fa.cid = %d', $node->nid, $node->vid, $cid);
+  while ($row = db_fetch_object($result)) {
+    $node_files[] = $row->fnid;
+  }
+
   foreach ($files as $file) {
     // Convert file to object for compatibility
     $file = (object)$file;
@@ -931,87 +939,41 @@ function _file_attach_save($node, $comment = NULL) {
       continue;
     }
 
-    // Create new nodes.
-    if (!empty($file->sid)) {
+    if (!empty($file->sid) || (!FILE_ATTACH_REUSE_NODES && is_numeric($file->nid) && !in_array($file->nid, $node_files))) {
+
+      // Create new node.
       $file->name = trim($file->name);
-      $og_groups = module_exists('og') && FILE_ATTACH_OG_INHERITANCE && !empty($node->og_groups) ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
-      $og_public = module_exists('og_access') && FILE_ATTACH_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
-      $file_node = file_node_create(array_merge(array('file' => $file), $og_groups, $og_public));
+      $file_node = file_node_create(array('file' => $file));
+      if (FILE_ATTACH_OG_INHERITANCE)
+        _file_propagate_og($node, $file_node);
       if (!$comment)
-        _file_attach_propagate_terms($node, $file_node);
+        _file_propagate_terms($node, $file_node);
       $file_attachment = (object)array('fnid' => $file_node->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_attachment);
       watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $file_node->nid, '%nid' => $node->nid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
-      continue;
     }
+    else if (is_numeric($file->nid)) {
 
-    // Update already saved files' data.
-    if (is_numeric($file->nid)) {
+      // Update already saved files' data.
       $result = db_query('SELECT fa.fnid FROM {file_attachments} fa WHERE fa.fnid = %d AND fa.nid = %d AND fa.vid = %d AND fa.cid = %d', $file->nid, $node->nid, $node->vid, $cid);
       $file_update = (object)array('fnid' => $file->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_update, db_result($result) ? array('fnid', 'nid', 'vid', 'cid') : array());
 
       // Save a new file node title.
-      $node_file = node_load($file->nid);
-      if (node_access('update', $node_file)) {
-        $node_file->title = trim($file->name);
-        node_save($node_file);
+      $file_node = node_load($file->nid);
+      if (node_access('update', $file_node)) {
+        $file_node->title = trim($file->name);
+        node_save($file_node);
+        if (FILE_ATTACH_OG_INHERITANCE)
+          _file_propagate_og($node, $file_node);
+        if (!$comment)
+          _file_propagate_terms($node, $file_node);
       }
     }
   }
   // Empty the session storage after save. We use this variable to track files
   // that haven't been related to the node yet.
   unset($_SESSION['file_attach_files']);
-}
-
-/**
- * Propagates taxonomy terms to the file node.
- *
- * @param $node
- *   A node object.
- * @param $file_node
- *   A file node object.
- */
-function _file_attach_propagate_terms($node, $file_node) {
-  if (!empty($node->taxonomy)) {
-    global $user;
-
-    // Retrieve the list of vocabulary IDs from which we'll propagate
-    // taxonomy terms associated with the containing parent node to any
-    // contained file attachment nodes:
-
-    $vocabularies = taxonomy_get_vocabularies('file');
-    $og_vocabs = $og_vocabs_hidden = array();
-    if (module_exists('og_vocab')) {
-      $result = db_query('SELECT nid, vid FROM {og_vocab}');
-      while ($row = db_fetch_object($result)) {
-        if (in_array($row->nid, array_keys($user->og_groups)))
-          $og_vocabs[] = $row->vid;
-        else
-          $og_vocabs_hidden[] = $row->vid;
-      }
-    }
-
-    $vocabs = array_diff(FILE_ATTACH_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
-    if (!empty($vocabs)) {
-      $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
-      if (is_array($taxonomy['tags'])) {
-        foreach ($taxonomy['tags'] as $vid => $data) {
-          if (!in_array($vid, $vocabs))
-            unset($taxonomy['tags'][$vid]);
-        }
-      }
-      foreach ($taxonomy as $vid => $data) {
-        if (is_numeric($vid) && !in_array($vid, $vocabs))
-          unset($taxonomy[$vid]);
-      }
-
-      if (!empty($taxonomy)) {
-        $file_node->taxonomy = $taxonomy;
-        node_save($file_node);
-      }
-    }
-  }
 }
 
 /**

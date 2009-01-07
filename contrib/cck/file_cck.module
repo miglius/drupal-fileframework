@@ -33,7 +33,22 @@ function file_cck_theme() {
     'file_cck_formatter_thumbnail' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_thumbnail_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    'file_cck_field_remove' => array(
+      'arguments' => array('form' => NULL),
+    ),
   );
+}
+
+function theme_file_cck_field_remove(&$form) {
+  $id = $form['value']['#parents'][1];
+  $form[$id] = array(
+    '#id' => $form['#field_name'] .'_remove_'. $id,
+    '#name' => $form['#field_name'] .'_remove['. $id .']',
+    '#type' => 'checkbox',
+    '#title' => t('Remove'),
+    '#value' => ($field = $form['#field_name'] .'_remove') && isset($_POST[$field])  ? (isset($_POST[$field][$id]) ? 1 : 0) : $form['#is_checked'],
+  );
+  return drupal_render($form);
 }
 
 /**
@@ -47,6 +62,11 @@ function file_cck_menu() {
       'page arguments' => array('file_cck_admin_settings'),
       'access arguments' => array('administer site configuration'),
       'file' => 'file_cck.admin.inc',
+    ),
+    'file_cck/js' => array(
+      'page callback' => 'file_cck_js',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
     ),
   );
 }
@@ -64,7 +84,7 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
     case 'update':
       if ($node->type != 'file') {
         // Executing sqls to update cck fields.
-        _file_cck_sql();
+        _file_cck_db_update();
         unset($_SESSION['file_cck_files']);
       }
       break;
@@ -106,6 +126,14 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
           foreach ($form[$field] as $delta => $field_data) {
             if (!is_array($field_data))
               continue;
+
+            if ($delta === $field .'_add_more') {
+              $form[$field][$delta]['#submit'] = array('node_form_submit_build_node');
+              $form[$field][$delta]['#ahah'] = array('path' => 'file_cck/js', 'wrapper' => strtr($field, '_', '-')  .'-add-more-wrapper', 'progress' => array('type' => 'bar', 'message' => t('Please wait...')));
+              $form[$field][$delta]['#suffix'] .= '<script type=\'text/javascript\'>$(document).ready(function() { $("#edit-'. strtr($field, '_', '-') .'-'. strtr($field, '_', '-') .'-add-more").mousedown(function() { $("#edit-file-cck-current-field").val("'. $field .'"); }); });</script>';
+              continue;
+            }
+
             $title = NULL;
             if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && is_object($file)) {
               $title = $file->name;
@@ -114,9 +142,10 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
               $node_file = node_load($nid);
               $title = $node_file->title;
             }
-            if (isset($title)) {
+            if (isset($title))
               $form[$field][$delta]['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => $title));
-            }
+            $form[$field][$delta]['#theme'] = 'file_cck_field_remove';
+            $form[$field][$delta]['#is_checked'] = isset($form_state['clicked_button']) && isset($form_state['clicked_button']['#post']) && isset($form_state['clicked_button']['#post'][$field .'_remove']) && isset($form_state['clicked_button']['#post'][$field .'_remove'][$delta]) ? 1 : 0;
 
             // Reseting #required flag, since it does not allow uploading files.
             // Will check if the file is uploaded in the validate hook.
@@ -124,6 +153,7 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
           }
         }
       }
+      $form['file_cck_current_field'] = array('#type' => 'hidden', '#value' => '');
     }
   }
 }
@@ -176,7 +206,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
       $multiple = count($order) > 1 ? TRUE : FALSE;
       $delta = 0;
       foreach ($order as $o) {
-        if ($upload = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array($field['widget']['extensions_allowed']))))) {
+        if ($upload = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array(isset($field['widget']['extensions_allowed']) ? $field['widget']['extensions_allowed'] : ''))))) {
           $node_file = (object)array('nosave' => TRUE);
           if (!file_node_save($node_file, $upload)) {
             drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
@@ -187,9 +217,9 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
             $_SESSION['file_cck_files'][$fid] = $node_file->file;
           }
         }
-        else if ($delta == 0 && $field['required'] == 1 && !is_object($_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $delta])) {
-          if (!db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
-            form_set_error($field['field_name'] .']['. $delta .'][value', t('field is required.'), 'error');
+        else if ($delta == 0 && $field['required'] == 1 && (!isset($_SESSION['file_cck_files']) || !isset($_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $delta]))) {
+          if (isset($_POST[$field['field_name'] .'_remove'][$o]) || !db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+            form_set_error('files]['. $field['field_name'] .'_'. $delta, t('%title field is required.', array('%title' => $field['widget']['label'])), 'error');
           }
         }
         $delta++;
@@ -202,25 +232,37 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
       $multiple = count($order) > 1 ? TRUE : FALSE;
       $delta = 0;
 
-      $og_groups = module_exists('og') && FILE_CCK_OG_INHERITANCE && !empty($node->og_groups) ? array('og_groups' => array_combine($node->og_groups, $node->og_groups)) : array();
-      $og_public = module_exists('og_access') && FILE_CCK_OG_INHERITANCE ? array('og_public' => $node->og_public) : array();
-
       foreach ($order as $o) {
+        // I cannot modify field entry here since cck module resets the changes made to the fields.
+        // Therefore I create a updates queue which is executed from the hook_nodeapi().
+
         $nid = NULL;
-        if (($file = file_save_upload($field['field_name'] .'_'. $o, file_get_validators())) || ($file = $_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o])) {
-          $file_node = file_node_create(array_merge(array('file' => $file), $og_groups, $og_public));
-          _file_cck_propagate_terms($node, $file_node);
+        if (isset($_POST[$field['field_name'] .'_remove'][$o])) {
+          _file_cck_db_update(array('action' => $field['multiple'] != 1 ? 'remove' : 'delete', 'table' => $db_info['table'], 'column' => $db_info['columns']['value']['column'], 'multiple' => $multiple, 'delta' => $delta, 'vid' => $node->vid));
+        }
+        else if (($file = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array(isset($field['widget']['extensions_allowed']) ? $field['widget']['extensions_allowed'] : ''))))) || (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o]) && $file = $_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o])) {
+          $file_node = file_node_create(array('file' => $file));
+          if (FILE_CCK_OG_INHERITANCE)
+            _file_propagate_og($node, $file_node);
+          _file_propagate_terms($node, $file_node);
           $nid = $file_node->nid;
         }
         else {
-          $nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid));
+          if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+            $file_node = node_load($nid);
+            if (node_access('update', $file_node)) {
+              if (FILE_CCK_OG_INHERITANCE)
+                _file_propagate_og($node, $file_node);
+              _file_propagate_terms($node, $file_node);
+            }
+          }
+          $nid = $nid ? $nid : NULL;
         }
-        if (isset($nid)) {
-          // I cannot modify field entry here since cck module resets the changes made to the fields.
-          // Therefore I create a updates queue which is executed from the hook_nodeapi().
-          _file_cck_sql('UPDATE {'. $db_info['table'] .'} SET '. $db_info['columns']['value']['column'] .' = %d WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), array($nid, $node->vid));
+
+        if (isset($nid) || $field['multiple'] != 1) {
+          _file_cck_db_update(array('action' => 'update', 'table' => $db_info['table'], 'column' => $db_info['columns']['value']['column'], 'multiple' => $multiple, 'delta' => $delta, 'file_nid' => $nid, 'nid' => $node->nid, 'vid' => $node->vid));
+          $delta++;
         }
-        $delta++;
       }
       break;
   }
@@ -454,6 +496,176 @@ function file_cck_file_process($element, $edit, $form_state, $form) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Ahah uploads
+
+/**
+ * Menu callback for AHAH additions.
+ */
+function file_cck_js() {
+
+  // Load the form from the Form API cache.
+  $cache = cache_get('form_'. $_POST['form_build_id'], 'cache_form');
+  $form = $cache->data;
+  $form_state = array('values' => $_POST);
+
+  // Handle new uploads, and merge tmp files into node-files.
+  file_cck_form_submit($form, $form_state);
+
+  // Build a replacement form.
+  $field_form = _file_cck_form($form, $form_state);
+
+  // Save the altered cache.
+  $cache->data = $form;
+  cache_set('form_'. $_POST['form_build_id'], $cache->data, 'cache_form', $cache->expire);
+
+  // Render the form for output.
+  $field_form += array(
+    '#post' => $_POST,
+    '#programmed' => FALSE,
+    '#tree' => FALSE,
+    '#parents' => array(),
+  );
+
+  drupal_alter('form', $field_form, array(), 'file_cck_js');
+  $form_state = array('submitted' => FALSE);
+  $field_form = form_builder('file_cck_js', $field_form, $form_state);
+  $output = theme('status_messages') . drupal_render($field_form);
+
+  // We send the updated cck file form.
+  // Don't call drupal_json(). ahah.js uses an iframe and
+  // the header output by drupal_json() causes problems in some browsers.
+
+  print drupal_to_js(array('status' => TRUE, 'data' => $output));
+  exit;
+}
+
+/**
+ * Save new uploads and store them in the session to be associated to the node.
+ *
+ * @param $form
+ *   A form array.
+ * @param $form_state
+ *   User ubmitted data.
+ */
+function file_cck_form_submit($form, &$form_state) {
+
+  // Clicked submit button name is sent only when no file is uploaded.
+  // Oterwise hidden form element is used.
+  foreach ($form_state['values'] as $k => $v) {
+    if ($v == t('Add another item')) {
+      $field_name = str_replace('_add_more', '', $k);
+      break;
+    }
+  }
+  $field_name = isset($field_name) ? $field_name : $form_state['values']['file_cck_current_field'];
+  $form_state['values']['file_cck_current_field'] = $field_name;
+
+  $type = content_types($form['#node']->type);
+  $field = $type['fields'][$field_name];
+
+  $i = 0;
+  do {
+    if ($upload = file_save_upload($field_name .'_'. $i, array_merge(file_get_validators(), array('file_cck_upload_validate' => array(isset($field['widget']['extensions_allowed']) ? $field['widget']['extensions_allowed'] : ''))))) {
+      $node = (object)array('nosave' => TRUE);
+      if (!file_node_save($node, $upload)) {
+        drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
+      }
+      else {
+
+        // Find the next session id and save it with the uploaded file.
+        // Remove 's_' when calculating next key.
+        $node->file->sid = 's_'. $field_name .'_'. $i;
+        $node->file->field = $field_name;
+        $node->file->delta = $i;
+        _file_cck_file($form_state, $node->file);
+      }
+    }
+    $i++;
+  } while (array_key_exists($i, $form_state['values'][$field_name]));
+}
+
+/**
+ * Attaches a file to the current files list.
+ *
+ * @param $form_state
+ *   A reference to the form state array.
+ * @param $file
+ *   A file object to be attached.
+ */
+function _file_cck_file(&$form_state, $file) {
+  // We do not allow the same file to be uploaded several times.
+  $is_uploaded = FALSE;
+  if (isset($form_state['values']['files'])) {
+    foreach ($form_state['values']['files'] as $fid => $file_attached) {
+      if ($file_attached['uri'] == $file->uri && $file_attached['field'] == $file->field) {
+        $is_uploaded = TRUE;
+        drupal_set_message(t("The file %file is already attached.", array('%file' => $file->name)), 'notice');
+        break;
+      }
+    }
+  }
+  if (!$is_uploaded) {
+    // Add default list and weight parameters.
+    $file->weight = isset($form_state['values']['files']) ? count($form_state['values']['files']) + 1 : 1;
+
+    $fid = isset($file->sid) ? $file->sid : 'n_'. $file->nid;
+    $_SESSION['file_cck_files'][$fid] = $file;
+    $form_state['values']['files'][$fid] = (array)$file;
+  }
+}
+
+/**
+ * Generates form inside cck field.
+ *
+ * @param $form
+ *   A form array
+ * @param $files
+ *   An array of the file objects
+ *
+ * @return
+ *   A form array.
+ */
+function _file_cck_form(&$form, &$form_state) {
+  $field = $form_state['values']['file_cck_current_field'];
+  $group = module_exists('fieldgroup') ? _fieldgroup_field_get_group($form['#node']->type, $field) : NULL;
+
+  $field_form = $group ? $form[$group][$field] : $form[$field];
+  $count = count(array_filter($field_form, create_function('$a', 'return is_array($a) && isset($a[\'#type\']) && $a[\'#type\'] == \'file_cck_file\';')));
+
+  // Arrange the files. To add a correct weight of the new field, the current weights should be not positive.
+  foreach ($form_state['values'][$field] as $delta => $data) {
+    $field_form[$delta]['#weight'] = $data['_weight'];
+    $field_form[$delta]['_weight']['#default_value'] = $data['_weight'];
+
+    $field_form[$delta]['_weight']['#delta'] = $count;
+  }
+
+  // Add a notice that the file has been uploaded.
+  if (isset($form_state['values']['files'])) {
+    foreach ($form_state['values']['files'] as $fid => $file) {
+      $file = (object)$file;
+      if (isset($file->field) && $file->field == $field)
+        $field_form[$file->delta]['#prefix'] = t('A file %file has already been uploaded. If you upload another file the current file data will be replaced.', array('%file' => $file->name));
+    }
+  }
+
+  // Create a new form element and reset default values.
+  $field_form[$count] = $field_form[0];
+  $field_form[$count]['#default_value']['value'] = 0;
+  $field_form[$count]['_weight']['#default_value'] = $count;
+  $field_form[$count]['#weight'] = $count;
+  $field_form[$count]['#delta'] = $count;
+  unset($field_form[$count]['#prefix']);
+
+  if ($group)
+    $form[$group][$field] = $field_form;
+  else
+    $form[$field] = $field_form;
+
+  return array($field => $field_form, '#field_info' => $form['#field_info'][$field]);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Auxiliary functions
 
 /**
@@ -466,16 +678,43 @@ function file_cck_file_process($element, $edit, $form_state, $form) {
  * @param $args
  *   An array of arguments to be passed to the sql.
  */
-function _file_cck_sql($sql = NULL, $args = array()) {
-  static $sqls = array();
-  if (!empty($sql)) {
-    $sqls[] = array('sql' => $sql, 'args' => $args);
+function _file_cck_db_update($action = array()) {
+  static $actions = array();
+  if (!empty($action)) {
+    $actions[] = $action;
   }
   else {
-    foreach ($sqls as $sql) {
-      db_query($sql['sql'], $sql['args']);
+    foreach ($actions as $action) {
+      switch ($action['action']) {
+        case 'update':
+          $sql = 'SELECT nid FROM {'. $action['table'] .'} WHERE vid = %d'. ($action['multiple'] ? ' AND delta = %d' : '');
+          $args = array_merge(array($action['vid']), $action['multiple'] ? array($action['delta']) : array());
+          if (db_result(db_query($sql, $args))) {
+            if (isset($action['file_nid']))
+              db_query('UPDATE {'. $action['table'] .'} SET '. $action['column'] .' = %d WHERE vid = %d'. ($action['multiple'] ? ' AND delta = %d' : ''), array_merge(array($action['file_nid']), $args));
+            else
+              db_query('UPDATE {'. $action['table'] .'} SET '. $action['column'] .' = null WHERE vid = %d'. ($action['multiple'] ? ' AND delta = %d' : ''), $args);
+          }
+          else {
+            if (isset($action['file_nid']))
+              db_query('INSERT INTO {'. $action['table'] .'} ('. $action['column'] .', nid, vid'. ($action['multiple'] ? ', delta' : '') .') VALUES (%d, %d, %d'. ($action['multiple'] ? ', %d' : '') .')', array_merge(array($action['file_nid'], $action['nid']), $args));
+            else
+              db_query('INSERT INTO {'. $action['table'] .'} ('. $action['column'] .', nid, vid'. ($action['multiple'] ? ', delta' : '') .') VALUES (null, %d, %d'. ($action['multiple'] ? ', %d' : '') .')', array_merge(array($action['nid']), $args));
+          }
+          break;
+        case 'remove':
+          $sql = 'UPDATE {'. $action['table'] .'} SET '. $action['column'] .' = null WHERE vid = %d'. ($action['multiple'] ? ' AND delta = %d' : '');
+          $args = array_merge(array($action['vid']), $action['multiple'] ? array($action['delta']) : array());
+          db_query($sql, $args);
+          break;
+        case 'delete':
+          $sql = 'DELETE FROM {'. $action['table'] .'} WHERE vid = %d'. ($action['multiple'] ? ' AND delta = %d' : '');
+          $args = array_merge(array($action['vid']), $action['multiple'] ? array($action['delta']) : array());
+          db_query($sql, $args);
+          break;
+      }
     }
-    $sqls = array();
+    $actions = array();
   }
 }
 
@@ -494,55 +733,5 @@ function _file_cck_sql($sql = NULL, $args = array()) {
  */
 function file_cck_upload_validate($file, $extensions = '') {
   return !empty($extensions) ? file_validate_extensions($file, $extensions) : array();
-}
-
-/**
- * Propagates taxonomy terms to the file node.
- *
- * @param $node
- *   A node object.
- * @param $file_node
- *   A file node object.
- */
-function _file_cck_propagate_terms($node, $file_node) {
-  if (!empty($node->taxonomy)) {
-    global $user;
-
-    // Retrieve the list of vocabulary IDs from which we'll propagate
-    // taxonomy terms associated with the containing parent node to any
-    // contained file attachment nodes:
-
-    $vocabularies = taxonomy_get_vocabularies('file');
-    $og_vocabs = $og_vocabs_hidden = array();
-    if (module_exists('og_vocab')) {
-      $result = db_query('SELECT nid, vid FROM {og_vocab}');
-      while ($row = db_fetch_object($result)) {
-        if (in_array($row->nid, array_keys($user->og_groups)))
-          $og_vocabs[] = $row->vid;
-        else
-          $og_vocabs_hidden[] = $row->vid;
-      }
-    }
-
-    $vocabs = array_diff(FILE_CCK_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_CCK_VOCABULARIES)), FILE_CCK_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
-    if (!empty($vocabs)) {
-      $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
-      if (is_array($taxonomy['tags'])) {
-        foreach ($taxonomy['tags'] as $vid => $data) {
-          if (!in_array($vid, $vocabs))
-            unset($taxonomy['tags'][$vid]);
-        }
-      }
-      foreach ($taxonomy as $vid => $data) {
-        if (is_numeric($vid) && !in_array($vid, $vocabs))
-          unset($taxonomy[$vid]);
-      }
-
-      if (!empty($taxonomy)) {
-        $file_node->taxonomy = $taxonomy;
-        node_save($file_node);
-      }
-    }
-  }
 }
 

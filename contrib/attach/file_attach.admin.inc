@@ -20,6 +20,13 @@ function file_attach_admin_settings() {
 
   // Attachments settings.
   $form['attachments'] = array('#type' => 'fieldset', '#title' => t('Attachments settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['attachments']['file_attach_reuse_nodes'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Attaching already uploaded files'),
+    '#options'       => array(FALSE => t('Craeate a copy of the file node'), TRUE => t('Use existing file node')),
+    '#description'   => t('When already uploaded file is selected to be attached to the node, a new file node might be created pointing to the same file or existing file node can be reused and attached to the node.'),
+    '#default_value' => FILE_ATTACH_REUSE_NODES,
+  );
   $form['attachments']['file_attach_method'] = array(
     '#type'          => 'radios',
     '#title'         => t('File upload method'),
@@ -150,6 +157,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_attach_reuse_nodes', $values['file_attach_reuse_nodes']);
       variable_set('file_attach_method', $values['file_attach_method']);
       variable_set('file_attach_max_files', $values['file_attach_max_files']);
       variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
@@ -168,6 +176,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_attach_reuse_nodes');
       variable_del('file_attach_method');
       variable_del('file_attach_max_files');
       variable_del('file_attach_show_attachments');

@@ -1313,3 +1313,89 @@ function file_get_image($file, $handler, $dimensions = array(0, 0)) {
   return isset($image) ? '<img width="'. $width .'" height="'. $height .'" src="'. url('bitcache/'. $image, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
 }
 
+/**
+ * Propagates og groups to the file node.
+ *
+ * @param $node
+ *   A node object.
+ * @param $file_node
+ *   A file node object.
+ *
+ * @return
+ */
+function _file_propagate_og($node, $file_node) {
+  if (!module_exists('og'))
+    return FALSE;
+
+  global $user;
+  $file_node->og_groups = (isset($file_node->og_groups) ? $file_node->og_groups : array()) + (isset($node->og_groups) && !empty($node->og_groups) ? array_intersect($node->og_groups, array_keys($user->og_groups)) : array());
+  $file_node->og_public = isset($node->og_public) ? $node->og_public : $file_node->og_public;
+  og_save_ancestry($file_node);
+}
+
+/**
+ * Propagates taxonomy terms to the file node.
+ *
+ * @param $node
+ *   A node object.
+ * @param $file_node
+ *   A file node object.
+ *
+ * @return
+ */
+function _file_propagate_terms($node, $file_node) {
+  if (!empty($node->taxonomy)) {
+    global $user;
+
+    // Retrieve the list of vocabulary IDs from which we'll propagate
+    // taxonomy terms associated with the containing parent node to any
+    // contained file attachment nodes:
+
+    $vocabularies = taxonomy_get_vocabularies('file');
+    $og_vocabs = $og_vocabs_hidden = array();
+    if (module_exists('og_vocab')) {
+      $result = db_query('SELECT nid, vid FROM {og_vocab}');
+      while ($row = db_fetch_object($result)) {
+        if (in_array($row->nid, array_keys($user->og_groups)))
+          $og_vocabs[] = $row->vid;
+        else
+          $og_vocabs_hidden[] = $row->vid;
+      }
+    }
+
+    $vocabs = array_diff(FILE_ATTACH_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
+
+    if (!empty($vocabs)) {
+
+      // Prepare the taxonomy to propagate.
+      $taxonomy = is_array($node->taxonomy) ? $node->taxonomy : array();
+      if (is_array($taxonomy['tags'])) {
+        foreach ($taxonomy['tags'] as $vid => $data) {
+          if (!in_array($vid, $vocabs))
+            unset($taxonomy['tags'][$vid]);
+        }
+      }
+      foreach ($taxonomy as $vid => $data) {
+        if (is_numeric($vid) && !in_array($vid, $vocabs))
+          unset($taxonomy[$vid]);
+      }
+
+      if (!empty($taxonomy)) {
+        // We have to save the taxonomy first to get rid of the dublicates and get tids
+        // for a free tags. taxonomy_node_save() deletes old terms, so we have to make
+        // a copy first.
+        $terms = taxonomy_node_get_terms($file_node);
+        taxonomy_node_save($file_node, $taxonomy);
+
+        // Creates a union of the old and propagated tags. Can't use taxonomy_node_get_terms()
+        // any more because it has already cached the terms for this node ID.
+        $result = db_query('SELECT tid FROM {term_node} WHERE nid = %d AND vid = %d', $file_node->nid, $file_node->vid);
+        while ($row = db_fetch_object($result)) {
+          $terms[$row->tid] = $row->tid;
+        }
+        taxonomy_node_save($file_node, $terms);
+      }
+    }
+  }
+}
+
