@@ -1340,10 +1340,12 @@ function _file_propagate_og($node, $file_node) {
  *   A node object.
  * @param $file_node
  *   A file node object.
+ * @param $settings
+ *   An array of settings defining which vocabs should be propagated.
  *
  * @return
  */
-function _file_propagate_terms($node, $file_node) {
+function _file_propagate_terms($node, $file_node, $settings = array()) {
   if (!empty($node->taxonomy)) {
     global $user;
 
@@ -1363,7 +1365,7 @@ function _file_propagate_terms($node, $file_node) {
       }
     }
 
-    $vocabs = array_diff(FILE_ATTACH_VOCABULARIES_ALL ? array_keys($vocabularies) : array_unique(array_merge(array_keys(unserialize(FILE_ATTACH_VOCABULARIES)), FILE_ATTACH_OG_VOCABULARIES ? $og_vocabs : array())), $og_vocabs_hidden);
+    $vocabs = array_diff($settings['all'] ? array_keys($vocabularies) : array_unique(array_merge(array_keys($settings['vocabs']), $settings['og'] ? $og_vocabs : array())), $og_vocabs_hidden);
 
     if (!empty($vocabs)) {
 

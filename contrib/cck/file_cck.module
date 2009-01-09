@@ -244,7 +244,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
           $file_node = file_node_create(array('file' => $file));
           if (FILE_CCK_OG_INHERITANCE)
             _file_propagate_og($node, $file_node);
-          _file_propagate_terms($node, $file_node);
+          _file_propagate_terms($node, $file_node, array('all' => FILE_CCK_VOCABULARIES_ALL, 'og' => FILE_CCK_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_CCK_VOCABULARIES)));
           $nid = $file_node->nid;
         }
         else {
@@ -253,7 +253,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
             if (node_access('update', $file_node)) {
               if (FILE_CCK_OG_INHERITANCE)
                 _file_propagate_og($node, $file_node);
-              _file_propagate_terms($node, $file_node);
+              _file_propagate_terms($node, $file_node, array('all' => FILE_CCK_VOCABULARIES_ALL, 'og' => FILE_CCK_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_CCK_VOCABULARIES)));
             }
           }
           $nid = $nid ? $nid : NULL;
