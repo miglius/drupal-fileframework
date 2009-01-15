@@ -21,11 +21,11 @@ define('FILE_TEXT_CODE',           variable_get('file_text_code', 0));
 function file_text_theme() {
   return array(
     'file_text_text_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_text.theme.inc'
     ),
     'file_text_code_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_text.theme.inc'
     ),
   );

@@ -24,7 +24,7 @@ function file_audio_theme() {
       'file' => 'file_audio.theme.inc'
     ),
     'file_audio_mp3_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_audio.theme.inc'
     ),
   );

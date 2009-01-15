@@ -39,23 +39,23 @@ function file_video_theme() {
       'file' => 'file_video.theme.inc'
     ),
     'file_video_quicktime_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_video.theme.inc'
     ),
     'file_video_windowsmedia_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_video.theme.inc'
     ),
     'file_video_realmedia_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_video.theme.inc'
     ),
     'file_video_flash_flv_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_video.theme.inc'
     ),
     'file_video_flash_swf_render' => array(
-      'arguments' => array('uri' => NULL, 'options' => NULL),
+      'arguments' => array('options' => NULL),
       'file' => 'file_video.theme.inc'
     ),
   );
