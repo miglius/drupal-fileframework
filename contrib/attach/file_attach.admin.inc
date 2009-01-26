@@ -23,7 +23,7 @@ function file_attach_admin_settings() {
   $form['attachments']['file_attach_reuse_nodes'] = array(
     '#type'          => 'radios',
     '#title'         => t('Attaching already uploaded files'),
-    '#options'       => array(FALSE => t('Craeate a copy of the file node'), TRUE => t('Use existing file node')),
+    '#options'       => array(FALSE => t('Create a copy of the file node'), TRUE => t('Use existing file node')),
     '#description'   => t('When already uploaded file is selected to be attached to the node, a new file node might be created pointing to the same file or existing file node can be reused and attached to the node.'),
     '#default_value' => FILE_ATTACH_REUSE_NODES,
   );
