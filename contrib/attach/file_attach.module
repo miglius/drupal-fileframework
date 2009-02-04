@@ -922,7 +922,7 @@ function _file_attach_save($node, $comment = NULL) {
 
   // An array of the file node nids currently attached to the node.
   $node_files = array();
-  $result = db_query('SELECT fa.fnid FROM {file_attachments} fa WHERE fa.nid = %d AND fa.vid = %d AND fa.cid = %d', $node->nid, $node->vid, $cid);
+  $result = db_query('SELECT fa.fnid FROM {file_attachments} fa WHERE fa.nid = %d AND fa.vid = %d AND fa.cid = %d', $node->nid, isset($node->old_vid) ? $node->old_vid : $node->vid, $cid);
   while ($row = db_fetch_object($result)) {
     $node_files[] = $row->fnid;
   }
@@ -962,8 +962,10 @@ function _file_attach_save($node, $comment = NULL) {
       // Save a new file node title.
       $file_node = node_load($file->nid);
       if (node_access('update', $file_node)) {
-        $file_node->title = trim($file->name);
-        node_save($file_node);
+        if ($file_node->title != trim($file->name)) {
+          $file_node->title = trim($file->name);
+          node_save($file_node);
+        }
         if (FILE_ATTACH_OG_INHERITANCE)
           _file_propagate_og($node, $file_node);
         if (!$comment)

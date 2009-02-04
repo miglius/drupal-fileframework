@@ -93,14 +93,26 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
       foreach ($type['fields'] as $field => $data) {
         if ($data['type'] == 'file_cck' && is_array($node->$field)) {
           $db_info = content_database_info($data);
-          $multiple = count($node->$field) > 1 ? TRUE : FALSE;
-          foreach ($node->$field as $delta => $data) {
-            if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $delta]) && is_object($file)) {
-              $node->content[$field]['field']['items'][$delta]['#item']['value'] = 's_'. $field .'_'. $delta;
+          $order = isset($_POST[$field]) ? array_keys($_POST[$field]) : array_keys($node->$field);
+          $multiple = count($order) > 1;
+          $delta = 0;
+          foreach ($order as $o) {
+            unset($fid);
+            if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && is_object($file)) {
+              $fid = 's_'. $field .'_'. $o;
             }
-            else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $delta : ''), $node->vid))) {
-              $node->content[$field]['field']['items'][$delta]['#item']['value'] = $nid;
+            else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+              $fid = $nid;
             }
+            if (isset($fid) && (!isset($_POST[$field .'_remove']) || !isset($_POST[$field .'_remove'][$o]))) {
+              // The items array is populated just for the first itemy, therefore I copy it
+              // and populate with the right value and the wirght.
+              if ($delta > 0)
+                $node->content[$field]['field']['items'][$delta] = $node->content[$field]['field']['items'][0];
+              $node->content[$field]['field']['items'][$delta]['#item']['value'] = $fid;
+              $node->content[$field]['field']['items'][$delta]['#weight'] = $delta;
+            }
+            $delta++;
           }
         }
       }
@@ -114,7 +126,6 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
 function file_cck_form_alter(&$form, $form_state, $form_id) {
   if (isset($form['type']) && isset($form['#node'])) {
     // Node form.
-
     // If the file is already uploaded, the corresponding message
     // is set next to the file upload field.
     if ($form['type']['#value'] .'_node_form' == $form_id) {
@@ -203,7 +214,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
     case 'validate':
       $db_info = content_database_info($field);
       $order = isset($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
-      $multiple = count($order) > 1 ? TRUE : FALSE;
+      $multiple = count($order) > 1;
       $delta = 0;
       foreach ($order as $o) {
         if ($upload = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array(isset($field['widget']['extensions_allowed']) ? $field['widget']['extensions_allowed'] : ''))))) {
@@ -212,7 +223,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
             drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
           }
           else {
-            $fid = 's_'. $field['field_name'] .'_'. $delta;
+            $fid = 's_'. $field['field_name'] .'_'. $o;
             $node_file->file->sid = $fid;
             $_SESSION['file_cck_files'][$fid] = $node_file->file;
           }
@@ -229,7 +240,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
     case 'update':
       $db_info = content_database_info($field);
       $order = isset($_POST[$field['field_name']]) ? array_keys($_POST[$field['field_name']]) : array(0);
-      $multiple = count($order) > 1 ? TRUE : FALSE;
+      $multiple = count($order) > 1;
       $delta = 0;
 
       foreach ($order as $o) {
@@ -248,7 +259,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
           $nid = $file_node->nid;
         }
         else {
-          if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+          if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), isset($node->old_vid) ? $node->old_vid : $node->vid))) {
             $file_node = node_load($nid);
             if (node_access('update', $file_node)) {
               if (FILE_CCK_OG_INHERITANCE)
