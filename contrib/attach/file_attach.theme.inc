@@ -12,7 +12,7 @@
 /**
  * Renders a node's or comment's file attachments in a table layout.
  */
-function theme_file_attachments($files) {
+function theme_file_attachments($files, $pid) {
   $header = array(
     t('Attachment'),
     t('Kind'),
@@ -31,25 +31,22 @@ function theme_file_attachments($files) {
     $id++;
   }
 
-  $output = '<div class="file-attachments">';
+  $output = '<div id="file-attachments-'. $pid .'" class="file-attachments">';
   if (!empty($rows)) {
     $output .= theme('table', $header, $rows, array('id' => 'attachments'));
     $js = "$(document).ready(function() {
-      $('.file-attach-container').hide();
-      $('a.file-attach-preview-button').click(function() {
+      $('#file-container-". $pid ."').find('.file-attach-container').hide();
+      $('#file-attachments-". $pid ."').find('a.file-attach-preview-button').click(function() {
         if($(this).hasClass('active')) {
-          $('.file-attach-preview-button').text('". t('Preview') ."');
-          $('.file-attach-preview-button').removeClass('active');
-          $('.file-attach-container').hide();
+          $('#file-attachments-". $pid ."').find('.file-attach-preview-button').removeClass('active').text('". t('Preview') ."');
+          $('#file-container-". $pid ."').find('.file-attach-container').hide();
         }
         else {
-          $('.file-attach-preview-button').text('". t('Preview') ."');
-          $(this).text('". t('Hide') ."');
           var id = $(this).attr('id').substr(8);
-          $('.file-attach-container').hide();
-          $('.file-attach-preview-button').removeClass('active');
+          $('#file-attachments-". $pid ."').find('.file-attach-preview-button').removeClass('active').text('". t('Preview') ."');
+          $(this).addClass('active').text('". t('Hide') ."');
+          $('#file-container-". $pid ."').find('.file-attach-container').hide();
           $('#file-attach-' + id).show();
-          $(this).addClass('active');
         }
         return false;
       });

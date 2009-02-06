@@ -31,7 +31,7 @@ define('FILE_ATTACH_TITLE_LENGTH', 50);
 function file_attach_theme() {
   return array(
     'file_attachments' => array(
-      'arguments' => array('files' => NULL),
+      'arguments' => array('files' => NULL, 'pid' => NULL),
       'file' => 'file_attach.theme.inc'
     ),
     'file_attach_form_current' => array(
@@ -873,13 +873,17 @@ function _file_attach_view($object) {
     // Attachments list.
     if (FILE_ATTACH_SHOW_ATTACHMENTS) {
       $content['attachments'] = array(
-        '#value' => theme('file_attachments', $files),
+        '#value' => theme('file_attachments', $files, $pid),
         '#weight' => 1,
       );
     }
     // Add attachment previews. We need to ensure that each file on each
     // commnet gets a unique id to make sure jquery is not confused.
     if (FILE_ATTACH_SHOW_PREVIEWS) {
+      $content['files_container_start_'. $pid] = array(
+        '#value' => '<div id="file-container-'. $pid .'">',
+        '#weight' => 2,
+      );
       $id = 0;
       foreach ($files as $file) {
         $data = array(
@@ -891,7 +895,7 @@ function _file_attach_view($object) {
         if (!empty($data)) {
           $content['files_'. $pid .'_'. $id] = array(
             '#value' => theme('file_attach_show', $file->nid, $data),
-            '#weight' => $id + 2,
+            '#weight' => $id + 3,
           );
         }
         else {
@@ -899,6 +903,10 @@ function _file_attach_view($object) {
         }
         $id++;
       }
+      $content['files_container_end_'. $pid] = array(
+        '#value' => '</div>',
+        '#weight' => $id + 3,
+      );
     }
   }
   return isset($content) ? $content : array();
