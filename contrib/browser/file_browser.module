@@ -8,6 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+define('FILE_BROWSER_BLOCKS',            variable_get('file_browser_blocks', 0));
 define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty', 0));
 define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', 1));
 define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', 1));
@@ -146,10 +147,12 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
           'info' => t('All files'),
         ),
       );
-      $vocabularies = taxonomy_get_vocabularies('file');
-      foreach ($vocabularies as $vid => $vocabulary) {
-        $block_info = t('@title file browser', array('@title' => $vocabulary->name));
-        $block['file_browser-'. $vocabulary->vid] = array('info' => $block_info);
+      if (FILE_BROWSER_BLOCKS) {
+        $vocabularies = taxonomy_get_vocabularies('file');
+        foreach ($vocabularies as $vid => $vocabulary) {
+          $block_info = t('@title file browser', array('@title' => $vocabulary->name));
+          $block['file_browser-'. $vocabulary->vid] = array('info' => $block_info);
+        }
       }
       return $block;
     case 'configure':

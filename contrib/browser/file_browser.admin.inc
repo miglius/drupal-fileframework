@@ -18,6 +18,15 @@
 function file_browser_admin_settings() {
   $form = array();
 
+  // General settings
+  $form['general'] = array('#type' => 'fieldset', '#title' => t('General settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['general']['file_browser_blocks'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Enable file browser blocks'),
+    '#default_value' => FILE_BROWSER_BLOCKS,
+    '#description'   => t('Whether a file browser block should be created for each taxonomy vocabulary which supports file nodes.'),
+  );
+
   // Vocabulary settings
   $options = array();
   foreach (taxonomy_get_vocabularies('file') as $vid => $vocabulary) {
@@ -150,6 +159,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_browser_blocks', $values['file_browser_blocks']);
       variable_set('file_browser_vocabularies_all', $values['file_browser_vocabularies_all']);
       variable_set('file_browser_vocabularies', $values['file_browser_vocabularies']);
       variable_set('file_browser_hide_empty', $values['file_browser_hide_empty']);
@@ -170,6 +180,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_browser_blocks');
       variable_del('file_browser_vocabularies_all');
       variable_del('file_browser_vocabularies');
       variable_del('file_browser_hide_empty');

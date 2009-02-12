@@ -25,6 +25,7 @@ function file_browser_install() {}
  * Implementation of hook_uninstall().
  */
 function file_browser_uninstall() {
+  variable_del('file_browser_blocks');
   variable_del('file_browser_vocabularies_all');
   variable_del('file_browser_vocabularies');
   variable_del('file_browser_hide_empty');
