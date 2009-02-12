@@ -103,8 +103,6 @@ function file_theme() {
  */
 function file_init() {
   module_load_include('inc', 'file');
-  drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
-  drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
 }
 
 /**
@@ -473,7 +471,6 @@ function file_node_access($op, $node, $account) {
  * Implementation of hook_form().
  */
 function file_node_form(&$node, $form_state) {
-  //drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
 
   // TODO: This node_form() craziness here is needed because when
   // drupal_retrieve_form('file_node_form') is performed, it will
@@ -509,6 +506,12 @@ function file_node_form(&$node, $form_state) {
   // TODO: metadata display & editing
 
   $form['#attributes'] = array('enctype' => 'multipart/form-data');
+
+  drupal_add_js(drupal_get_path('module', 'file') .'/file_form.js');
+
+  if (module_exists('file_restriction'))
+    file_restriction_js('#edit-file');
+
   return $form;
 }
 

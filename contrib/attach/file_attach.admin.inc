@@ -27,20 +27,6 @@ function file_attach_admin_settings() {
     '#description'   => t('When already uploaded file is selected to be attached to the node, a new file node might be created pointing to the same file or existing file node can be reused and attached to the node.'),
     '#default_value' => FILE_ATTACH_REUSE_NODES,
   );
-  $form['attachments']['file_attach_method'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('File upload method'),
-    '#options'       => array(TRUE => t('Javascript AHAH based upload'), FALSE => t('Upload on the node save')),
-    '#description'   => t('Select the method to upload attachments.'),
-    '#default_value' => FILE_ATTACH_METHOD,
-  );
-  $form['attachments']['file_attach_max_files'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Attachments on page submit'),
-    '#options'       => drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
-    '#description'   => t('If uploads are performed on node submit, select a number of files allowed to attach to the form. This setting does not restrict the total number of attachments. More attachments can be added on the preview page.'),
-    '#default_value' => FILE_ATTACH_MAX_FILES,
-  );
 
   // Visibility settings.
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -158,8 +144,6 @@ function file_attach_admin_settings_submit($form, &$form_state) {
   switch ($op) {
     case t('Save configuration'):
       variable_set('file_attach_reuse_nodes', $values['file_attach_reuse_nodes']);
-      variable_set('file_attach_method', $values['file_attach_method']);
-      variable_set('file_attach_max_files', $values['file_attach_max_files']);
       variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
       variable_set('file_attach_show_previews', $values['file_attach_show_previews']);
       variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
@@ -177,8 +161,6 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       break;
     case t('Reset to defaults'):
       variable_del('file_attach_reuse_nodes');
-      variable_del('file_attach_method');
-      variable_del('file_attach_max_files');
       variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
       variable_del('file_attach_vocabularies_all');

@@ -475,7 +475,8 @@ function file_cck_elements() {
   return array(
     'file_cck_file' => array(
       '#input' => TRUE,
-      '#columns' => array('value'), '#delta' => 0,
+      '#columns' => array('value'),
+      '#delta' => 0,
       '#process' => array('file_cck_file_process'),
     ),
   );
@@ -492,11 +493,15 @@ function theme_file_cck_file($element) {
  * Process an individual element.
  */
 function file_cck_file_process($element, $edit, $form_state, $form) {
-  $field = $form['#field_info'][$element['#field_name']];
-  $field_key = $element['#columns'][0];
   $delta = $element['#delta'];
-  $element[$field_key] = array(
-    '#name' => 'files['. preg_replace('/\[(\d+)/', '_$1', $element['#name']),
+
+  if (module_exists('file_restriction')) {
+    $extensions_allowed = trim(isset($form['#field_info'][$element['#field_name']]['widget']['extensions_allowed']) ? $form['#field_info'][$element['#field_name']]['widget']['extensions_allowed'] : '');
+    file_restriction_js(strtr('#edit-'. $element['#field_name'] .'-'. $delta .'-value', '_', '-'), !empty($extensions_allowed) ? array('extensions_allowed' => $extensions_allowed) : array());
+  }
+
+  $element['value'] = array(
+    '#name' => 'files['. $element['#field_name'] .'_'. $delta .']',
     '#type' => 'file',
     '#title' => $element['#title'],
     '#description' => $element['#description'],
@@ -525,6 +530,16 @@ function file_cck_js() {
   // Build a replacement form.
   $field_form = _file_cck_form($form, $form_state);
 
+  $js = '';
+  if (module_exists('file_restriction')) {
+    $extensions_allowed = trim(isset($field_form['#field_info']['widget']['extensions_allowed']) ? $field_form['#field_info']['widget']['extensions_allowed'] : '');
+    $delta = 0;
+    while ($delta < $field_form['#field_count']) {
+      $js .= file_restriction_js(strtr('#edit-'. $field_form['#field_info']['field_name'] .'-'. $delta .'-value', '_', '-'), !empty($extensions_allowed) ? array('extensions_allowed' => $extensions_allowed) : array(), TRUE);
+      $delta++;
+    }
+  }
+
   // Save the altered cache.
   $cache->data = $form;
   cache_set('form_'. $_POST['form_build_id'], $cache->data, 'cache_form', $cache->expire);
@@ -540,7 +555,7 @@ function file_cck_js() {
   drupal_alter('form', $field_form, array(), 'file_cck_js');
   $form_state = array('submitted' => FALSE);
   $field_form = form_builder('file_cck_js', $field_form, $form_state);
-  $output = theme('status_messages') . drupal_render($field_form);
+  $output = theme('status_messages') . drupal_render($field_form) . $js;
 
   // We send the updated cck file form.
   // Don't call drupal_json(). ahah.js uses an iframe and
@@ -673,7 +688,7 @@ function _file_cck_form(&$form, &$form_state) {
   else
     $form[$field] = $field_form;
 
-  return array($field => $field_form, '#field_info' => $form['#field_info'][$field]);
+  return array($field => $field_form, '#field_info' => $form['#field_info'][$field], '#field_count' => $count + 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -743,6 +758,7 @@ function _file_cck_db_update($action = array()) {
  *   An array with an error messages.
  */
 function file_cck_upload_validate($file, $extensions = '') {
+  $extensions = trim($extensions);
   return !empty($extensions) ? file_validate_extensions($file, $extensions) : array();
 }
 

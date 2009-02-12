@@ -385,11 +385,17 @@ function file_browser_upload_form($form_state, $gid) {
   $form['upload_0'] = array(
     '#type' => 'file',
     '#size' => 10,
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
   );
   $form['link'] = array(
     '#type' => 'markup',
     '#value' => '<a href="javascript:Drupal.file_browserAddFileWidget();">'. t('Add File') .'</a>',
   );
+
+  if (module_exists('file_restriction'))
+    file_restriction_js('#edit-upload-0');
+
   if (FILE_BROWSER_OG_UPLOAD && module_exists('og')) {
     global $user;
     $groups = array();

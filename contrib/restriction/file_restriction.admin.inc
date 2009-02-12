@@ -19,10 +19,10 @@ function file_restriction_admin_settings() {
   $form = array();
 
   $form['general'] = array('#type' => 'fieldset', '#title' => t('All users'), '#collapsible' => TRUE, '#collapsed' => FALSE);
-  $form['general']['file_restriction_extension_allowed'] = array(
+  $form['general']['file_restriction_extensions_allowed'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Allowed file extensions'),
-    '#default_value' => FILE_RESTRICTION_EXTENSION_ALLOWED,
+    '#default_value' => FILE_RESTRICTION_EXTENSIONS_ALLOWED,
     '#maxlength'     => 255,
     '#description'   => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.'),
   );
@@ -51,7 +51,7 @@ function file_restriction_admin_settings() {
 
   $roles = user_roles(FALSE, 'upload files');
   $form['roles'] = array('#type' => 'value', '#value' => $roles);
-  $roles_extension_allowed = variable_get('file_restriction_roles_extension_allowed', array());
+  $roles_extensions_allowed = variable_get('file_restriction_roles_extensions_allowed', array());
   $roles_size = variable_get('file_restriction_roles_size', array());
   $roles_quota = variable_get('file_restriction_roles_quota', array());
   $roles_quota_generated = variable_get('file_restriction_roles_quota_generated', array());
@@ -62,10 +62,10 @@ function file_restriction_admin_settings() {
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $form['settings_role_'. $rid]['file_restriction_extension_allowed_'. $rid] = array(
+    $form['settings_role_'. $rid]['file_restriction_extensions_allowed_'. $rid] = array(
       '#type'          => 'textfield',
       '#title'         => t('Allowed file extensions'),
-      '#default_value' => isset($roles_extension_allowed[$rid]) ? $roles_extension_allowed[$rid] : FILE_RESTRICTION_EXTENSION_ALLOWED,
+      '#default_value' => isset($roles_extensions_allowed[$rid]) ? $roles_extensions_allowed[$rid] : FILE_RESTRICTION_EXTENSIONS_ALLOWED,
       '#maxlength'     => 255,
       '#description'   => t('Only files with those extensions will be possible to upload to the website. Separate extensions with a space and do not include the leading dot. Empty means that all file types are allowed.'),
     );
@@ -153,32 +153,32 @@ function file_restriction_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      variable_set('file_restriction_extension_allowed', trim($values['file_restriction_extension_allowed']));
+      variable_set('file_restriction_extensions_allowed', trim($values['file_restriction_extensions_allowed']));
       variable_set('file_restriction_size', $values['file_restriction_size']);
       variable_set('file_restriction_quota', $values['file_restriction_quota']);
       variable_set('file_restriction_quota_generated', $values['file_restriction_quota_generated']);
-      $roles_extension_allowed = array();
+      $roles_extensions_allowed = array();
       $roles_size = array();
       $roles_quota = array();
       $roles_quota_generated = array();
       foreach ($values['roles'] as $rid => $role) {
-        $roles_extension_allowed[$rid] = trim($values['file_restriction_extension_allowed_'. $rid]);
+        $roles_extensions_allowed[$rid] = trim($values['file_restriction_extensions_allowed_'. $rid]);
         $roles_size[$rid] = $values['file_restriction_size_'. $rid];
         $roles_quota[$rid] = $values['file_restriction_quota_'. $rid];
         $roles_quota_generated[$rid] = $values['file_restriction_quota_generated_'. $rid];
       }
-      variable_set('file_restriction_roles_extension_allowed', $roles_extension_allowed);
+      variable_set('file_restriction_roles_extensions_allowed', $roles_extensions_allowed);
       variable_set('file_restriction_roles_size', $roles_size);
       variable_set('file_restriction_roles_quota', $roles_quota);
       variable_set('file_restriction_roles_quota_generated', $roles_quota_generated);
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
-      variable_del('file_restriction_extension_allowed');
+      variable_del('file_restriction_extensions_allowed');
       variable_del('file_restriction_size');
       variable_del('file_restriction_quota');
       variable_del('file_restriction_quota_generated');
-      variable_del('file_restriction_roles_extension_allowed');
+      variable_del('file_restriction_roles_extensions_allowed');
       variable_del('file_restriction_roles_size');
       variable_del('file_restriction_roles_quota');
       variable_del('file_restriction_roles_quota_generated');

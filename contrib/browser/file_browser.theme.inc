@@ -15,6 +15,9 @@
 function theme_file_browser_page($data) {
   extract($data, EXTR_SKIP);
 
+  drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
+  drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
+
   $output = '<div class="file-system" id="file-system-'. $vid .'">';
   $output .= $terms;
   $output .= '</div>';

@@ -8,8 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_ATTACH_METHOD',           variable_get('file_attach_method', 1));
-define('FILE_ATTACH_MAX_FILES',        variable_get('file_attach_max_files', 5));
+define('FILE_ATTACH_REUSE_NODES',      variable_get('file_attach_reuse_nodes', '0'));
 define('FILE_ATTACH_SHOW_ATTACHMENTS', variable_get('file_attach_show_attachments', 1));
 define('FILE_ATTACH_SHOW_PREVIEWS',    variable_get('file_attach_show_previews', 1));
 define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_all', 1));
@@ -18,7 +17,6 @@ define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance'
 define('FILE_ATTACH_OG_VOCABULARIES',  variable_get('file_attach_og_vocabularies', 0));
 define('FILE_ATTACH_POPUP_SIZE',       variable_get('file_attach_popup_size', '590x500'));
 define('FILE_ATTACH_POPUP_PER_PAGE',   variable_get('file_attach_popup_per_page', '6'));
-define('FILE_ATTACH_REUSE_NODES',      variable_get('file_attach_reuse_nodes', '0'));
 
 define('FILE_ATTACH_TITLE_LENGTH', 50);
 
@@ -119,10 +117,8 @@ function file_attach_block($op = 'list', $delta = 0, $edit = array()) {
  * Implementation of hook_init().
  */
 function file_attach_init() {
-  if (!empty($_POST) && $_POST['form_id'] == 'comment_form' && isset($_POST['op']) && $_POST['op'] == t('Preview') && FILE_ATTACH_METHOD) {
-    // When AHAH file attach is disabled everything is working
-    // as expected and this section is not needed, however, when it's
-    // enabled, the AHAH sets #cache to TRUE and then hook_form_alter()
+  if (!empty($_POST) && $_POST['form_id'] == 'comment_form' && isset($_POST['op']) && $_POST['op'] == t('Preview')) {
+    // AHAH sets #cache to TRUE and then hook_form_alter()
     // is not executed.
     // This is the only place to save the upload and alter the saved
     // cached form to add the latest preview.
@@ -134,7 +130,7 @@ function file_attach_init() {
     $cache = cache_get('form_'. $_POST['form_build_id'], 'cache_form');
 
     $form_state = array('values' => $_POST);
-    unset($form_state['values']['files']['upload_0']);
+    unset($form_state['values']['files']['upload']);
 
     // Handle new uploads, and merge tmp files into node-files.
     $form = array();
@@ -275,18 +271,6 @@ function _file_attach_form_fieldset(&$form, $object) {
   if (!user_access('attach files'))
     return;
 
-  if (!FILE_ATTACH_METHOD) {
-    drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach_onsave.js');
-    drupal_add_js(array(
-      'file_attach' => array(
-        'max' => FILE_ATTACH_MAX_FILES,
-        'files' => t('Files'),
-        'maximum' => t('max'),
-      )),
-      'setting'
-    );
-  }
-
   // File attachments fieldset
   $form['attachments'] = array(
     '#type'        => 'fieldset',
@@ -353,42 +337,29 @@ function _file_attach_form($object) {
   }
 
   if (user_access('attach files')) {
+    if (module_exists('file_restriction'))
+      file_restriction_js('#edit-upload');
 
-    if (FILE_ATTACH_METHOD) {
-      $form['file_attach_more']['#weight'] = 10;
-      $form['file_attach_more']['upload_0'] = array(
-        '#type' => 'file',
-        '#title' => t('Attach new file'),
-        '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))),
-        '#size' => 40,
-      );
-      $form['file_attach_more']['attach'] = array(
-        '#type' => 'submit',
-        '#value' => t('Update attachments'),
-        '#name' => 'attach',
-        '#ahah' => array(
-          'path' => 'file_attach/js',
-          'wrapper' => 'file-attach-wrapper',
-          'progress' => array('type' => 'bar', 'message' => t('Please wait...')),
-        ),
-        '#submit' => array('node_form_submit_build_node'),
-        '#prefix' => '<div id="file-attach-update-attachments">',
-        '#suffix' => '</div>',
-      );
-    }
-    else {
-      // Can not take advantage of the #tree parameter, because for the file uploads FAPI does not
-      // use it, but creates a uploaded files array instead.
-      $form['files_new'] = array(
-        '#theme' => 'file_attach_form_new',
-        '#prefix' => '<div id="attachments-new">',
-        '#suffix' => '</div>',
-      );
-
-      for ($i = 0; $i < FILE_ATTACH_MAX_FILES; $i++) {
-        $form['files_new'] += _file_attach_more_form($i);
-      }
-    }
+    $form['file_attach_more']['#weight'] = 10;
+    $form['file_attach_more']['upload'] = array(
+      '#type' => 'file',
+      '#title' => t('Attach new file'),
+      '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))),
+      '#size' => 40,
+    );
+    $form['file_attach_more']['attach'] = array(
+      '#type' => 'submit',
+      '#value' => t('Update attachments'),
+      '#name' => 'attach',
+      '#ahah' => array(
+        'path' => 'file_attach/js',
+        'wrapper' => 'file-attach-wrapper',
+        'progress' => array('type' => 'bar', 'message' => t('Please wait...')),
+      ),
+      '#submit' => array('node_form_submit_build_node'),
+      '#prefix' => '<div id="file-attach-update-attachments">',
+      '#suffix' => '</div>',
+    );
 
     drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
     list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
@@ -437,25 +408,6 @@ function _file_attach_form($object) {
 }
 
 /**
- * Creates one file upload form element.
- *
- * @param $delt
- *   Unique number of the form file element.
- *
- * @return
- *   An array with the form file upload element.
- */
-function _file_attach_more_form($delta) {
-  return array(
-    'upload_'. $delta => array(
-      '#type' => 'file',
-      '#title' => t('Attach'),
-      '#size' => 40,
-    ),
-  );
-}
-
-/**
  * Save new uploads and store them in the session to be associated to the node or comment.
  *
  * @param $form
@@ -491,23 +443,19 @@ function file_attach_form_submit($form, &$form_state) {
 
   // Handle the file uploads. The do cycle is needed if we use several file
   // upload elements when ahah submission is disabled.
-  $i = 0;
-  do {
-    if (($user->uid == 1 || user_access('attach files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
-      $node = (object)array('nosave' => TRUE);
-      if (!file_node_save($node, $upload)) {
-        drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
-      }
-      else {
-
-        // Find the next session id and save it with the uploaded file.
-        // Remove 's_' when calculating next key.
-        $node->file->sid = 's_'. (!empty($_SESSION['file_attach_files']) ? max(array_map(create_function('$a', 'return substr($a, 2);'), array_keys($_SESSION['file_attach_files']))) + 1 : '0');
-        _file_attach_file($form_state, $node->file);
-      }
+  if (($user->uid == 1 || user_access('attach files')) && ($upload = file_save_upload('upload', file_get_validators()))) {
+    $node = (object)array('nosave' => TRUE);
+    if (!file_node_save($node, $upload)) {
+      drupal_set_message(t("Error saving file %file. Please, contact site administrator.", array('%file' => $upload->filename)), 'error');
     }
-    $i++;
-  } while (array_key_exists('upload_'. $i, $form_state['values']));
+    else {
+
+      // Find the next session id and save it with the uploaded file.
+      // Remove 's_' when calculating next key.
+      $node->file->sid = 's_'. (!empty($_SESSION['file_attach_files']) ? max(array_map(create_function('$a', 'return substr($a, 2);'), array_keys($_SESSION['file_attach_files']))) + 1 : '0');
+      _file_attach_file($form_state, $node->file);
+    }
+  }
 
   // Attach already saved file node.
   if (isset($form_state['values']['attach_saved']) && preg_match('/^\[(\d+)\]/', $form_state['values']['attach_saved'], $matches)) {
@@ -597,7 +545,7 @@ function file_attach_js() {
 
   $form = $cache->data;
   $form_state = array('values' => $_POST);
-  unset($form_state['values']['files']['upload_0']);
+  unset($form_state['values']['files']['upload']);
 
   // Handle new uploads, and merge tmp files into node-files.
   file_attach_form_submit($form, $form_state);
@@ -631,10 +579,14 @@ function file_attach_js() {
   $form = form_builder('file_attach_js', $form, $form_state);
   $output = theme('status_messages') . drupal_render($form);
 
+  if (module_exists('file_restriction'))
+    $output .= file_restriction_js('#edit-upload', array(), TRUE);
+
   // We send the updated file attachments form.
   // Don't call drupal_json(). ahah.js uses an iframe and
   // the header output by drupal_json() causes problems in some browsers.
 
+  watchdog('miglius', print_r(drupal_to_js(array('status' => TRUE, 'data' => $output)), true));
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
 }

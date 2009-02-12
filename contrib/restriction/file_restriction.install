@@ -25,11 +25,11 @@ function file_restriction_install() {}
  * Implementation of hook_uninstall().
  */
 function file_restriction_uninstall() {
-  variable_del('file_restriction_extension_allowed');
+  variable_del('file_restriction_extensions_allowed');
   variable_del('file_restriction_size');
   variable_del('file_restriction_quota');
   variable_del('file_restriction_quota_generated');
-  variable_del('file_restriction_roles_extension_allowed');
+  variable_del('file_restriction_roles_extensions_allowed');
   variable_del('file_restriction_roles_size');
   variable_del('file_restriction_roles_quota');
   variable_del('file_restriction_roles_quota_generated');

@@ -68,6 +68,8 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
 
   if (!$initialized) {
     $initialized = TRUE;
+    drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
+    drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
 
     // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');

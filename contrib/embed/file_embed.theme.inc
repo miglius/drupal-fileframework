@@ -25,7 +25,7 @@ function theme_file_embed_textarea_link($data) {
 
     // Cluetip for metadata.
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
 
     drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');

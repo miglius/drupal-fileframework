@@ -355,7 +355,6 @@ Drupal.file_browserFileClick = function(obj) {
  * Adds upload widget.
  */
 Drupal.file_browserAddFileWidget = function() {
-  var p = document.createElement("p");
   // creating the new file widget that will be added to the form
   var widget = document.createElement("input");
   widget.setAttribute("type", "file");
@@ -363,13 +362,23 @@ Drupal.file_browserAddFileWidget = function() {
   widget.setAttribute("id", "edit-upload-" + Drupal.file_browserVars.filecount);
   widget.setAttribute("class", "form-file");
   widget.setAttribute("size", "10");
-  p.appendChild(widget);
+  // creating widget wrapper
+  var wrapper = document.createElement("div");
+  wrapper.setAttribute('id', 'edit-upload-' + Drupal.file_browserVars.filecount + '-wrapper');
+  wrapper.setAttribute('class', 'form-item');
+  wrapper.appendChild(widget);
+  var div = document.createElement("div");
+  div.appendChild(wrapper);
   // adding the new widget to the container widget
   $('#file-upload').find('input:file').each(function() {
     if (this.id == 'edit-upload-' + (Drupal.file_browserVars.filecount - 1)) {
-      $(p).insertAfter($(this).parent());
+      $(div).insertAfter($(this).parent().parent());
     }
   });
+  // integration with file restriction module
+  if (typeof(Drupal.file_restrictionExtensions) == 'function') {
+    Drupal.file_restrictionExtensions('#edit-upload-' + Drupal.file_browserVars.filecount);
+  }
   Drupal.file_browserVars.filecount++;
 }
 
@@ -382,6 +391,7 @@ Drupal.file_browserDelFileWidget = function() {
   }
   Drupal.file_browserVars.filecount = 1;
   $('#file-browser-upload-form input#edit-upload-0').val(''); // resetting the value in the text field
+  $('.file-restriction').hide();
   $('#file-upload-spinner').hide();
 }
 
