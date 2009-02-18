@@ -846,12 +846,12 @@ function _file_attach_view($object) {
         $data = theme('file_show', $data);
         if (!empty($data)) {
           $content['files_'. $pid .'_'. $id] = array(
-            '#value' => theme('file_attach_show', $file->nid, $data),
+            '#value' => theme('file_attach_show', $pid .'-'. $id, $data),
             '#weight' => $id + 3,
           );
         }
         else {
-          drupal_add_js('$(document).ready(function() { $("td #preview-'. $file->nid .'").addClass("disabled"); });', 'inline');
+          drupal_add_js('$(document).ready(function() { $("#file-attach-preview-button-'. $pid .'-'. $id .'").hide(); });', 'inline');
         }
         $id++;
       }
@@ -893,9 +893,11 @@ function _file_attach_save($node, $comment = NULL) {
 
     // Remove file. Process removals first since no further processing
     // will be required.
-    if (!empty($file->remove) && is_numeric($file->nid)) {
-      db_query("DELETE FROM {file_attachments} WHERE nid = %d AND vid = %d AND cid = %d AND fnid = %d", $node->nid, $node->vid, $cid, $file->nid);
-      watchdog('file_attach', 'The file attachment with the nid=%fnid was removed from the node nid=%nid, cid=%cid.', array('%fnid' => $file->nid, '%nid' => $node->nid, '%cid' => $cid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
+    if (!empty($file->remove)) {
+      if (is_numeric($file->nid)) {
+        db_query("DELETE FROM {file_attachments} WHERE nid = %d AND vid = %d AND cid = %d AND fnid = %d", $node->nid, $node->vid, $cid, $file->nid);
+        watchdog('file_attach', 'The file attachment with the nid=%fnid was removed from the node nid=%nid, cid=%cid.', array('%fnid' => $file->nid, '%nid' => $node->nid, '%cid' => $cid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
+      }
       continue;
     }
 

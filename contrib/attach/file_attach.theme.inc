@@ -24,7 +24,7 @@ function theme_file_attachments($files, $pid) {
   foreach ($files as $file) {
     $file->name = drupal_strlen($file->name) > FILE_ATTACH_TITLE_LENGTH ? drupal_substr($file->name, 0, FILE_ATTACH_TITLE_LENGTH - 3) .'...' : $file->name;
     $rows[] = array(
-      l(t('Download'), 'file/'. $file->nid .'/download/'. $file->vid, array('attributes' => array('class' => 'file-attach-download-button'))) . l(t('Preview'), '', array('attributes' => array('id' => 'preview-'. $file->nid, 'class' => 'file-attach-preview-button'))) . theme('file_render', $file, array('download' => array(), 'show' => array())),
+      l(t('Download'), 'file/'. $file->nid .'/download/'. $file->vid, array('attributes' => array('class' => 'file-attach-download-button'))) . (FILE_ATTACH_SHOW_PREVIEWS ? l(t('Preview'), '', array('attributes' => array('id' => 'file-attach-preview-button-'. $pid .'-'. $id, 'class' => 'file-attach-preview-button'))) : '') . theme('file_render', $file, array('download' => array(), 'show' => array())),
       file_mime_description_for($file->type),
       format_size($file->size),
     );
@@ -42,7 +42,7 @@ function theme_file_attachments($files, $pid) {
           $('#file-container-". $pid ."').find('.file-attach-container').hide();
         }
         else {
-          var id = $(this).attr('id').substr(8);
+          var id = $(this).attr('id').substr(27);
           $('#file-attachments-". $pid ."').find('.file-attach-preview-button').removeClass('active').text('". t('Preview') ."');
           $(this).addClass('active').text('". t('Hide') ."');
           $('#file-container-". $pid ."').find('.file-attach-container').hide();
