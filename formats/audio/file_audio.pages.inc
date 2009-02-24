@@ -45,7 +45,7 @@ function file_audio_xspf($nid, $vid, $hash) {
   $output .= '<playlist version="1" xmlns="http://xspf.org/ns/0/">'."\n";
   $output .= '  <trackList>'."\n";
   $output .= '    <track>'."\n";
-  $output .= '      <location>'. url('bitcache/'. $hash, array('query' => array('vid' => $vid), 'absolute' => true)) .'</location>'."\n";
+  $output .= '      <location>'. url('bitcache/'. $hash, array('query' => array('vid' => $vid), 'absolute' => TRUE)) .'</location>'."\n";
   if (isset($item[$uri][rdf_qname_to_uri('foaf:made')]) && $artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0])
     $output .= '      <creator>'. $artist .'</creator>'."\n";
   if (isset($item[$uri][rdf_qname_to_uri('wordnet:album')]) && $album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0])

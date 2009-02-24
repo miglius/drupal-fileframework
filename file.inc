@@ -1329,7 +1329,8 @@ function _file_propagate_og($node, $file_node) {
 
   global $user;
   $file_node->og_groups = array_unique(array_merge(isset($file_node->og_groups) ? $file_node->og_groups : array(), isset($node->og_groups) && !empty($node->og_groups) ? array_intersect($node->og_groups, array_keys($user->og_groups)) : array()));
-  $file_node->og_public = isset($node->og_public) ? $node->og_public : $file_node->og_public;
+  if (isset($node->og_public) || isset($file_node->og_public))
+    $file_node->og_public = isset($node->og_public) ? $node->og_public : $file_node->og_public;
   og_save_ancestry($file_node);
 }
 

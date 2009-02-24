@@ -232,10 +232,10 @@ function _file_browser_get_unfiled_term($vid) {
  * @return
  */
 function _file_browser_enforce_unfiled(&$node) {
-  if (!is_array($node->og_groups) || !module_exists('og_vocab'))
+  if (!isset($node->og_groups) || !module_exists('og_vocab'))
     return;
 
-  if (!is_array($node->taxonomy))
+  if (!isset($node->taxonomy))
     $node->taxonomy = array();
 
   // When an attachment is updated when the parent node is saved

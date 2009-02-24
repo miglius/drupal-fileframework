@@ -87,7 +87,7 @@ function file_requirements($phase) {
     $status['flowplayer'] = array(
       'title' => $t('Flowplayer'),
       'value' => $flowplayer ? FILE_VIDEO_FLOWPLAYER_VERSION : $t('Not installed'),
-      'description' => $flowplayer ? '' : $t('<a href="@flowplayer">Flowplayer</a> is not available. It is recommended that you install this player in order to play video files in the browser. To install, <a href="@download">download</a> the latest version of the player, unzip it to %path under the Drupal directory and <a href="@set">set</a> player\'s version. Note, that flowplayer older than version 3.0.0 can be used, but will not be detected.', array('@flowplayer' => 'http://flowplayer.org/', '@download' => 'http://flowplayer.org/download.html', '%path' => $flowplayer_path .'/', '@set' => url('admin/settings/file/format/video'))),
+      'description' => $flowplayer ? '' : $t('<a href="@flowplayer">Flowplayer</a> is not available. It is recommended that you install this player in order to play video files in the browser. To install, <a href="@download">download</a> the latest version of the player, unzip it to %path under the Drupal directory and <a href="@set">set</a> player\'s version. Note, that flowplayer older than version 3.0.0 can be used, but will not be detected.', array('@flowplayer' => 'http://flowplayer.org/', '@download' => 'http://flowplayer.org/download', '%path' => $flowplayer_path .'/', '@set' => url('admin/settings/file/format/video'))),
       'severity' => $flowplayer ? REQUIREMENT_OK : REQUIREMENT_WARNING,
     );
 
