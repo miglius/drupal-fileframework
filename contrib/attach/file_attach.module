@@ -436,7 +436,7 @@ function file_attach_form_submit($form, &$form_state) {
         }
       }
       else {
-        $form_state['values']['files'][$fid] = array_merge((isset($_SESSION['file_attach_files']) && isset($_SESSION['file_attach_files'][$fid])) ? $_SESSION['file_attach_files'][$fid] : array(), $file);
+        $form_state['values']['files'][$fid] = array_merge((isset($_SESSION['file_attach_files']) && isset($_SESSION['file_attach_files'][$fid])) ? (array) $_SESSION['file_attach_files'][$fid] : array(), $file);
       }
     }
   }
