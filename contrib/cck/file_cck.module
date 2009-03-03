@@ -133,6 +133,7 @@ function file_cck_form_alter(&$form, $form_state, $form_id) {
       $type = content_types($node->type);
       foreach ($type['fields'] as $field => $data) {
         if ($data['type'] == 'file_cck') {
+          $form['#attributes']['enctype'] = 'multipart/form-data';
           $db_info = content_database_info($data);
           foreach ($form[$field] as $delta => $field_data) {
             if (!is_array($field_data))
