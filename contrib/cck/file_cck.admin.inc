@@ -19,26 +19,28 @@ function file_cck_admin_settings() {
   $form = array();
 
   // Vocabulary settings.
-  $options = array();
-  foreach (taxonomy_get_vocabularies('file') as $vid => $vocab) {
-    $options[$vid] = $vocab->name;
+  if (module_exists('taxonomy')) {
+    $options = array();
+    foreach (taxonomy_get_vocabularies('file') as $vid => $vocab) {
+      $options[$vid] = $vocab->name;
+    }
+    $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    $form['vocabs']['file_cck_vocabularies_all'] = array(
+      '#type'          => 'radios',
+      '#title'         => t('Vocabularies to inherit terms from'),
+      '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
+      '#description'   => t('Select the vocabularies from which field file will inherit the taxonomy terms of the parent node on the creation of the field.'),
+      '#default_value' => FILE_CCK_VOCABULARIES_ALL,
+    );
+    $form['vocabs']['file_cck_vocabularies'] = array(
+      '#type'          => 'select',
+      '#title'         => t('Choose vocabularies to inherit terms from'),
+      '#options'       => $options,
+      '#multiple'      => TRUE,
+      '#description'   => t('If "Only bellow selected vocabularies" are selected, then choose the vocabularies.'),
+      '#default_value' => unserialize(FILE_CCK_VOCABULARIES),
+    );
   }
-  $form['vocabs'] = array('#type' => 'fieldset', '#title' => t('Vocabulary settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
-  $form['vocabs']['file_cck_vocabularies_all'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Vocabularies to inherit terms from'),
-    '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
-    '#description'   => t('Select the vocabularies from which field file will inherit the taxonomy terms of the parent node on the creation of the field.'),
-    '#default_value' => FILE_CCK_VOCABULARIES_ALL,
-  );
-  $form['vocabs']['file_cck_vocabularies'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Choose vocabularies to inherit terms from'),
-    '#options'       => $options,
-    '#multiple'      => TRUE,
-    '#description'   => t('If "Only bellow selected vocabularies" are selected, then choose the vocabularies.'),
-    '#default_value' => unserialize(FILE_CCK_VOCABULARIES),
-  );
 
   // Organic groups integration.
   if (module_exists('og')) {
