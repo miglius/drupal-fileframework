@@ -738,7 +738,7 @@ function file_rdf_namespaces() {
 function _file_block_properties() {
   if (arg(0) == 'node' && preg_match('/(\d+)/', arg(1), $matches)) {
     $file_node = node_load($matches[1]);
-    if (is_object($file_node) && $file_node->type == 'file' && node_access('view', $node) && !empty($file_node->file)) {
+    if (is_object($file_node) && $file_node->type == 'file' && node_access('view', $file_node) && !empty($file_node->file)) {
       $metadata = array();
       $namespaces = rdf_get_namespaces();
       $info = file_get_metadata_info();
