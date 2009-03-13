@@ -497,7 +497,7 @@ function _file_image_render_options($uri, $options = array()) {
 
   $node = node_load($options['nid'], $options['vid']);
   $title = isset($node->title) ? $node->title : NULL;
-  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) . (isset($node->vid) ? '?vid='. $node->vid : '');
+  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE, 'query' => isset($node->vid) ? array('vid' => $node->vid) : array()));
 
   $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => "max-width: {$max_width}px; max-height: {$max_height}px;", 'border' => '0'), $options);
   return array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));

@@ -174,7 +174,7 @@ function file_document_mm_render($uri, $options = array()) {
 function _file_document_render_options($uri, $options = array()) {
   $node = node_load($options['nid'], $options['vid']);
   $title = isset($node->title) ? $node->title : NULL;
-  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE)) . (isset($node->vid) ? '?vid='. $node->vid : '');
+  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE, 'query' => isset($node->vid) ? array('vid' => $node->vid) : array()));
 
   return array_merge($options, compact('src', 'title'));
 }

@@ -27,7 +27,7 @@ function file_install() {
     rdf_db_create_repository('file', array('dc:title' => t('File framework'), 'dc:description' => 'A repository for the file framework managed files metadata.'));
   else
     drupal_set_message(t('RDF API module cannot be found. You should install RDF module first, and then reinstall File Framework.'));
-  bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.'));
+  bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.', 'adapter' => 'file', 'module' => 'file'));
 }
 
 /**
@@ -216,6 +216,12 @@ function file_update_6000() {
     foreach ($uris as $uri)
       rename(BITCACHE_ROOT .'/'. file_get_hash($uri), BITCACHE_ROOT .'/file/'. file_get_hash($uri));
   }
+  return $ret;
+}
+
+function file_update_6001() {
+  $ret = array();
+  $ret[] = update_sql("UPDATE {bitcache_repositories} SET module = 'file' WHERE name = 'file'");
   return $ret;
 }
 

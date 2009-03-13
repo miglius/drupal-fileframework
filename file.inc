@@ -37,8 +37,8 @@ function file_node_save($node, $file) {
       return FALSE;
     }
 
-    $file->size = isset($file->size) ? $file->size : bitcache_get(file_get_hash($file->uri))->size;
-    $file->type = isset($file->type) ? $file->type : bitcache_get(file_get_hash($file->uri))->type;
+    $file->size = isset($file->size) ? $file->size : bitcache_get_size(file_get_hash($file->uri));
+    $file->type = isset($file->type) ? $file->type : bitcache_get_type(file_get_hash($file->uri));
   }
 
   if (!isset($file->uri)) {
@@ -616,7 +616,7 @@ function file_metadata_extract($filename, $mimetype) {
  *   Structured array pointing to the structored array of metadata information.
  */
 function file_get_metadata($file) {
-  return array($file->uri => file_metadata_extract(bitcache_get(file_get_hash($file))->path, $file->filemime));
+  return array($file->uri => file_metadata_extract(bitcache_get_path(file_get_hash($file), TRUE), $file->filemime));
 }
 
 /**
@@ -1030,9 +1030,9 @@ function file_wrapper_html($node, $handler, $options = array(), $cached = FALSE)
 function file_wrapper_ahah($handler, $hash, $vid) {
   // Access control is not done at menu layer.
   if ($node = file_bitcache_access($hash, $vid)) {
-    $handlers = file_handlers_for((object)array('uri' => 'bitcache://'. $hash));
+    $handlers = file_handlers_for((object)array('uri' => bitcache_uri($hash)));
     if (empty($handlers[$handler]))
-      $handlers[$handler]['uri'] = 'bitcache://'. $hash;
+      $handlers[$handler]['uri'] = bitcache_uri($hash);
 
     return file_wrapper($handler, $handlers[$handler]['uri'], is_object($node) ? $node : '', array(), 'js');
   }
@@ -1106,7 +1106,7 @@ function file_bitcache($op, $id, $stream = NULL) {
         $counter = $_GET['op'] .'s';
         db_query("UPDATE {file_nodes} f SET $counter = $counter + 1 WHERE f.vid = %d", $node->vid);
       }
-      $extensions = file_mime_extensions_for(rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'), NULL));
+      $extensions = file_mime_extensions_for(rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:format'), NULL));
       foreach ($extensions as $extension) {
         if (preg_match('/\.'. $extension .'$/', drupal_strtolower($node->title))) {
           $extension_correct = TRUE;
@@ -1115,12 +1115,12 @@ function file_bitcache($op, $id, $stream = NULL) {
       }
       $ext = !empty($extensions) && !isset($extension_correct) ? '.'. reset($extensions) : '';
       $title = isset($node->title) ? $node->title : 'file';
-      $mime = rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:format'));
+      $mime = rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:format'));
       // http://www.adobe.com/devnet/flashplayer/articles/fplayer10_security_changes_02.html#head32
       $headers = ($mime == 'application/x-shockwave-flash') ? array() : array('Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"');
       return array_merge($headers, array(
         'Content-Type' => $mime,
-        'Content-Length' => rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:extent'))->value,
+        'Content-Length' => rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:extent'))->value,
         'Last-Modified' => gmdate('D, d M Y H:i:s', isset($node->changed) ? $node->changed : time()) .' GMT',
       ));
       break;
@@ -1137,7 +1137,7 @@ function file_bitcache($op, $id, $stream = NULL) {
  *   A file hash.
  */
 function file_get_hash($file) {
-  return is_object($file) ? drupal_substr($file->uri, -FILE_HASH_SIZE) : drupal_substr($file, -FILE_HASH_SIZE);
+  return is_object($file) ? bitcache_uri_to_id($file->uri) : bitcache_uri_to_id($file);
 }
 
 /**
@@ -1152,11 +1152,11 @@ function file_get_hash($file) {
  *   A node object or FALSE if access is not granted. NULL means that file framework
  *     does not make the access decision and passes it back to the bitcache.
  */
-function file_bitcache_access($id, $vid) {
-  $uri = 'bitcache://'. $id;
-  $parent_uri = rdf_value('bitcache://'. $id, rdf_qname_to_uri('dc:source'));
+function file_bitcache_access($id, $vid = NULL) {
+  $uri = bitcache_uri($id);
+  $parent_uri = rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:source'));
 
-  if (isset($vid)) {
+  if (!empty($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
     if (!is_object($row))
       $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $parent_uri, $vid));
@@ -1310,7 +1310,7 @@ function file_get_image($file, $handler, $dimensions = array(0, 0)) {
     if ($width > 0 && $width < $dimensions[0] && $height > 0 && $height < $dimensions[1])
       $image = file_get_hash($file->uri);
   }
-  return isset($image) ? '<img width="'. $width .'" height="'. $height .'" src="'. url('bitcache/'. $image, array('query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
+  return isset($image) ? '<img width="'. $width .'" height="'. $height .'" src="'. bitcache_resolve_id($image, array('absolute' => FALSE, 'query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
 }
 
 /**

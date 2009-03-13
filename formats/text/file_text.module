@@ -221,8 +221,7 @@ function file_text_code_render($uri, $options = array()) {
  * Renders options for the text display.
  */
 function _file_text_render_options($uri, $options = array()) {
-  $hash = file_get_hash($uri);
-  $text = bitcache_get_contents($hash);
+  $text = bitcache_get_contents(file_get_hash($uri));
   if (FILE_TEXT_PREVIEW_LINES > 0) {
     $text = explode("\n", $text);
     $lines = count($text);
@@ -236,6 +235,6 @@ function _file_text_render_options($uri, $options = array()) {
 
   }
 
-  return array_merge($options, compact('hash', 'text', 'append'));
+  return array_merge($options, compact('uri', 'text', 'append'));
 }
 

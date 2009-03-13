@@ -33,7 +33,7 @@ function theme_file_text_text_render($options = array()) {
 function theme_file_text_code_render($options = array()) {
   extract($options, EXTR_SKIP);
 
-  //return '<div class="code" style="width:580px; height:350px; overflow:auto;">'. utf8_encode($text) .'</div>';
-  return '<iframe src="'. url('bitcache/'. $hash, array('query' => array('vid' => $vid, 'disposition' => 'inline'))) .'" width="580px" height="350px"><i/iframe>';
+  $src = bitcache_resolve_uri($uri, array('absolute' => FALSE, 'query' => array_merge(!empty($vid) ? array('vid' => $vid) : array(), array('disposition' => 'inline'))));
+  return '<iframe src="'. $src .'" width="580px" height="350px"></iframe>';
 }
 

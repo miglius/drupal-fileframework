@@ -104,7 +104,7 @@ function file_serve($node, $vid, $disposition = 'attachment') {
     drupal_not_found();
     return;
   }
-  $href = bitcache_resolve_uri('bitcache://'. file_get_hash($node->file));
+  $href = bitcache_resolve_uri($node->file->uri);
   $query = array('vid' => isset($vid) ? $vid : $node->vid, 'disposition' => $disposition, 'op' => ($disposition == 'attachment') ? 'download' : 'view');
   drupal_goto($href, $query);
 }
@@ -126,7 +126,7 @@ function file_serve($node, $vid, $disposition = 'attachment') {
 function file_metadata($uri, $nid) {
 
   $access = FALSE;
-  $uri = 'bitcache://'. $uri;
+  $uri = bitcache_uri($uri);
   $parent_uri = rdf_value($uri, rdf_qname_to_uri('dc:source'));
 
   $files = array_merge(

@@ -282,9 +282,9 @@ function file_audio_rdf_namespaces() {
  * Renders options for the audio display.
  */
 function _file_audio_render_options($uri, $options = array()) {
-  $node = node_load($options['nid'], $options['vid']);
-  $src = $node->nid .'/'. $node->vid .'/'. file_get_hash($uri);
-  $title = $node->title;
+  $node = !empty($options['vid']) ? node_load($options['nid'], $options['vid']) : NULL;
+  $src = file_get_hash($uri) . (is_object($node) ? ('/'. $node->nid .'/'. $node->vid) : '');
+  $title = isset($node->title) ? $node->title : '';
 
   $options = array_merge(array('class' => 'file-audio'), $options);
   return array_merge($options, compact('src', 'title'));

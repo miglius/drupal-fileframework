@@ -19,18 +19,20 @@
  * @param $hash
  *   A bitstram hash.
  */
-function file_audio_xspf($nid, $vid, $hash) {
+function file_audio_xspf($hash, $nid, $vid) {
   if (is_numeric($nid) && is_numeric($vid)) {
     $node = node_load($nid, $vid);
     if (!node_access('view', $node))
       exit;
   }
   else {
-    exit;
+    $node = file_bitcache_access($hash);
+    if (!is_object($node))
+      exit;
   }
 
   $file = $node->file;
-  $uri = 'bitcache://'. $hash;
+  $uri = bitcache_uri($hash);
 
   // Check if the requested uri is a derivatie of the original one.
   if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri)) {
@@ -40,12 +42,13 @@ function file_audio_xspf($nid, $vid, $hash) {
   }
 
   $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+  $src = bitcache_resolve_id($hash, array('absolute' => TRUE, 'query' => !empty($vid) ? array('vid' => $vid) : array()));
 
   $output = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
   $output .= '<playlist version="1" xmlns="http://xspf.org/ns/0/">'."\n";
   $output .= '  <trackList>'."\n";
   $output .= '    <track>'."\n";
-  $output .= '      <location>'. url('bitcache/'. $hash, array('query' => array('vid' => $vid), 'absolute' => TRUE)) .'</location>'."\n";
+  $output .= '      <location>'. $src .'</location>'."\n";
   if (isset($item[$uri][rdf_qname_to_uri('foaf:made')]) && $artist = $item[$uri][rdf_qname_to_uri('foaf:made')][0])
     $output .= '      <creator>'. $artist .'</creator>'."\n";
   if (isset($item[$uri][rdf_qname_to_uri('wordnet:album')]) && $album = $item[$uri][rdf_qname_to_uri('wordnet:album')][0])
