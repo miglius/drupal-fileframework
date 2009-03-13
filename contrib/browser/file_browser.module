@@ -255,11 +255,11 @@ function _file_browser_enforce_unfiled(&$node) {
   }
 
   foreach ($node->og_groups as $gid) {
-    foreach (og_vocab_load_vocabularies($gid) as $vid => $vocabulary) {
+    foreach (og_vocab_get_vocabularies($gid) as $vid => $vocabulary) {
       if (in_array('file', $vocabulary->nodes)) {
         if ($tid = _file_browser_get_unfiled_term($vid)) {
           // Selecting the <none> entry should have the same effect as not selecting any entry.
-          if (is_array($node->taxonomy[$vid]))
+          if (isset($node->taxonomy[$vid]))
             unset($node->taxonomy[$vid][""]);
 
           // If no categories were selected, associate the node with unfiled category:
