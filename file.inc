@@ -1154,7 +1154,7 @@ function file_get_hash($file) {
  */
 function file_bitcache_access($id, $vid = NULL) {
   $uri = bitcache_uri($id);
-  $parent_uri = rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:source'));
+  $parent_uri = rdf_value($uri, rdf_qname_to_uri('dc:source'));
 
   if (!empty($vid)) {
     $row = db_fetch_object(db_query("SELECT f.nid, f.vid FROM {file_nodes} f WHERE f.uri = '%s' AND f.vid = %d", $uri, $vid));
