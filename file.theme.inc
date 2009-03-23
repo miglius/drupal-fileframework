@@ -40,7 +40,7 @@ function theme_file_admin_handler_settings($form) {
       $element['weight']['#attributes']['class'] = "handler-weight";
       $row[] = array('data' => drupal_render($element['enabled']), 'class' => 'checkbox');
       $row[] = drupal_render($element['weight']);
-      $rows[] = array('data' => $row, 'class' => 'draggable'. (isset($element['enabled']['#default_value']) ? ' menu-enabled' : ' menu-disabled'));
+      $rows[] = array('data' => $row, 'class' => 'draggable'. ($element['enabled']['#default_value'] ? ' menu-enabled' : ' menu-disabled'));
       unset($form['handler'][$handler]);
     }
   }
