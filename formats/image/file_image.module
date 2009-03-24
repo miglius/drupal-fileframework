@@ -76,7 +76,7 @@ function file_image_menu() {
 function file_image_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'insert':
-      if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && isset($node->locations) && is_array($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
+      if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && isset($node->locations) && isset($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
         $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL));
         $namespaces = rdf_get_namespaces();
         if (($lat = isset($data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0] : NULL) && ($long = isset($data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0] : NULL)) {
