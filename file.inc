@@ -1215,12 +1215,17 @@ function file_get_validators() {
  *   Size in bytes.
  */
 function file_get_files_size($uid, $converted = 1) {
+  if (!$converted) {
+    $row = db_fetch_object(db_query('SELECT SUM(fn.size) AS size FROM {file_nodes} fn INNER JOIN {node} n ON fn.nid = n.nid WHERE n.uid = %d', $uid));
+    return !empty($row->size) ? $row->size : 0;
+  }
+
   $size = 0;
   $result = db_query('SELECT fn.size, fn.uri FROM {file_nodes} fn INNER JOIN {node} n ON fn.nid = n.nid WHERE n.uid = %d', $uid);
   while ($row = db_fetch_object($result)) {
     $size += $row->size;
 
-    if ($converted == 1 && ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $row->uri)))) {
+    if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $row->uri))) {
       foreach ($generated as $uri => $data) {
         $size += rdf_value($uri, rdf_qname_to_uri('dc:extent'))->value;
       }
