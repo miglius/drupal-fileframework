@@ -96,7 +96,7 @@ function file_requirements($phase) {
     $status['xspf_player'] = array(
       'title' => $t('XSPF player'),
       'value' => $xspf_player ? $t('Installed') : $t('Not installed'),
-      'description' => $xspf_player ? '' : $t('<a href="@xspf_player">XSPF player</a> is not available. It is recommended that you install this player in order to play audio files in the browser. To install, <a href="@download">download</a> the latest version of the player and unzip it to %path under the Drupal directory.', array('@xspf_player' => 'http://musicplayer.sourceforge.net/', '@download' => 'http://musicplayer.sourceforge.net/#download', '%path' => $xspf_player_path .'/')),
+      'description' => $xspf_player ? '' : $t('<a href="@xspf_player">XSPF player</a> is not available. It is recommended that you install this player in order to play audio files in the browser. To install, <a href="@download">download</a> the latest Slim version of the player and unzip it to %path under the Drupal directory.', array('@xspf_player' => 'http://musicplayer.sourceforge.net/', '@download' => 'http://musicplayer.sourceforge.net/#download', '%path' => $xspf_player_path .'/')),
       'severity' => $xspf_player ? REQUIREMENT_OK : REQUIREMENT_WARNING,
     );
   }
