@@ -33,7 +33,7 @@ function file_document_mm($nid, $vid, $hash) {
   $uri = bitcache_uri($hash);
 
   // Check if the requested uri is a derivatie of the original one.
-  if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri)) {
+  if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY))) {
     // The URI is not the node iteslf, nor the derivative.
     drupal_access_denied();
     exit;

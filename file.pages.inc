@@ -28,7 +28,7 @@ function file_page_metadata($node) {
   db_query("CREATE TEMPORARY TABLE file_properties (name VARCHAR(255), value VARCHAR(255))");
 
   $info = file_get_metadata_info();
-  $data = rdf_normalize(rdf_query($node->file->uri));
+  $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
   foreach ($data as $subject => $predicates) {
     foreach ($predicates as $predicate => $objects) {
       foreach ($objects as $object) {
@@ -148,7 +148,7 @@ function file_metadata($uri, $nid) {
     }
   }
 
-  if ($access && $rdf = rdf_normalize(rdf_query($uri, NULL, NULL))) {
+  if ($access && $rdf = rdf_normalize(rdf_query($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))) {
     $namespaces = rdf_get_namespaces();
     $info = file_get_metadata_info();
     foreach ($rdf as $subject => $predicates) {

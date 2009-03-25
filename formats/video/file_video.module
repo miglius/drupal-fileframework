@@ -84,8 +84,7 @@ function file_video_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^video\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $playtime = ($playtime = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:playtime_string'))) ? $playtime : NULL;
-      $a = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:playtime_string'));
+      $playtime = ($playtime = rdf_value($node->file->uri, rdf_qname_to_uri('wordnet:playtime_string'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $playtime : NULL;
       if (!empty($playtime)) {
         $links['file_video_playtime'] = array(
           'title' => t('Length @playtime', array('@playtime' => $playtime)),
@@ -466,8 +465,8 @@ function file_video_rdf_namespaces() {
  * Renders options for the video display.
  */
 function _file_video_render_options($uri, $options = array()) {
-  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'))->value;
-  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'))->value;
+  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
+  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
 
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : NULL);
   $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : NULL);
@@ -493,10 +492,10 @@ function _file_video_render_options($uri, $options = array()) {
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE, 'query' => isset($node->vid) ? array('vid' => $node->vid) : array()));
 
   // Thumbnail
-  $source = rdf_value($uri, rdf_qname_to_uri('dc:source'));
-  $derivatives = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), isset($source) ? $source : $uri));
+  $source = rdf_value($uri, rdf_qname_to_uri('dc:source'), NULL, array('repository' => FILE_RDF_REPOSITORY));
+  $derivatives = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), isset($source) ? $source : $uri, array('repository' => FILE_RDF_REPOSITORY)));
   foreach ($derivatives as $derivative => $data) {
-    if (rdf_exists($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image')) {
+    if (rdf_exists($derivative, rdf_qname_to_uri('dc:creator'), 'file_video_flash_image', array('repository' => FILE_RDF_REPOSITORY))) {
       $image = bitcache_resolve_uri($derivative, array('absolute' => FALSE, 'query' => isset($node->vid) ? array('vid' => $node->vid) : array()));
       break;
     }

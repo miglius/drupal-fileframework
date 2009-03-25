@@ -35,13 +35,13 @@ function file_audio_xspf($hash, $nid, $vid) {
   $uri = bitcache_uri($hash);
 
   // Check if the requested uri is a derivatie of the original one.
-  if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri)) {
+  if ($file->uri != $uri && !rdf_exists($uri, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY))) {
     // The URI is not the node iteslf, nor the derivative.
     drupal_access_denied();
     exit;
   }
 
-  $item = rdf_normalize(rdf_query($uri, NULL, NULL));
+  $item = rdf_normalize(rdf_query($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
   $src = bitcache_resolve_id($hash, array('absolute' => TRUE, 'query' => !empty($vid) ? array('vid' => $vid) : array()));
 
   $output = '<?xml version="1.0" encoding="UTF-8"?>'."\n";

@@ -11,7 +11,7 @@
 define('FILE_RESTRICTION_EXTENSIONS_ALLOWED', variable_get('file_restriction_extensions_allowed', 'jpg jpeg gif png txt html doc xls pdf ps ppt pps css bmp zip rar gzip pfx tar tgz odg svg csv xml avi mov mpeg mpg qt wmv mp3'));
 define('FILE_RESTRICTION_SIZE',              variable_get('file_restriction_size', 10));
 define('FILE_RESTRICTION_QUOTA',             variable_get('file_restriction_quota', 100));
-define('FILE_RESTRICTION_QUOTA_GENERATED',   variable_get('file_restriction_quota_generated', 1));
+define('FILE_RESTRICTION_QUOTA_GENERATED',   variable_get('file_restriction_quota_generated', 0));
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks

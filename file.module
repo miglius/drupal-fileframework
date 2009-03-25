@@ -604,9 +604,9 @@ function file_nodeapi(&$node, $op, $teaser, $page) {
           $uri_txt = $file->uri;
         }
         else {
-          if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+          if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
             foreach ($generated as $uri => $data) {
-              if (rdf_value($uri, rdf_qname_to_uri('dc:format')) == 'text/plain') {
+              if (rdf_value($uri, rdf_qname_to_uri('dc:format'), NULL, array('repository' => FILE_RDF_REPOSITORY)) == 'text/plain') {
                 // A plain text preview.
                 $uri_txt = $uri;
                 break;
@@ -742,7 +742,7 @@ function _file_block_properties() {
       $metadata = array();
       $namespaces = rdf_get_namespaces();
       $info = file_get_metadata_info();
-      $data = rdf_normalize(rdf_query($file_node->file->uri));
+      $data = rdf_normalize(rdf_query($file_node->file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
       foreach ($data as $subject => $predicates) {
         foreach ($predicates as $predicate => $objects) {
           foreach ($objects as $object) {

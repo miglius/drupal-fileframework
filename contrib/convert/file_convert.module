@@ -354,7 +354,7 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
  *   TRUE if save was successfull.
  */
 function _file_convert_failure_log($file, $handler) {
-  if (!rdf_exists($file->uri, 'wordnet:failed', $handler))
+  if (!rdf_exists($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY)))
     return rdf_insert($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY));
 
   return TRUE;
@@ -372,12 +372,12 @@ function _file_convert_failure_log($file, $handler) {
  *   TRUE if failure is logged.
  */
 function _file_convert_isnot_needed($file, $handler) {
-  if (rdf_exists($file->uri, 'wordnet:failed', $handler))
+  if (rdf_exists($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY)))
     return TRUE;
 
-  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri))) {
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
     foreach ($generated as $uri => $data) {
-      $preview = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler));
+      $preview = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler, array('repository' => FILE_RDF_REPOSITORY)));
       if (!empty($preview))
         return TRUE;
     }

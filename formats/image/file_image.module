@@ -77,7 +77,7 @@ function file_image_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'insert':
       if (module_exists('location') && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type) && isset($node->locations) && isset($node->locations[0]['locpick']) && empty($node->locations[0]['locpick']['user_latitude']) && empty($node->locations[0]['locpick']['user_longitude'])) {
-        $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL));
+        $data = rdf_normalize(rdf_query($node->file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
         $namespaces = rdf_get_namespaces();
         if (($lat = isset($data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:lat', $namespaces, FALSE)][0] : NULL) && ($long = isset($data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)]) ? $data[$node->file->uri][rdf_qname_to_uri('geo:long', $namespaces, FALSE)][0] : NULL)) {
           $node->locations[0]['locpick']['user_latitude'] = $lat;
@@ -95,8 +95,8 @@ function file_image_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file) && preg_match('/^image\//', $node->file->type)) {
     if (!empty($node->file->uri)) {
-      $width = ($width = rdf_value($node->file->uri, rdf_qname_to_uri('exif:width'))) ? $width->value : NULL;
-      $height = ($height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'))) ? $height->value : NULL;
+      $width = ($width = rdf_value($node->file->uri, rdf_qname_to_uri('exif:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $width->value : NULL;
+      $height = ($height = rdf_value($node->file->uri, rdf_qname_to_uri('exif:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $height->value : NULL;
       if (!empty($width) && !empty($height)) {
         $links['file_image_resolution'] = array(
           'title' => t('@resolution pixels', array('@resolution' => $width .'x'. $height)),
@@ -474,8 +474,8 @@ function _file_image_allowed_attributes() {
  * Renders options for the image display.
  */
 function _file_image_render_options($uri, $options = array()) {
-  $width = rdf_value($uri, rdf_qname_to_uri('exif:width'))->value;
-  $height = rdf_value($uri, rdf_qname_to_uri('exif:height'))->value;
+  $width = rdf_value($uri, rdf_qname_to_uri('exif:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
+  $height = rdf_value($uri, rdf_qname_to_uri('exif:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
 
   list($max_width, $max_height) = explode('x', FILE_IMAGE_PREVIEW_RESOLUTION);
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : $max_width);
