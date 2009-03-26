@@ -159,7 +159,7 @@ function file_video_mime_types() {
     'video/x-flv' => array(
       'name' => t('Flash FLV video'),
       'handlers' => array('file_video_flash_flv'),
-      'extensions' => array('flv'), // this is not defined in mime.types
+      'extensions' => array('flv'),
       'icon' => 'flash.gif',
     ),
     'application/x-shockwave-flash' => array(
@@ -170,11 +170,14 @@ function file_video_mime_types() {
     'application/vnd.rn-realmedia' => array(
       'name' => t('RealMedia video'),
       'handlers' => array('file_video_realmedia'),
+      'extensions' => array('rm'),
       'icon' => 'video.gif',
     ),
     'video/vnd.rn-realvideo' => array(
       'name' => t('RealMedia video'),
       'handlers' => array('file_video_realmedia'),
+      'extensions' => array('rv'),
+      'icon' => 'video.gif',
     ),
   );
 }

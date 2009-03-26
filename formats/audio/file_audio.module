@@ -85,11 +85,6 @@ function file_audio_mime_types() {
       'handlers' => array('file_audio_mp3'),
       'extensions' => array('mp3'), // to use as a first extension instead of mpga as defined in mime.type
     ),
-    'audio/mpg' => array(
-      'name' => t('MPEG-audio Layer 3 file'),
-      'handlers' => array('file_audio_mp3'),
-      'extensions' => array('mp3'), // the extension is not defined in mime.type
-    ),
     'audio/x-aiff' => array(
       'name' => t('AIFF audio file'),
     ),
@@ -98,12 +93,14 @@ function file_audio_mime_types() {
     ),
     'audio/x-pn-realaudio-plugin' => array(
       'name' => t('RealAudio file'),
+      'extensions' => array('rpm'),
     ),
     'audio/x-realaudio' => array(
       'name' => t('RealAudio file'),
     ),
     'audio/vnd.rn-realaudio' => array(
       'name' => t('RealAudio file'),
+      'extensions' => array('ra', 'ram'),
     ),
     'audio/x-wav' => array(
       'name' => t('Wave file'),

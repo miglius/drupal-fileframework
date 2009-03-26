@@ -194,9 +194,6 @@ function file_image_mime_types() {
       'name' => t('Icon file'),
       'handlers' => array('file_image_image'),
     ),
-    'image/bmp' => array(
-      'name' => t('Bitmap image'),
-    ),
     'image/x-ms-bmp' => array(
       'name' => t('Bitmap image'),
     ),

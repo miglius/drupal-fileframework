@@ -26,7 +26,6 @@ define('FILE_CRON_LIMIT_SIZE',               (int)variable_get('file_cron_limit_
 define('FILE_CRON_LIMIT_TOTAL',              (int)variable_get('file_cron_limit_total', 0));
 define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetection', 0));
 define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetection_conditions', 'application/octet-stream'));
-define('FILE_MIME_REGISTRY_PATH',            variable_get('file_mime_registry_path', ''));
 define('FILE_OG_BROWSER_TAB',                variable_get('file_og_browser_tab', 1));
 define('FILE_OG_GALLERY_TAB',                variable_get('file_og_gallery_tab', 1));
 
@@ -45,7 +44,7 @@ function file_help($path, $arg) {
     case 'admin/settings/file/handler':
       return '<p>'. t('Select which file handlers are enabled. Enabled file handlers will process and display files with corresponding MIME types. If a file can be displayed by more then one handler, then handlers\' order will be preserved while displaying the file. "MIME types" shows which MIME types are processed by the hanler directly. However, the file can be first converted to other MIME type first, and then displayed by that type handler. One MIME type can have several handlers.') .'</p>';
     case 'admin/settings/file/mime':
-      return '<p>'. t('MIME types supported by the file framework and the web server.') .'</p>';
+      return '<p>'. t('These settings govern how a MIME type is assigned for a file. Uploaded file carries on the MIME type sent by the browser uploading the file. Some browsers do not send the MIME type or set it to be an \'application/octet-stream\'. If the MIME type for a uploaded file is not known or if it is \'application/octet-stream\', the system uses the table below to find the correct MIME type based on the file extension. If several MIME types claim the same file extension, a first mapping in the table wins. The table rows can be overwritten in the "Custom MIME types" section. The "Additional MIME detection" section allows to perform additional MIME type detection on the server side judging from the contents of the file rather than the file extension or information sent by the browser.') .'</p>';
   }
 }
 
@@ -141,7 +140,8 @@ function file_menu() {
       'title' => 'MIME registry',
       'type' => MENU_LOCAL_TASK,
       'description' => 'Manage MIME type mappings.',
-      'page callback' => 'file_admin_mime',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_admin_mime'),
       'access arguments' => array('administer site configuration'),
       'weight' => 2,
       'file' => 'file.admin.inc',

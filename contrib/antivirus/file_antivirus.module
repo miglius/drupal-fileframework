@@ -44,6 +44,9 @@ function file_antivirus_file_validate($file) {
     if ($result = file_antivirus_scan_clamav($file)) {
       return array($result);
     }
+    else if (isset($file->scanned) && $file->scanned === FALSE) {
+      drupal_set_message(t("Antivirus software is not running on the system. Please contact site administrator."), 'error');
+    }
     else {
       drupal_set_message(t("File %file was scanned by the antivirus software. No threats were found.", array('%file' => $file->filename)), 'notice');
     }
@@ -64,13 +67,12 @@ function file_antivirus_scan_clamav($file) {
     // Command line.
     $clamav_path = FILE_ANTIVIRUS_CLAMAV_PATH ? FILE_ANTIVIRUS_CLAMAV_PATH : exec('which clamscan');
     if (!file_exists($clamav_path) || !_file_antivirus_check_clamav(array('path' => $clamav_path))) {
+      $file->scanned = FALSE;
       watchdog('file_antivirus', 'The \'clamscan\' utility is not installed at %path.', array('%path' => $clamav_path), WATCHDOG_ERROR);
-      if (!FILE_ANTIVIRUS_CLAMAV_ALLOW) {
+      if (!FILE_ANTIVIRUS_CLAMAV_ALLOW)
         return t('Antivirus utility is not found on the system. Please contact site administrator.');
-      }
-      else{
+      else
         return NULL;
-      }
     }
     if (exec(escapeshellcmd($clamav_path) .' '. escapeshellarg($file->filepath), $output)) {
       if (preg_match('/FOUND$/', $output[0])) {
@@ -86,13 +88,12 @@ function file_antivirus_scan_clamav($file) {
   else {
     // Daemon.
     if (!_file_antivirus_check_clamav(array('host' => FILE_ANTIVIRUS_CLAMAV_HOST, 'port' => FILE_ANTIVIRUS_CLAMAV_PORT))) {
+      $file->scanned = FALSE;
       watchdog('file_antivirus', 'The \'clamav-daemon\' is not running at %host host %port port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT), WATCHDOG_ERROR);
-      if (!FILE_ANTIVIRUS_CLAMAV_ALLOW) {
+      if (!FILE_ANTIVIRUS_CLAMAV_ALLOW)
         return t('Antivirus daemon is not running on the system. Please contact site administrator.');
-      }
-      else{
+      else
         return NULL;
-      }
     }
     $handler = @fsockopen(FILE_ANTIVIRUS_CLAMAV_HOST, FILE_ANTIVIRUS_CLAMAV_PORT);
     if (!$handler) {

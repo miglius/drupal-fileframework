@@ -249,35 +249,6 @@ function file_node_delete_node($file) {
 // File MIME type detection
 
 /**
- * Searches for a MIME registry file in a predefined locations.
- *
- * @param $file
- *   Filename of the MIME registry file.
- *
- * @return
- *   A full path to the registry file if it is found or NULL otherwise.
- */
-function file_mime_registry_path($file = 'mime.types') {
-  static $path = NULL;
-  if (!$path) {
-    $locations = FILE_MIME_REGISTRY_PATH ? array(FILE_MIME_REGISTRY_PATH) : array(
-      dirname(__FILE__),         // Drupal module directory
-      '/opt/local/apache2/conf', // Apache 2.x on OS X w/ MacPorts
-      '/etc/apache2',            // Apache 2.x
-      '/etc/apache',             // Apache 1.x
-      '/etc/httpd',              // Apache 1.x
-      '/etc',                    // Debian/Ubuntu/etc
-    );
-    foreach ($locations as $location) {
-      $filename = $location .'/'. $file;
-      if (file_exists($filename) && is_readable($filename))
-        return $path = $filename;
-    }
-  }
-  return $path;
-}
-
-/**
  * This function executes all hook_mime_types() hooks in the format modules
  * and creates an array of all supported MIME types pointing tho the array of
  * module name, description and icon file.
@@ -358,30 +329,30 @@ function file_mime_icon_for($type, $description = NULL) {
 }
 
 /**
- * Returns a MIME extensions registered with the web server.
+ * Returns a MIME extensions registered with the systen.
+ *
+ * $custom
+ *   Should a custom MIME additions be included?
  *
  * @return
  *   A structured array of the MIME types pointing to the array of extensions.
  */
-function file_mime_extensions() {
+function file_mime_extensions($custom = 1) {
   static $registry = NULL;
   if (!$registry) {
     $registry = array();
-    if (($typemap = file_mime_registry_path()) && ($file = fopen($typemap, 'r'))) {
-      while (!feof($file)) {
-        if (($line = trim(preg_replace('/\s+/', ' ', fgets($file, 1024)))) && $line[0] != '#') {
-          $extensions = explode(' ', $line);
-          $type = array_shift($extensions);
-          if (count($extensions) > 0)
-            $registry[$type] = $extensions;
-        }
-      }
-      fclose($file);
-    }
+    module_load_include('inc', 'file', 'file.mime');
+    $registry = array_map(create_function('$a', 'return explode(\'|\', $a);'), array_flip(file_drupal_mime_types()));
+
     foreach (file_get_mime_types() as $type => $data) {
       if (!empty($data['extensions']))
         $registry[$type] = isset($registry[$type]) ? array_unique(array_merge($data['extensions'], $registry[$type])) : $data['extensions'];
     }
+
+    // Placing custom variables at the begining of the array.
+    $registry = array_merge(variable_get('file_mime_types', array()), array_merge($registry, variable_get('file_mime_types', array())));
+    //foreach (variable_get('file_mime_types', array()) as $type => $extensions)
+      //$registry[$type] = $extensions;
   }
   return $registry;
 }

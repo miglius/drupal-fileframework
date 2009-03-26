@@ -99,29 +99,6 @@ function file_admin_settings() {
     '#description'   => t('The cron job will inspect only chosen number of files per run. Set it to zero to make it unlimited.'),
   );
 
-  // MIME type autodetection
-  $form['mime'] = array('#type' => 'fieldset', '#title' => t('MIME types'), '#collapsible' => TRUE, '#collapsed' => FALSE);
-  $form['mime']['file_mime_autodetection'] = array(
-    '#type'          => 'radios',
-    '#title'         => t('Server-side MIME type autodetection after upload'),
-    '#options'       => array(t('Disabled'), t('Enabled'), t('Conditional')),
-    '#default_value' => FILE_MIME_AUTODETECTION,
-    '#description'   => t('Whether to always attempt MIME type autodetection on the server side for any uploaded files, regardless of whether the client supplied MIME type information or not. Your choice here depends on how well-setup your server is for proper MIME detection and how much you trust your users\' web browsers to report correct MIME types. Unless you are very sure of what you are doing, you are advised to leave this disabled, which corresponds with Drupal\'s default behavior.'),
-  );
-  $form['mime']['file_mime_autodetection_conditions'] = array(
-    '#type'          => 'textarea',
-    '#title'         => t('MIME autodetection conditions'),
-    '#default_value' => FILE_MIME_AUTODETECTION_CONDITIONS,
-    '#rows'          => 3,
-    '#description'   => t('If "Server-side MIME type autodetection after upload" is set to "Conditional", please specify for which uploaded files MIME types or file extensions the autodetection should be performed on the server side. One MIME type or file extension without leading dot per line.'),
-  );
-  $form['mime']['file_mime_registry_path'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Path to the server\'s MIME type definitions \'mime.types\' file'),
-    '#default_value' => FILE_MIME_REGISTRY_PATH,
-    '#description'   => t('The module will try to locate the MIME type definitions in the default locations, however if your web server is installed in the custom location, you should give a path to the \'mime.types\' file without a trailing slash.'),
-  );
-
   // OG integration.
   if (module_exists('og_vocab')) {
     $form['og'] = array('#type' => 'fieldset', '#title' => t('OG integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -183,11 +160,6 @@ function file_admin_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      $mime_path = $values['file_mime_registry_path'];
-      $mime_file = $mime_path .'/mime.types';
-      if (!empty($mime_path) && (!file_exists($mime_file) || !is_readable($mime_file))) {
-        form_set_error('file_file_mime_registry_path', t('A file %file does not exists or is not readable by the web server.', array('%file' => $mime_file)));
-      }
       if (!is_numeric($values['file_cron_limit_total'])) {
         form_set_error('file_cron_limit_total', t('A total number should be numeric.'));
       }
@@ -215,9 +187,6 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_set('file_cron', $values['file_cron']);
       variable_set('file_cron_limit_size', $values['file_cron_limit_size']);
       variable_set('file_cron_limit_total', $values['file_cron_limit_total']);
-      variable_set('file_mime_autodetection', $values['file_mime_autodetection']);
-      variable_set('file_mime_autodetection_conditions', $values['file_mime_autodetection_conditions']);
-      variable_set('file_mime_registry_path', $values['file_mime_registry_path']);
       variable_set('file_og_browser_tab', $values['file_og_browser_tab']);
       variable_set('file_og_gallery_tab', $values['file_og_gallery_tab']);
       drupal_set_message(t('The configuration options have been saved.'));
@@ -235,9 +204,6 @@ function file_admin_settings_submit($form, &$form_state) {
       variable_del('file_cron');
       variable_del('file_cron_limit_size');
       variable_del('file_cron_limit_total');
-      variable_del('file_mime_autodetection');
-      variable_del('file_mime_autodetection_conditions');
-      variable_del('file_mime_registry_path');
       variable_del('file_og_browser_tab');
       variable_del('file_og_gallery_tab');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
@@ -364,20 +330,121 @@ function file_admin_handler_settings_submit($form, &$form_state) {
 }
 
 /**
- * Implements the registered MIMEs page.
+ * Implements the MIME settings page.
+ *
+ * @return
+ *   The form structure.
+ */
+function file_admin_mime() {
+  // MIME type autodetection
+  $form['autodetection'] = array('#type' => 'fieldset', '#title' => t('Additional MIME detection'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['autodetection']['file_mime_autodetection'] = array(
+    '#type'          => 'radios',
+    '#title'         => t('Server-side MIME type autodetection after upload'),
+    '#options'       => array(t('Disabled'), t('Enabled'), t('Conditional')),
+    '#default_value' => FILE_MIME_AUTODETECTION,
+    '#description'   => t('Whether to always attempt MIME type autodetection on the server side for any uploaded file from the contents of the file, regardless of whether the client supplied MIME type information or the MIME type can be extracted from the file extension using the table below. The MIME type extraction will be done using \'fileinfo \' PHP extension or \'file\' unix utility whichever is available on the server. Your choice here depends on how well-setup your server is for proper MIME detection and how much you trust your users\' web browsers to report correct MIME types. Unless you are very sure of what you are doing, you are advised to leave this disabled, which corresponds with Drupal\'s default behavior.'),
+  );
+  $form['autodetection']['file_mime_autodetection_conditions'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('MIME autodetection conditions'),
+    '#default_value' => FILE_MIME_AUTODETECTION_CONDITIONS,
+    '#rows'          => 3,
+    '#description'   => t('If "Server-side MIME type autodetection after upload" is set to "Conditional", please specify for which uploaded files MIME types or file extensions the autodetection should be performed on the server side. One MIME type or file extension without leading dot per line.'),
+  );
+
+  // MIME types
+  $form['mime'] = array('#type' => 'fieldset', '#title' => t('MIME types'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $file_mime_types = '';
+  foreach (variable_get('file_mime_types', array()) as $type => $extensions)
+    $file_mime_types .= $type .'|'. implode('|', $extensions) ."\n";
+  $form['mime']['file_mime_types'] = array(
+    '#type'          => 'textarea',
+    '#title'         => t('Custom MIME types'),
+    '#default_value' => $file_mime_types,
+    '#rows'          => 5,
+    '#description'   => t('Enter additional MIME type mappings to the table bellow or override the default ones, one mapping per line. A custom mappings will appear at the top of the table and will be compared first when detecting a MIME type from the file extension. A line should contain a MIME type, vertical bar and custom number of file extensions separated by vertical bars as in the following example:<br /><code>application/custom|cst|cs2|cs3</code>'),
+  );
+
+  $form['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Save configuration'),
+  );
+  $form['reset'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Reset to defaults'),
+  );
+
+  $form['list']['#value'] = file_admin_mime_list();
+
+  return $form;
+}
+
+/**
+ * validate hook for the MIME settings form.
+ */
+function file_admin_mime_validate($form, &$form_state) {
+  $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
+  switch ($op) {
+    case t('Save configuration'):
+      $form_state['file_mime_types'] = array();
+      $mime_types_syntax = TRUE;
+      $registry = file_mime_extensions(FALSE);
+      foreach ((trim($values['file_mime_types']) ? explode("\n", drupal_strtolower(trim($values['file_mime_types']))) : array()) as $line) {
+        if (count($data = explode('|', trim($line))) > 1) {
+          if (!preg_match('/.+\/.+/', ($type = trim(array_shift($data)))) || count($extensions = array_values(array_unique(array_filter($data)))) == 0)
+            $mime_types_syntax = FALSE;
+          else
+            $form_state['file_mime_types'] += array($type => $extensions);
+        }
+        else
+          $mime_types_syntax = FALSE;
+      }
+      if (!$mime_types_syntax)
+        form_set_error('file_mime_types', t('Bad MIME mapping syntax.'));
+      break;
+  }
+}
+
+/**
+ * Submit hook for the MIME settings form.
+ */
+function file_admin_mime_submit($form, &$form_state) {
+  $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
+  switch ($op) {
+    case t('Save configuration'):
+      variable_set('file_mime_autodetection', $values['file_mime_autodetection']);
+      variable_set('file_mime_autodetection_conditions', $values['file_mime_autodetection_conditions']);
+      variable_set('file_mime_types', $form_state['file_mime_types']);
+      break;
+    case t('Reset to defaults'):
+      variable_del('file_mime_autodetection');
+      variable_del('file_mime_autodetection_conditions');
+      variable_del('file_mime_types');
+      break;
+  }
+}
+
+/**
+ * Implements the registered MIMEs list page.
  *
  * @return
  *   The themed HTML page.
  */
-function file_admin_mime() {
+function file_admin_mime_list() {
   $head = array(t('Type'), t('Extensions'), t('Description'), t('Module'));
   $rows = array();
-  foreach (file_get_mime_types() as $type => $info) {
-    $mime_extensions = file_mime_extensions_for($type);
-    $extension = !empty($mime_extensions) ? implode(', ', file_mime_extensions_for($type)) : '';
-    $rows[] = array($type, $extension, is_array($info['name']) ? reset($info['name']) : $info['name'], is_array($info['module']) ? implode(', ', $info['module']) : $info['module']);
+  foreach (file_mime_extensions() as $type => $extensions) {
+    $mime_types = file_get_mime_types();
+    $rows[] = array(
+      $type,
+      implode(', ', $extensions),
+      isset($mime_types[$type]) ? (is_array($mime_types[$type]['name']) ? reset($mime_types[$type]['name']) : $mime_types[$type]['name']) : '',
+      isset($mime_types[$type]) ? (is_array($mime_types[$type]['module']) ? implode(', ', $mime_types[$type]['module']) : $mime_types[$type]['module']) : '',
+    );
   }
-  sort($rows);
 
   if (empty($rows)) {
     $rows[] = array(array('data' => t('No MIME types registered.'), 'colspan' => '4'));

@@ -90,11 +90,7 @@ function file_text_mime_types() {
     'text/sgml' => array(
       'name' => t('SGML document'),
       'handlers' => array('file_text_text'),
-    ),
-    'text/xml' => array(
-      'name' => t('XML document'),
-      'handlers' => array('file_text_text'),
-      'icon' => 'xml.gif',
+      'extensions' => array('sgml'),
     ),
     'application/xml' => array(
       'name' => t('XML document'),
@@ -113,7 +109,7 @@ function file_text_mime_types() {
       'name' => t('CSV text document'),
       'handlers' => array('file_text_text'),
     ),
-    'text/x-c++' => array(
+    'text/x-c++hdr' => array(
       'name' => t('C++ document'),
       'handlers' => array('file_text_text'),
     ),

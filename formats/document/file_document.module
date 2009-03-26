@@ -60,6 +60,7 @@ function file_document_mime_types() {
   return array(
     'text/rtf' => array(
       'name' => t('Rich text document'),
+      'extensions' => array('rtf'),
       'icon' => 'rtf.gif',
     ),
     'application/rtf' => array(
@@ -72,6 +73,7 @@ function file_document_mime_types() {
     ),
     'text/vnd.ms-word' => array(
       'name' => t('Word document'),
+      'extensions' => array('doc'),
       'icon' => 'word.gif',
     ),
     'application/msword' => array(

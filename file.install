@@ -49,10 +49,10 @@ function file_uninstall() {
   variable_del('file_cron_limit_size');
   variable_del('file_cron_limit_total');
   variable_del('file_cron_last_nid');
+  variable_del('file_handlers');
   variable_del('file_mime_autodetection');
   variable_del('file_mime_autodetection_conditions');
-  variable_del('file_mime_registry_path');
-  variable_del('file_handlers');
+  variable_del('file_mime_types');
   variable_del('file_og_browser_tab');
   variable_del('file_og_gallery_tab');
 

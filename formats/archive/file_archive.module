@@ -43,6 +43,7 @@ function file_archive_mime_types() {
   return array(
     'application/x-compress' => array(
       'name' => t('Compressed archive'),
+      'extensions' => array('tgz'),
       'icon' => 'zip.gif',
     ),
     'application/x-cpio' => array(
@@ -55,7 +56,7 @@ function file_archive_mime_types() {
     ),
     'application/x-gzip' => array(
       'name' => t('Gzip archive'),
-      'extensions' => array('gzip', 'gz'), // this is not defined in mime.types
+      'extensions' => array('gz', 'gzip'),
       'icon' => 'zip.gif',
     ),
     'application/x-stuffit' => array(
@@ -72,18 +73,22 @@ function file_archive_mime_types() {
     ),
     'application/x-rar-compressed' => array(
       'name' => t('RAR archive'),
+      'extensions' => array('rar'),
       'icon' => 'zip.gif',
     ),
     'application/bzip2' => array(
       'name' => t('Bzip2 archive'),
+      'extensions' => array('bz2'),
       'icon' => 'zip.gif',
     ),
     'application/x-bz2' => array(
       'name' => t('Bzip2 archive'),
+      'extensions' => array('bz2'),
       'icon' => 'zip.gif',
     ),
     'application/x-lzma' => array(
       'name' => t('LZMA archive'),
+      'extensions' => array('lzma'),
       'icon' => 'zip.gif',
     ),
   );
