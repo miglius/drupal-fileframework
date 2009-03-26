@@ -224,12 +224,12 @@ function file_gallery_content($vid, $tids = array(), $filter = NULL, $options = 
   else if (is_numeric($vid)) {
     if (isset($filter_array[0])) {
       if (!FILE_GALLERY_HIDE_EMPTY) {
-        $sql = 'SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name';
-        $sql_count = 'SELECT COUNT(DISTINCT(t.tid)) FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY weight, name';
+        $sql = 'SELECT t.* FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY t.weight, t.name';
+        $sql_count = 'SELECT COUNT(DISTINCT(t.tid)) FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid WHERE t.vid = %d AND h.parent = %d ORDER BY t.weight, t.name';
       }
       else {
-        $sql = 'SELECT DISTINCT(t.tid), t.vid, t.name, t.description, t.weight FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY weight, name';
-        $sql_count = 'SELECT COUNT(DISTINCT(t.tid)) FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY weight, name';
+        $sql = 'SELECT DISTINCT(t.tid), t.vid, t.name, t.description, t.weight FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY t.weight, t.name';
+        $sql_count = 'SELECT COUNT(DISTINCT(t.tid)) FROM {term_data} t INNER JOIN {term_hierarchy} h ON h.tid = t.tid INNER JOIN {term_node} tn ON t.tid = tn.tid INNER JOIN {node} n ON tn.vid = n.vid WHERE t.vid = %d AND h.parent = %d AND n.type = \'file\' ORDER BY t.weight, t.name';
       }
       $result = pager_query(db_rewrite_sql($sql, 't', 'tid'), $pager, 0, db_rewrite_sql($sql_count, 't', 'tid'), $vid, !empty($tids) ? reset($tids) : 0);
       while ($term = db_fetch_object($result)) {
