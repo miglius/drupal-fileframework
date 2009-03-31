@@ -9,44 +9,46 @@
 /**
  * Field handler to present a node attachments.
  */
-class file_views_handler_field_file_attachments_fnid extends views_handler_field_prerender_list {
+class file_views_handler_field_file_attachments_fnid extends views_handler_field {
   function construct() {
     parent::construct();
-    $this->additional_fields['nid'] = array('table' => 'node', 'field' => 'nid');
+    $this->additional_fields['fnid'] = 'fnid';
   }
 
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
-    $form['only_listed'] = array(
-      '#title' => t('Only show "listed" file attachments'),
-      '#type' => 'checkbox',
-      '#default_value' => !empty($this->options['only_listed']),
+    $form['display'] = array(
+      '#title' => t('Display'),
+      '#type' => 'radios',
+      '#default_value' => isset($this->options['display']) ? $this->options['display'] : 0,
+      '#options' => array(0 => t('File'), 1 => t('Thumbnail')),
+    );
+    $form['link_to'] = array(
+      '#title' => t('Link this field'),
+      '#type' => 'select',
+      '#default_value' => isset($this->options['link_to']) ? $this->options['link_to'] : 0,
+      '#options' => array(t('No link'), t('Node'), t('Download')),
+      '#description' => t('A link for the thumbnail display.'),
     );
   }
 
   function query() {
+    $this->ensure_my_table();
     $this->add_additional_fields();
-    $this->field_alias = $this->aliases['nid'];
   }
 
-  function pre_render($values) {
-    $nids = array();
-    $this->items = array();
-
-    $data = array();
-    foreach ($values as $result) {
-      $nids[] = $result->{$this->aliases['nid']};
-    }
-    if (!empty($nids)) {
-      // Support "only listed files" option.
-      $where = '';
-      if (!empty($this->options['only_listed'])) {
-        $where = " AND fa.list <> 0";
-      }
-      $result = db_query("SELECT fa.nid AS pnid, fn.*, n.title AS name FROM {file_attachments} fa LEFT JOIN {file_nodes} fn ON fa.fnid = fn.nid LEFT JOIN {node} n ON fa.fnid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
-      while ($file = db_fetch_object($result)) {
-        $file->name = drupal_strlen($file->name) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($file->name, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $file->name;
-        $this->items[$file->pnid][$file->nid] = theme('file_render', $file);
+  function render($values) {
+    $nid = $values->{$this->aliases['fnid']};
+    $node = node_load(array('nid' => $nid));
+    if (isset($node->file) && ($file = $node->file) && is_object($file)) {
+      $file->name = drupal_strlen($node->title) > FILE_VIEWS_TITLE_LENGTH_SHORT ? drupal_substr($node->title, 0, FILE_VIEWS_TITLE_LENGTH_SHORT - 3) .'...' : $node->title;
+      switch ($this->options['display']) {
+        case 0:
+          return theme('file_render', $file) .'<script type=\'text/javascript\'>$(\'a.file-metadata\').cluetip();</script>';
+        case 1:
+          $thumbnail = file_get_image($file, 'file_image_thumbnail');
+          $thumbnail = $thumbnail ? $thumbnail : t('no thumbnail');
+          return !empty($this->options['link_to']) ? l($thumbnail, $this->options['link_to'] == 1 ? 'node/'. $nid : 'file/'. $nid .'/download', array('html' => TRUE)) : $thumbnail;
       }
     }
   }

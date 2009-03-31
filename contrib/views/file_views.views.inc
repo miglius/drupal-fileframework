@@ -33,13 +33,19 @@ function file_views_views_handlers() {
       'file_views_handler_field_file_nodes_view' => array(
         'parent' => 'views_handler_field_node_link',
       ),
-      'file_views_handler_field_file_nodes_uri' => array(
+      'file_views_handler_field_file_nodes_file' => array(
         'parent' => 'views_handler_field',
       ),
       'file_views_handler_field_file_attachments_fnid' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_attachments_list' => array(
         'parent' => 'views_handler_field_prerender_list',
       ),
-      'file_views_handler_field_file_attachments_nid' => array(
+      'file_views_handler_field_file_attachments_count' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'file_views_handler_field_file_attachments_parents' => array(
         'parent' => 'views_handler_field_prerender_list',
       ),
     ),
@@ -56,13 +62,8 @@ function file_views_views_data() {
   // file_nodes table
 
   $data['file_nodes']['table']['group']  = t('Files');
-
   $data['file_nodes']['table']['join'] = array(
     'node' => array(
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-    'node_revisions' => array(
       'left_field' => 'vid',
       'field' => 'vid',
     ),
@@ -144,36 +145,29 @@ function file_views_views_data() {
     ),
   );
 
-  $data['file_nodes']['uri'] = array(
+  $data['file_nodes']['file'] = array(
     'field' => array(
-      //'title' => t('Thumbnail'),
       'title' => t('File'),
-      //'help' => t('Provide a thumbnail of the file.'),
       'help' => t('Provide a file.'),
-      'handler' => 'file_views_handler_field_file_nodes_uri',
+      'handler' => 'file_views_handler_field_file_nodes_file',
     ),
+
   );
 
   // ----------------------------------------------------------------------
   // file_attachments table
 
   $data['file_attachments']['table']['group']  = t('Files');
-
-  $data['file_attachments']['table']['name']  = 'file_attachments';
   $data['file_attachments']['table']['join'] = array(
     'node' => array(
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-    'node_revisions' => array(
       'left_field' => 'vid',
       'field' => 'vid',
     ),
   );
 
   $data['file_attachments']['fnid'] = array(
-    'title' => t('Attached files'),
-    'help' => t('All files attached to a node.'),
+    'title' => t('Attached file'),
+    'help' => t('A file attached to a node.'),
     'field' => array(
       'handler' => 'file_views_handler_field_file_attachments_fnid',
     ),
@@ -187,25 +181,27 @@ function file_views_views_data() {
     ),
   );
 
-  $data['file_attached_to']['table']['group']  = t('Files');
-
-  $data['file_attached_to']['table']['name']  = 'file_attachments';
-  $data['file_attached_to']['table']['join'] = array(
-    'node' => array(
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-    'node_revisions' => array(
-      'left_field' => 'vid',
-      'field' => 'vid',
+  $data['file_attachments']['list'] = array(
+    'field' => array(
+      'title' => t('All attached files'),
+      'help' => t('A list of all files attached to a node.'),
+      'handler' => 'file_views_handler_field_file_attachments_list',
     ),
   );
 
-  $data['file_attached_to']['nid'] = array(
-    'title' => t('Attached to'),
-    'help' => t('All nodes the file is attached to.'),
+  $data['file_attachments']['count'] = array(
     'field' => array(
-      'handler' => 'file_views_handler_field_file_attachments_nid',
+      'title' => t('Number of attached files'),
+      'help' => t('A number of the files attached to a node.'),
+      'handler' => 'file_views_handler_field_file_attachments_count',
+    ),
+  );
+
+  $data['file_attachments']['parents'] = array(
+    'field' => array(
+      'title' => t('Attached to'),
+      'help' => t('A list of all nodes the file is attached to.'),
+      'handler' => 'file_views_handler_field_file_attachments_parents',
     ),
   );
 

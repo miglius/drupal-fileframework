@@ -7,9 +7,9 @@
  */
 
 /**
- * Field handler to present a nodes the file is attached to.
+ * Field handler to present a list of nodes the file is attached to.
  */
-class file_views_handler_field_file_attachments_nid extends views_handler_field_prerender_list {
+class file_views_handler_field_file_attachments_parents extends views_handler_field_prerender_list {
   function construct() {
     parent::construct();
     $this->additional_fields['nid'] = array('table' => 'node', 'field' => 'nid');
@@ -43,7 +43,7 @@ class file_views_handler_field_file_attachments_nid extends views_handler_field_
       if (!empty($this->options['only_listed'])) {
         $where = " AND fa.list <> 0";
       }
-      $result = db_query("SELECT fa.fnid, fa.nid, n.title FROM {file_attachments} fa LEFT JOIN {node} n ON fa.nid = n.nid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
+      $result = db_query("SELECT fa.fnid, fa.nid, n.title FROM {file_attachments} fa INNER JOIN {node} n ON fa.vid = n.vid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
       while ($row = db_fetch_object($result)) {
         $this->items[$row->fnid][$row->nid] = $this->render_link(check_plain($row->title), $row->nid);
       }
