@@ -717,7 +717,7 @@ function file_generate_previews($file, $cron = FALSE) {
  *   TRUE if the preview was generated, FALSE otherwise.
  */
 function file_generate_secondary_previews($file, $tier) {
-  if ($tier >= FILE_CONVERT_TIER_LIMIT)
+  if ($tier < 1 || $tier >= FILE_CONVERT_TIER_LIMIT)
     return FALSE;
 
   $result = FALSE;
