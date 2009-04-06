@@ -113,7 +113,7 @@ function theme_file_video_flash_flv_render($options = array()) {
     $output .= 'id="FlowPlayer" ';
     $output .= 'width="'. ($width > $width_min ? $width : $width_min) .'" ';
     $output .= 'height="'. $height .'" ';
-    $output .= 'flashvars="config={ playList: [ { url: \''. $image .'\', type: \'jpg\' }, { url: \''. $src .'\' } ], fullScreenScriptURL: \''. $player_path .'/html/fullscreen.js\', autoPlay: true, showPlayListButtons: false, showMenu: false, loop: false, initialScale: \'orig\', autoBuffering: false, useNativeFullScreen: true }" ';
+    $output .= 'flashvars="config={ playList: [ '. (isset($image) ? '{ url: \''. $image .'\', type: \'jpg\' }, ' : '') .'{ url: \''. $src .'\' } ], fullScreenScriptURL: \''. $player_path .'/html/fullscreen.js\', autoPlay: true, showPlayListButtons: false, showMenu: false, loop: false, initialScale: \'orig\', autoBuffering: false, useNativeFullScreen: true }" ';
     $output .= 'allowfullscreen="true" ';
     $output .= 'allowscriptaccess="sameDomain" ';
     $output .= 'quality="high" ';
@@ -136,7 +136,7 @@ function theme_file_video_flash_flv_render($options = array()) {
 
     $output .= '<div id="file-player-'. $nid .'-'. $id .'" style="width: '. ($width > $width_min ? $width : $width_min) .'px; height: '. $height .'px;"></div>';
     $output .= '<script language="JavaScript">';
-    $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ { url: "'. $image .'", type: "jpg" }, { url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\')';
+    $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ '. (isset($image) ? '{ url: "'. $image .'", type: "jpg" }, ' : '') .'{ url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\')';
     $output .= '</script>';
   }
 
