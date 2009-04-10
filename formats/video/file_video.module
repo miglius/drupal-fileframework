@@ -275,23 +275,22 @@ function file_video_metadata_parse($filename, $mimetype) {
   if (!array_key_exists($mimetype, file_video_mime_types()))
     return NULL;
 
-  // FIXME
-  // Refactor when getid3 module is ported to D6
-  $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3/getid3/getid3.php';
-  if (!file_exists($getid3_path))
-    return NULL;
-
-  require_once $getid3_path;
-  $id3 = new getID3;
   $metadata = array();
 
-  $getid3 = _file_video_getid3();
-  foreach ($getid3 as $name => $data) {
-    $getid3_data_default[$name] = $data['default'];
+  if (module_exists('getid3') && getid3_load()) {
+    $info = getid3_analyze($filename);
   }
-  $getid3_data = variable_get('file_video_getid3_data', $getid3_data_default);
+  else {
+    $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3/getid3/getid3.php';
+    if (!file_exists($getid3_path))
+      return NULL;
 
-  if (($info = @$id3->analyze($filename)) && !empty($info['video'])) {
+    require_once $getid3_path;
+    $id3 = new getID3;
+    $info = @$id3->analyze($filename);
+  }
+
+  if (!empty($info['video'])) {
 
     // Video comments
     if (empty($info['comments']) && !empty($info['asf']['comments']))
@@ -319,6 +318,13 @@ function file_video_metadata_parse($filename, $mimetype) {
     if ($info['video']['resolution_y'] < 0 || $info['video']['resolution_y'] > 2048)
       unset($info['video']['resolution_y']);
 
+    $getid3 = _file_video_getid3();
+    $getid3_data_default = array();
+    foreach ($getid3 as $name => $data) {
+      $getid3_data_default[$name] = $data['default'];
+    }
+    $getid3_data = variable_get('file_video_getid3_data', $getid3_data_default);
+
     $rdf_getid3 = array();
     foreach ($getid3 as $name => $data) {
       if (isset($getid3_data[$name]) && $element = file_get_recursive($info, $data['getid3'])) {
@@ -335,7 +341,7 @@ function file_video_metadata_parse($filename, $mimetype) {
         }
       }
     }
-    $metadata =  array_merge($rdf_getid3, $metadata);
+    $metadata = array_merge($rdf_getid3, $metadata);
   }
 
   return $metadata;
@@ -468,8 +474,8 @@ function file_video_rdf_namespaces() {
  * Renders options for the video display.
  */
 function _file_video_render_options($uri, $options = array()) {
-  $width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
-  $height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
+  $width = is_object($width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $width->value : 0;
+  $height = is_object($height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $height->value : 0;
 
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : NULL);
   $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : NULL);

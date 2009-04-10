@@ -194,25 +194,31 @@ function file_audio_metadata_parse($filename, $mimetype) {
   if (!array_key_exists($mimetype, file_audio_mime_types()))
     return NULL;
 
-  // Refactor when getid3 module is ported to D6
-  $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3/getid3/getid3.php';
-  if (!file_exists($getid3_path))
-    return NULL;
-
-  require_once $getid3_path;
-  $id3 = new getID3;
   $metadata = array();
 
-  $getid3 = _file_audio_getid3();
-  foreach ($getid3 as $name => $data) {
-    $getid3_data_default[$name] = $data['default'];
+  if (module_exists('getid3') && getid3_load()) {
+    $info = getid3_analyze($filename);
   }
-  $getid3_data = variable_get('file_audio_getid3_data', $getid3_data_default);
+  else {
+    $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3/getid3/getid3.php';
+    if (!file_exists($getid3_path))
+      return NULL;
 
-  if (($info = @$id3->analyze($filename)) && !empty($info['audio'])) {
+    require_once $getid3_path;
+    $id3 = new getID3;
+    $info = @$id3->analyze($filename);
+  }
 
+  if (!empty($info['audio'])) {
     if (empty($info['audio']['codec']) && !empty($info['audio']['encoder']))
       $info['audio']['codec'] = $info['audio']['encoder'];
+
+    $getid3 = _file_audio_getid3();
+    $getid3_data_default = array();
+    foreach ($getid3 as $name => $data) {
+      $getid3_data_default[$name] = $data['default'];
+    }
+    $getid3_data = variable_get('file_audio_getid3_data', $getid3_data_default);
 
     $rdf_getid3 = array();
     foreach ($getid3 as $name => $data) {
@@ -227,7 +233,7 @@ function file_audio_metadata_parse($filename, $mimetype) {
         }
       }
     }
-    $metadata =  array_merge($rdf_getid3, $metadata);
+    $metadata = array_merge($rdf_getid3, $metadata);
   }
 
   return $metadata;
