@@ -781,8 +781,18 @@ function file_attach_comment(&$a1, $op) {
  */
 function _file_attach_load($nid, $vid, $cid = 0) {
   $files = array();
-  $result = db_query('SELECT fa.* FROM {file_attachments} fa WHERE fa.nid = %d AND fa.vid = %d AND fa.cid = %d ORDER BY fa.weight', $nid, $vid, $cid);
+  $args = array_merge(array($cid, $nid), $cid == 0 ? array($vid) : array());
+  $result = db_query('SELECT fa.* FROM {file_attachments} fa WHERE fa.cid = %d AND fa.nid = %d'. ($cid == 0 ? ' AND fa.vid = %d' : '') .' ORDER BY fa.weight', $args);
   while ($row = db_fetch_object($result)) {
+    if ($cid > 0 && isset($files['n_'. $row->fnid])) {
+      // Since comments are not tied to the node revisions, we need to
+      // use the latest node revision available for a correct weight.
+      if ($row->vid > $files['n_'. $row->fnid]->vid)
+        unset($files['n_'. $row->fnid]);
+      else
+        continue;
+    }
+
     $node_file = node_load($row->fnid);
     if (node_access('view', $node_file)) {
       $extras = array('name' => $node_file->title, 'list' => $row->list, 'weight' => $row->weight);
