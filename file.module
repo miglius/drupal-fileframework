@@ -255,6 +255,12 @@ function file_page_metadata_access($node) {
  * Check groups browser access.
  */
 function file_og_browser_access($node) {
+  global $user;
+  if (module_exists('og') && !isset($user->og_groups) && $user->uid) {
+    // We have to perform a load in order to assure that the $user->og_groups bits are present.
+    // $user->og_groups bits are missing when the i18n module is enabled.
+    $user = user_load(array('uid' => $user->uid));
+  }
   return module_exists('file_browser') && module_exists('og_vocab') ? user_access('browse files') && og_is_group_member($node, FALSE) : FALSE;
 }
 
@@ -262,6 +268,12 @@ function file_og_browser_access($node) {
  * Check groups gallery access.
  */
 function file_og_gallery_access($node) {
+  global $user;
+  if (module_exists('og') && !isset($user->og_groups) && $user->uid) {
+    // We have to perform a load in order to assure that the $user->og_groups bits are present.
+    // $user->og_groups bits are missing when the i18n module is enabled.
+    $user = user_load(array('uid' => $user->uid));
+  }
   return module_exists('file_gallery') && module_exists('og_vocab') ? user_access('view files') && og_is_group_member($node, FALSE) : FALSE;
 }
 
