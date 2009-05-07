@@ -15,7 +15,6 @@ INSTALLATION
 ------------
 
   1. Copy all the module files into a subdirectory called modules/fileframework/
-     under your Drupal installation directory.
 
   2. Go to Administer >> Site building >> Modules and enable the RDF,
      Bitcache and File Framework odules. Press the "Save configuration" button.
@@ -38,5 +37,8 @@ Folowing software is optional, but highly recommended:
 
   XSPF Player (Slim version)
   <http://musicplayer.sourceforge.net>
+
+  MindMapMacro
+  <http://code.xwiki.org/xwiki/bin/view/Macros/MindMapMacro>
 
 This software should be extracted under the 'vendor' folder.
