@@ -32,8 +32,8 @@ function file_attach_admin_settings() {
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['visibility']['file_attach_show_attachments'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Attachments'),
-    '#description'   => t('Show the attached files.'),
+    '#title'         => t('Attachment list'),
+    '#description'   => t('Show the list of attached files.'),
     '#default_value' => FILE_ATTACH_SHOW_ATTACHMENTS,
   );
   $form['visibility']['file_attach_show_previews'] = array(
