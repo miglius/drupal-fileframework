@@ -10,8 +10,8 @@
 //////////////////////////////////////////////////////////////////////////////
 
 define('FILE_RDF_REPOSITORY',      'file');
-define('FILE_BITCACHE_REPOSITORY', 'file');
 
+define('FILE_BITCACHE_REPOSITORY',           variable_get('file_bitcache_repository', 'file'));
 define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 1));
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
@@ -387,7 +387,7 @@ function file_cron() {
     // Inspect recemtly updated files which were changed since
     // an hour before last cron run.
     $recent = 60*60;
-    $result = db_query("SELECT f.nid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE n.changed > %d ORDER BY n.changed", (int)variable_get('cron_last', 0) - $recent);
+    $result = db_query("SELECT f.nid, f.vid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE n.changed > %d ORDER BY n.changed", (int)variable_get('cron_last', 0) - $recent);
     while ($file = db_fetch_object($result)) {
       $total++;
       file_generate_previews($file, TRUE);
@@ -398,7 +398,7 @@ function file_cron() {
     unset($file);
 
     // Inspect the rest files.
-    $result = db_query("SELECT f.nid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d AND f.nid > %d ORDER BY f.nid", $byte_limit, FILE_CRON_LIMIT_TOTAL > 0 ? variable_get('file_cron_last_nid', 0) : 0);
+    $result = db_query("SELECT f.nid, f.vid, f.uri, f.size, f.type AS filemime, n.title AS filename FROM {file_nodes} f INNER JOIN {node} n ON f.nid = n.nid WHERE f.size <= %d AND f.vid > %d ORDER BY f.nid", $byte_limit, FILE_CRON_LIMIT_TOTAL > 0 ? variable_get('file_cron_last_vid', 0) : 0);
     while ($byte_counter <= $byte_limit && (FILE_CRON_LIMIT_TOTAL == 0 || $total < FILE_CRON_LIMIT_TOTAL) && ($file = db_fetch_object($result))) {
       $total++;
       file_generate_previews($file, TRUE);
@@ -407,7 +407,7 @@ function file_cron() {
       $errors += isset($file->errors) ? $file->errors : 0;
     }
     if (isset($file) && FILE_CRON_LIMIT_TOTAL > 0)
-      variable_set('file_cron_last_nid', isset($file->nid) && ($total == FILE_CRON_LIMIT_TOTAL) ? $file->nid : 0);
+      variable_set('file_cron_last_vid', isset($file->vid) && ($total == FILE_CRON_LIMIT_TOTAL) ? $file->vid : 0);
 
     // Log a concise summary message to let the administrator know what
     // occurred. Note that if any problems were encountered, file_repair()

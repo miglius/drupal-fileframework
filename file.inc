@@ -127,7 +127,9 @@ function file_data_save($file, $tier = NULL) {
 
   // Move the file to permanent storage, deleting the temporary file.
   bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
-  if (!($hash = bitcache_put_file(NULL, $file_save->filepath, isset($file->noconvert) ? TRUE : FALSE))) {
+  $hash = bitcache_put_file(NULL, $file_save->filepath, isset($file->noconvert) ? TRUE : FALSE);
+  bitcache_use_repository();
+  if (!$hash) {
     watchdog('file', 'The bitcache_put_file() function failed for the file %name, uri=%uri or it\'s derivative in %mime.', array('%name' => $file->filename, '%uri' => $file->uri, '%mime' => $file_save->filemime), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     return FALSE;
   }
@@ -204,7 +206,7 @@ function file_node_create($node = array()) {
  *
  */
 function file_node_delete_node($file) {
-  if (!empty($file->uri) && db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == 0) {
+  if (!empty($file->uri) && db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == (isset($file->keep_blob) ? 1 : 0)) {
     bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
 
     // The last reference to the blob. Search for a previews.
@@ -236,12 +238,14 @@ function file_node_delete_node($file) {
     }
 
     // Delete from the RDF.
-    if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+    if (!isset($file->keep_rdf) && !rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
       watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
 
     // Delete from a bitcache.
-    if (!bitcache_delete(file_get_hash($file)))
+    if (!isset($file->keep_blob) && !bitcache_delete(file_get_hash($file)))
       watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+
+    bitcache_use_repository();
   }
 }
 
@@ -612,7 +616,7 @@ function file_generate_previews($file, $cron = FALSE) {
   }
 
   //Extract metadata if it is missing and save to RDF.
-  if (!rdf_exists($file->uri, 'wordnet:failed', 'metadata', array('repository' => FILE_RDF_REPOSITORY)) && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed', array('repository' => FILE_RDF_REPOSITORY))) {
+  if (!rdf_exists($file->uri, 'wordnet:failed', 'metadata', array('repository' => FILE_RDF_REPOSITORY)) && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed', array('repository' => FILE_RDF_REPOSITORY)) || isset($file->delete_rdf)) {
     if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
       watchdog('file', 'The RDF data was not deleted for the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
@@ -1376,5 +1380,11 @@ function _file_propagate_terms($node, $file_node, $settings = array()) {
       }
     }
   }
+
+  // The $terms array will contain a mix of numerical tids and $term objects on edit.
+  // Normalizing the array to contain term objects.
+  $terms = array_map(create_function('$a', 'return !is_object($a) ? taxonomy_get_term($a) : $a;'), isset($terms) ? $terms : array());
+  foreach (module_implements('file_propagate_terms') as $module)
+    module_invoke($module, 'file_propagate_terms', $file_node, $terms);
 }
 

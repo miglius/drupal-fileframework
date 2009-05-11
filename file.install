@@ -36,6 +36,7 @@ function file_install() {
 function file_uninstall() {
   drupal_uninstall_schema('file');
 
+  variable_del('file_bitcache_repository');
   variable_del('file_show_previews');
   variable_del('file_handler_autoload');
   variable_del('file_show_generated');

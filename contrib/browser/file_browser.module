@@ -189,18 +189,39 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Node API hooks
+// File API hooks
 
 /**
- * Implementation of hook_nodeapi().
+ * Uncategorized files are put in unfiled folder.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
  */
-function file_browser_nodeapi(&$node, $op) {
-  switch ($op) {
-    case 'insert':
-    case 'update':
-      if ($node->type == 'file' && FILE_BROWSER_OG_UNFILED)
-        _file_browser_enforce_unfiled($node);
-      break;
+function file_browser_file_propagate_terms(&$node, $terms) {
+  if (!FILE_BROWSER_OG_UNFILED || !isset($node->og_groups) || !module_exists('og_vocab'))
+    return;
+
+  $vocabs = array();
+  foreach ($terms as $tid => $term)
+    $vocabs[$term->vid][] = $tid;
+
+  foreach ($node->og_groups as $gid) {
+    foreach (og_vocab_get_vocabularies($gid) as $vid => $vocabulary) {
+      if (in_array('file', $vocabulary->nodes)) {
+        if ($tid = _file_browser_get_unfiled_term($vid)) {
+          // If no categories were selected, associate the node with unfiled category:
+          if (empty($vocabs[$vid]))
+            db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
+          // If any categories were selected, make sure the unfiled category isn't selected:
+          else if (isset($vocabs[$vid]) && in_array($tid, $vocabs[$vid])) {
+            if (count($vocabs[$vid]) > 1)
+              db_query('DELETE FROM {term_node} WHERE nid = %d AND tid = %d', $node->nid, $tid);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -221,63 +242,6 @@ function _file_browser_get_unfiled_term($vid) {
   $tid = db_result(db_query("SELECT tid FROM {term_data} WHERE vid = %d AND name = '%s'", $vid, FILE_BROWSER_OG_UNFILED));
   db_query("INSERT INTO {term_hierarchy} (tid, parent) VALUES (%d, 0)", $tid);
   return $tid;
-}
-
-/**
- * Uncategorized files are put in unfiled folder.
- *
- * @param $node
- *   A node object.
- *
- * @return
- */
-function _file_browser_enforce_unfiled(&$node) {
-  if (!isset($node->og_groups) || !module_exists('og_vocab'))
-    return;
-
-  if (!isset($node->taxonomy))
-    $node->taxonomy = array();
-
-  // When an attachment is updated when the parent node is saved
-  // then $node->taxonomy points to the array of the term objects.
-  if (is_object(reset($node->taxonomy)))
-    return;
-
-  // Normalize the $node->taxonomy array into a known-good format that we
-  // can rely on for comparisons in the code further below.
-  foreach ($node->taxonomy as $vid => $tids) {
-    if (!is_array($tids)) {
-      unset($node->taxonomy[$vid]);
-      if ($term = taxonomy_get_term($tids)) {
-        $node->taxonomy[$term->vid] = array($term->tid => $term->tid);
-      }
-    }
-  }
-
-  foreach ($node->og_groups as $gid) {
-    foreach (og_vocab_get_vocabularies($gid) as $vid => $vocabulary) {
-      if (in_array('file', $vocabulary->nodes)) {
-        if ($tid = _file_browser_get_unfiled_term($vid)) {
-          // Selecting the <none> entry should have the same effect as not selecting any entry.
-          if (isset($node->taxonomy[$vid]))
-            unset($node->taxonomy[$vid][""]);
-
-          // If no categories were selected, associate the node with unfiled category:
-          if (empty($node->taxonomy[$vid])) {
-            db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
-            $node->taxonomy[$vid] = array($tid => $tid);
-          }
-          // If any categories were selected, make sure the unfiled category isn't selected:
-          else if (is_array($node->taxonomy[$vid]) && in_array($tid, $node->taxonomy[$vid])) {
-            if (count($node->taxonomy[$vid]) > 1) {
-              db_query('DELETE FROM {term_node} WHERE nid = %d AND tid = %d', $node->nid, $tid);
-              unset($node->taxonomy[$vid][$tid]);
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

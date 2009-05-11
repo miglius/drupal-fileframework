@@ -104,6 +104,9 @@ function file_embed_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
   switch ($op) {
     case 'view':
       drupal_add_css(drupal_get_path('module', 'file_embed') .'/file_embed.css');
+
+      drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
+      drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
       break;
   }
 }
@@ -281,7 +284,7 @@ function file_embed_file_filter_process($matches) {
     $options['file_html'] = file_wrapper_html($node, isset($options['handler']) ? $options['handler'] : NULL, array('container' => FALSE), TRUE);
 
     $handlers = file_handlers_for($node->file);
-    if (isset($options['link']) && isset($options['handler']) && preg_match('/^image\//', $handlers[$options['handler']]['type'])) {
+    if (isset($options['link']) && $options['handler'] != 'file' && isset($options['handler']) && preg_match('/^image\//', $handlers[$options['handler']]['type'])) {
       $options['file_html'] = l($options['file_html'], 'node/'. $node->nid, array('html' => TRUE));
     }
     return theme('file_embed_file', $options);

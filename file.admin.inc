@@ -16,6 +16,16 @@
  *   The form structure.
  */
 function file_admin_settings() {
+  // Bitcache settings
+  $form['bitcache'] = array('#type' => 'fieldset', '#title' => t('Bitcache'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['bitcache']['file_bitcache_repository'] = array(
+    '#type' => 'select',
+    '#title' => t('Repository'),
+    '#default_value' => FILE_BITCACHE_REPOSITORY,
+    '#options' => bitcache_get_repositories('titles'),
+    '#description' => t('Select the Bitcache repository that will be used to store the uploaded files.'),
+  );
+
   // Visibility settings
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['visibility']['file_show_previews'] = array(
@@ -175,6 +185,7 @@ function file_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_bitcache_repository', $values['file_bitcache_repository']);
       variable_set('file_show_previews', $values['file_show_previews']);
       variable_set('file_handler_autoload', $values['file_handler_autoload']);
       variable_set('file_show_generated', $values['file_show_generated']);
@@ -192,6 +203,7 @@ function file_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_bitcache_repository');
       variable_del('file_show_previews');
       variable_del('file_handler_autoload');
       variable_del('file_show_generated');

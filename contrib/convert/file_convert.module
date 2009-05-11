@@ -40,6 +40,13 @@ function file_convert_theme() {
 }
 
 /**
+ * Implementation of hook_perm().
+ */
+function file_convert_perm() {
+  return array('re-run file conversions');
+}
+
+/**
  * Implementation of hook_menu().
  */
 function file_convert_menu() {
@@ -64,7 +71,31 @@ function file_convert_menu() {
       'weight' => 1,
       'file' => 'file_convert.admin.inc',
     ),
+    'file/%node/conversion' => array(
+      'title' => 'File conversion',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_convert_rerun',
+      'page arguments' => array(1, 3),
+      'access callback' => 'node_access',
+      'access arguments' => array('view', 1),
+      'file' => 'file_convert.pages.inc',
+    ),
   );
+}
+
+/**
+ * Implementation of hook_link().
+ */
+function file_convert_link($type, $node = NULL, $teaser = FALSE) {
+  $links = array();
+  if (user_access('re-run file conversions') && $type == 'node' && $node->type == 'file' && !empty($node->file)) {
+    $links['file_convert_conversion'] = array(
+      'title' => t('Re-run conversions'),
+      'href' => 'file/'. $node->nid .'/conversion/'. $node->vid,
+      'attributes' => array('title' => t('Re-run file conversions for this file.')),
+    );
+  }
+  return $links;
 }
 
 //////////////////////////////////////////////////////////////////////////////

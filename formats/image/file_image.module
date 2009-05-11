@@ -471,8 +471,8 @@ function _file_image_allowed_attributes() {
  * Renders options for the image display.
  */
 function _file_image_render_options($uri, $options = array()) {
-  $width = rdf_value($uri, rdf_qname_to_uri('exif:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
-  $height = rdf_value($uri, rdf_qname_to_uri('exif:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))->value;
+  $width = is_object($width = rdf_value($uri, rdf_qname_to_uri('exif:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $width->value : 0;
+  $height = is_object($height = rdf_value($uri, rdf_qname_to_uri('exif:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $height->value : 0;
 
   list($max_width, $max_height) = explode('x', FILE_IMAGE_PREVIEW_RESOLUTION);
   $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : $max_width);
