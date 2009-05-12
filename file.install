@@ -71,17 +71,19 @@ function file_requirements($phase) {
   $t = get_t();
 
   if ($phase == 'runtime') {
-    $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3';
-    if (file_exists($getid3_path .'/getid3/getid3.php'))
-      include_once $getid3_path .'/getid3/getid3.php';
+    if (!module_exists('getid3')) {
+      $getid3_path = drupal_get_path('module', 'file') .'/vendor/getid3';
+      if (file_exists($getid3_path .'/getid3/getid3.php'))
+        include_once $getid3_path .'/getid3/getid3.php';
 
-    $getid3 = class_exists('getID3');
-    $status['getid3'] = array(
-      'title' => $t('getID3 library'),
-      'value' => $getid3 ? $t('@version', array('@version' => GETID3_VERSION)) : $t('Not installed'),
-      'description' => $getid3 ? '' : $t('<a href="@getid3">getID3</a> is not available. It is recommended that you install this library in order to enable metadata extraction from the audio and video files. To install, <a href="@download">download</a> the latest version of the library and unzip it to %path under the Drupal directory.', array('@getid3' => 'http://getid3.sourceforge.net/', '@download' => 'http://sourceforge.net/project/showfiles.php?group_id=55859', '%path' => $getid3_path .'/')),
-      'severity' => $getid3 ? REQUIREMENT_OK : REQUIREMENT_WARNING,
-    );
+      $getid3 = class_exists('getID3');
+      $status['getid3'] = array(
+        'title' => $t('getID3 library'),
+        'value' => $getid3 ? $t('@version', array('@version' => GETID3_VERSION)) : $t('Not installed'),
+        'description' => $getid3 ? '' : $t('<a href="@getid3">getID3</a> is not available. It is recommended that you install this library in order to enable metadata extraction from the audio and video files. To install, <a href="@download">download</a> the latest version of the library and unzip it to %path under the Drupal directory.', array('@getid3' => 'http://getid3.sourceforge.net/', '@download' => 'http://sourceforge.net/project/showfiles.php?group_id=55859', '%path' => $getid3_path .'/')),
+        'severity' => $getid3 ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+      );
+    }
 
     $flowplayer_path = drupal_get_path('module', 'file') .'/vendor/flowplayer';
     $flowplayer = defined('FILE_VIDEO_FLOWPLAYER_VERSION') && file_exists($flowplayer_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf') ? TRUE : FALSE;

@@ -428,24 +428,6 @@ function file_cron() {
   }
 }
 
-/**
- * Implementation of hook_form_alter().
- */
-function file_form_alter(&$form, $form_state, $form_id) {
-  switch ($form_id) {
-    case "system_file_system_settings":
-      // File module uses bitchache, so this setting is not used.
-      unset($form['file_downloads']);
-      break;
-  }
-}
-
-/**
- * Implementation of hook_search().
- */
-function file_search($op = 'search', $keys = NULL) {
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // Node API hooks
 
