@@ -1,5 +1,9 @@
 // $Id$
 
+NOTE: This is experimental software meant for advanced users; assume nothing
+works, and you may be pleasantly surprised. And when it breaks, you get to
+keep both pieces.
+
 REQUIREMENTS
 ------------
 Requires Drupal 6.x and the following modules:
@@ -7,19 +11,21 @@ Requires Drupal 6.x and the following modules:
   Bitcache
   <http://drupal.org/project/bitcache>
 
-  RDF API
+  RDF
   <http://drupal.org/project/rdf>
 
 
 INSTALLATION
 ------------
 
-  1. Copy all the module files into a subdirectory called modules/fileframework/
+  1. Copy all the module files into a subdirectory called
+     sites/all/modules/fileframework/
 
-  2. Go to Administer >> Site building >> Modules and enable the RDF,
-     Bitcache and File Framework odules. Press the "Save configuration" button.
+  2. Go to [Administer >> Site building >> Modules] and enable the RDF,
+     Bitcache and File Framework modules. Press the "Save configuration"
+     button.
 
-  4. Go to Administer >> Site configuration >> Files to review and
+  4. Go to [Administer >> Site configuration >> Files] to review and
      change the configuration options to your liking.
 
   5. (See README.txt for information on submitting bug reports.)
@@ -42,3 +48,42 @@ Folowing software is optional, but highly recommended:
   <http://code.xwiki.org/xwiki/bin/view/Macros/MindMapMacro>
 
 This software should be extracted under the 'vendor' folder.
+
+
+STORAGE OPTIONS
+---------------
+To re-configure File Framework to use another Bitcache storage backend (for
+example, to store your files on Amazon S3 instead of on the file system),
+follow these instructions:
+
+  1. Install File Framework normally per the instructions given above.
+
+  2. Go to [Administer >> Site configuration >> Data storage] and create a
+     new Bitcache repository. You may use any of the available repository
+     backends (a.k.a. storage adapters) and you can name the repository
+     anything you like.
+
+  3. Go to [Administer >> Site configuration >> Files] and choose your
+     newly-created repository from the "Repository" drop-down box. Press the
+     "Save configuration" button.
+
+  4. Go to [Administer >> Site configuration >> Data storage] and delete the
+     old Bitcache repository (called "File framework") which was
+     automatically created when you installed File Framework.
+
+     (Alternatively, you can let this repository continue existing, in which
+     case File Framework will continue looking up any existing file data
+     from it, but will store new files in the new repository you've
+     indicated.)
+
+
+HOW-TOs & LINKS
+---------------
+For extended installation instructions, please refer to these excellent
+step-by-step how-tos created by the Drupal community:
+
+  * Setting up Drupal File Framework on Ubuntu 8.10
+    <http://tr.im/lkQv> by Justin Hopkins
+
+  * Setting up your system for file conversions with File Framework
+    <http://tr.im/lkQe> by Ben Lavender
