@@ -199,12 +199,12 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
  *
  * @return
  */
-function file_browser_file_propagate_terms(&$node, $terms) {
+function file_browser_file_propagate_terms(&$node) {
   if (!FILE_BROWSER_OG_UNFILED || !isset($node->og_groups) || !module_exists('og_vocab'))
     return;
 
   $vocabs = array();
-  foreach ($terms as $tid => $term)
+  foreach ($node->taxonomy as $tid => $term)
     $vocabs[$term->vid][] = $tid;
 
   foreach ($node->og_groups as $gid) {
@@ -212,12 +212,16 @@ function file_browser_file_propagate_terms(&$node, $terms) {
       if (in_array('file', $vocabulary->nodes)) {
         if ($tid = _file_browser_get_unfiled_term($vid)) {
           // If no categories were selected, associate the node with unfiled category:
-          if (empty($vocabs[$vid]))
-            db_query('INSERT INTO {term_node} (nid, vid, tid) VALUES (%d, %d, %d)', $node->nid, $node->vid, $tid);
+          if (empty($vocabs[$vid])) {
+            $node->taxonomy[$tid] = taxonomy_get_term($tid);
+            taxonomy_node_save($node, $node->taxonomy);
+          }
           // If any categories were selected, make sure the unfiled category isn't selected:
           else if (isset($vocabs[$vid]) && in_array($tid, $vocabs[$vid])) {
-            if (count($vocabs[$vid]) > 1)
-              db_query('DELETE FROM {term_node} WHERE nid = %d AND tid = %d', $node->nid, $tid);
+            if (count($vocabs[$vid]) > 1) {
+              unset($node->taxonomy[$tid]);
+              taxonomy_node_save($node, $node->taxonomy);
+            }
           }
         }
       }

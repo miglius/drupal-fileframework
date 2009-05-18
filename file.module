@@ -552,6 +552,7 @@ function file_node_insert($node) {
   if (is_object($file)) {
     file_node_save($node, $file);
     module_invoke_all('file', 'insert', $node);
+    _file_propagate_terms((object)array(), $node);
     unset($_SESSION['file_preview_file']);
   }
 }
@@ -569,6 +570,7 @@ function file_node_update($node) {
   if (is_object($file)) {
     file_node_save($node, $file);
     module_invoke_all('file', 'update', $node);
+    _file_propagate_terms((object)array(), $node);
     unset($_SESSION['file_preview_file']);
   }
 }

@@ -153,7 +153,7 @@ function file_data_save($file, $tier = NULL) {
     }
   }
   if (!rdf_delete($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY))) {
-    watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $key), WATCHDOG_ERROR);
+    watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $uri), WATCHDOG_ERROR);
     return FALSE;
   }
   if (!rdf_insert_all(rdf_denormalize($metadata), array('repository' => FILE_RDF_REPOSITORY))) {
@@ -1318,7 +1318,7 @@ function _file_propagate_og($node, $file_node) {
  * Propagates taxonomy terms to the file node.
  *
  * @param $node
- *   A node object.
+ *   A node object or empty object to trigger hook_file_propagate_terms().
  * @param $file_node
  *   A file node object.
  * @param $settings
@@ -1327,6 +1327,9 @@ function _file_propagate_og($node, $file_node) {
  * @return
  */
 function _file_propagate_terms($node, $file_node, $settings = array()) {
+  if (!module_exists('taxonomy'))
+    return FALSE;
+
   if (!empty($node->taxonomy)) {
     global $user;
 
@@ -1372,19 +1375,41 @@ function _file_propagate_terms($node, $file_node, $settings = array()) {
 
         // Creates a union of the old and propagated tags. Can't use taxonomy_node_get_terms()
         // any more because it has already cached the terms for this node ID.
-        $result = db_query('SELECT tid FROM {term_node} WHERE nid = %d AND vid = %d', $file_node->nid, $file_node->vid);
-        while ($row = db_fetch_object($result)) {
-          $terms[$row->tid] = $row->tid;
-        }
+        $terms = _file_taxonomy_node_get_terms($file_node) + $terms;
         taxonomy_node_save($file_node, $terms);
       }
     }
   }
+  else {
+    // File node is saved.
+    taxonomy_node_save($file_node, isset($file_node->taxonomy) ? $file_node->taxonomy : array());
 
-  // The $terms array will contain a mix of numerical tids and $term objects on edit.
-  // Normalizing the array to contain term objects.
-  $terms = array_map(create_function('$a', 'return !is_object($a) ? taxonomy_get_term($a) : $a;'), isset($terms) ? $terms : array());
+    // Can't use taxonomy_node_get_terms()
+    // any more because it has already cached the terms for this node ID.
+    $terms = _file_taxonomy_node_get_terms($file_node);
+  }
+
+  $file_node->taxonomy = isset($terms) ? $terms : array();
   foreach (module_implements('file_propagate_terms') as $module)
-    module_invoke($module, 'file_propagate_terms', $file_node, $terms);
+    module_invoke($module, 'file_propagate_terms', $file_node);
+}
+
+/**
+ * Gets taxonomy terns of the node instead of taxonomy_node_get_terms()
+ * because the terms are already cached.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   An array of the term objects.
+ */
+function _file_taxonomy_node_get_terms($node) {
+  $terms = array();
+  $result = db_query('SELECT tid FROM {term_node} WHERE nid = %d AND vid = %d', $node->nid, $node->vid);
+  while ($row = db_fetch_object($result)) {
+    $terms[$row->tid] = taxonomy_get_term($row->tid);
+  }
+  return $terms;
 }
 
