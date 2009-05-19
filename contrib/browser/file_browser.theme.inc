@@ -125,7 +125,7 @@ function theme_file_browser_preview($data) {
       $output .= '<div class="item-list">';
       $output .= '<ul>';
       foreach ($nodes as $n) {
-        $output .= '<li>'. l($n->title, 'node/'. $n->nid, isset($n->cid) ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
+        $output .= '<li>'. l($n->title, 'node/'. $n->nid, $n->cid > 0 ? array('fragment' => 'comment-'. $n->cid) : array()) .'</li>';
       }
       $output .= '</ul>';
       $output .= '</div>';

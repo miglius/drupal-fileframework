@@ -727,10 +727,12 @@ function file_browser_preview($node = NULL, $tid = 0) {
 
   // File back references.
   $nodes = array();
-  $result = db_query('SELECT fa.cid, n.* FROM {file_attachments} fa LEFT JOIN {node} n ON fa.nid = n.nid WHERE fa.fnid = %d', $node->nid);
-  while ($n = db_fetch_object($result)) {
-    if (node_access('view', $n)) {
-      $nodes[] = $n;
+  if (module_exists('file_attach')) {
+    $result = db_query("SELECT fa.cid, n.* FROM {file_attachments} fa LEFT JOIN {node} n ON fa.nid = n.nid WHERE fa.list = '1' AND fa.fnid = %d AND (fa.cid = 0 AND fa.vid = n.vid OR fa.cid > 0)", $node->nid);
+    while ($n = db_fetch_object($result)) {
+      if (node_access('view', $n)) {
+        $nodes[] = $n;
+      }
     }
   }
 
