@@ -384,7 +384,7 @@ function file_browser_upload_form($form_state, $gid) {
         '#suffix' => '</div>',
       );
       if ($gid)
-        $form['og_groups']['#suffix'] = '<script type=\'text/javascript\'>$(document).ready(function() { $("#edit-og-groups-'. $gid .'").attr("disabled", true); });</script>';
+        $form['og_groups']['#suffix'] .= '<script type=\'text/javascript\'>$(document).ready(function() { $("#edit-og-groups-'. $gid .'").attr("disabled", true); });</script>';
     }
     if (module_exists('og_access')) {
       // get the visibility for normal users
