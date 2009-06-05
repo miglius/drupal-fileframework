@@ -22,6 +22,10 @@ function file_spreadsheet_mime_types() {
       'name' => t('Excel spreadsheet'),
       'icon' => 'excel.gif',
     ),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => array(
+      'name' => t('Excel spreadsheet'),
+      'icon' => 'excel.gif',
+    ),
   );
 }
 
@@ -32,32 +36,50 @@ function file_spreadsheet_mime_converters() {
   return array(
     'application/vnd.oasis.opendocument.spreadsheet' => array(
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.ms-excel' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f xls "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].xls" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f xls "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].xls" "[out_file]"',
       ),
       'text/csv' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f csv "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].csv" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].ods"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f csv "[in_file].ods"; {mv} "[in_file].ods" "[in_file]"; {mv} "[in_file].csv" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
     'application/vnd.ms-excel' => array(
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.oasis.opendocument.spreadsheet' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f ods "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].ods" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f ods "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].ods" "[out_file]"',
       ),
       'text/csv' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f csv "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].csv" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xls"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f csv "[in_file].xls"; {mv} "[in_file].xls" "[in_file]"; {mv} "[in_file].csv" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+      ),
+    ),
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => array(
+      'application/pdf' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xlsx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].xlsx"; {mv} "[in_file].xlsx" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'handlers' => array('file_slideshow_pdf'),
+      ),
+      'application/vnd.oasis.opendocument.spreadsheet' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xlsx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f ods "[in_file].xlsx"; {mv} "[in_file].xlsx" "[in_file]"; {mv} "[in_file].ods" "[out_file]"',
+      ),
+      'text/csv' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xlsx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f csv "[in_file].xlsx"; {mv} "[in_file].xlsx" "[in_file]"; {mv} "[in_file].csv" "[out_file]"',
+      ),
+      'application/vnd.ms-excel' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].xlsx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f xls "[in_file].xlsx"; {mv} "[in_file].xlsx" "[in_file]"; {mv} "[in_file].xls" "[out_file]"',
+      ),
+      'application/zip' => array(
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
   );

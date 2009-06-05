@@ -76,6 +76,10 @@ function file_slideshow_mime_types() {
       'name' => t('PowerPoint presentation'),
       'icon' => 'powerpoint.gif',
     ),
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation' => array(
+      'name' => t('PowerPoint presentation'),
+      'icon' => 'powerpoint.gif',
+    ),
   );
 }
 
@@ -97,39 +101,54 @@ function file_slideshow_mime_converters() {
       ),
       'image/jpeg' => array(
         'pipeline' => '{gs} -q -sDEVICE=jpeg -dBATCH -dNOPAUSE -dFirstPage=1 -dLastPage=1 -r300 -sOutputFile="[out_file]" "[in_file]"',
-        //'pipeline' => 'cd "[tmpdir]"; {mv} "[in_file]" "[in_file].pdf"; {convert} "[in_file].pdf"\[0\] "[out_file].jpeg"; {mv} "[in_file].pdf" "[in_file]"; {mv} "[out_file].jpeg" "[out_file]"',
+        //'pipeline' => '{mv} "[in_file]" "[in_file].pdf"; {convert} "[in_file].pdf"\[0\] "[out_file].jpeg"; {mv} "[in_file].pdf" "[in_file]"; {mv} "[out_file].jpeg" "[out_file]"',
         'handlers' => array('file_image_image'),
       ),
       'application/x-shockwave-flash' => array(
-        'pipeline' => 'cd "[tmpdir]"; {pdf2swf} -lb "[in_file]" "[out_file]"',
+        'pipeline' => '{pdf2swf} -lb "[in_file]" "[out_file]"',
         'handlers' => array('file_video_flash_swf'),
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
     'application/vnd.oasis.opendocument.presentation' => array(
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].odp"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].odp"; {mv} "[in_file].odp" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].odp"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].odp"; {mv} "[in_file].odp" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.ms-powerpoint' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].odp"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f ppt "[in_file].odp"; {mv} "[in_file].odp" "[in_file]"; {mv} "[in_file].ppt" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].odp"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f ppt "[in_file].odp"; {mv} "[in_file].odp" "[in_file]"; {mv} "[in_file].ppt" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
     'application/vnd.ms-powerpoint' => array(
       'application/pdf' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].ppt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f pdf "[in_file].ppt"; {mv} "[in_file].ppt" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].ppt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].ppt"; {mv} "[in_file].ppt" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),
       ),
       'application/vnd.oasis.opendocument.presentation' => array(
-        'pipeline' => '{localhost:8100}cd "[tmpdir]"; {mv} "[in_file]" "[in_file].ppt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli-2.2.1.jar}} -f odp "[in_file].ppt"; {mv} "[in_file].ppt" "[in_file]"; {mv} "[in_file].odp" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].ppt"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f odp "[in_file].ppt"; {mv} "[in_file].ppt" "[in_file]"; {mv} "[in_file].odp" "[out_file]"',
       ),
       'application/zip' => array(
-        'pipeline' => '{mkdir} "[in_file].tmp"; cd "[in_file].tmp"; {mv} "[in_file]" "[filename]"; {gzip} -c * > "[out_file]"; cd "[tmpdir]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+      ),
+    ),
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation' => array(
+      'application/pdf' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'handlers' => array('file_slideshow_pdf'),
+      ),
+      'application/vnd.oasis.opendocument.presentation' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f odp "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].odp" "[out_file]"',
+      ),
+      'application/vnd.ms-powerpoint' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f ppt "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].ppt" "[out_file]"',
+      ),
+      'application/zip' => array(
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
       ),
     ),
   );

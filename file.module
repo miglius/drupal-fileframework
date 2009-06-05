@@ -16,6 +16,7 @@ define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
 define('FILE_SHOW_GENERATED',                variable_get('file_show_generated', 1));
 define('FILE_SHOW_FILE',                     variable_get('file_show_file', 1));
+define('FILE_VIEWS_COUNTER',                 variable_get('file_views_counter', 1));
 define('FILE_VIEW_LINK',                     variable_get('file_view_link', 1));
 define('FILE_INFO_LINK',                     variable_get('file_info_link', 1));
 define('FILE_PROPERTIES_LINK',               variable_get('file_properties_link', 1));
@@ -354,10 +355,12 @@ function file_link($type, $node = NULL, $teaser = FALSE) {
       'title' => file_mime_description_for($node->file->type),
       'html' => TRUE,
     );
-    $links['file_views'] = array(
-      'title' => format_plural(db_result(db_query('SELECT SUM(f.views) FROM {file_nodes} f WHERE f.nid = %d', $node->nid)), '1 view', '@count views'),
-      'html'  => TRUE,
-    );
+    if (FILE_VIEWS_COUNTER) {
+      $links['file_views'] = array(
+        'title' => format_plural(db_result(db_query('SELECT SUM(f.views) FROM {file_nodes} f WHERE f.nid = %d', $node->nid)), '1 view', '@count views'),
+        'html'  => TRUE,
+      );
+    }
     $links['file_downloads'] = array(
       'title' => format_plural(db_result(db_query('SELECT SUM(f.downloads) FROM {file_nodes} f WHERE f.nid = %d', $node->nid)), '1 download', '@count downloads'),
       'html'  => TRUE,
