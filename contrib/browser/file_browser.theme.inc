@@ -98,7 +98,7 @@ function theme_file_browser_preview($data) {
     $output .= '<tr><th>'. t('Modified:') .'</th><td>'. format_date($node->changed, 'small') .'</td></tr>';
     $output .= '<tr><th>'. t('Type:') .'</th><td>'. file_mime_description_for($file->type) .'</td></tr>';
     $output .= '<tr><th>'. t('Size:') .'</th><td>'. format_size($file->size) .'</td></tr>';
-    if (FILE_VIEW_LINK)
+    if (FILE_VIEWS_COUNTER)
       $output .= '<tr><th>'. t('Views:') .'</th><td>'. $file->views .'</td></tr>';
     $output .= '<tr><th>'. t('Downloads:') .'</th><td>'. $file->downloads .'</td></tr>';
 
