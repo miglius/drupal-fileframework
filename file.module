@@ -536,16 +536,19 @@ function file_node_validate($node) {
     $_SESSION['file_preview_file'] = $file;
   }
 
-  // Make sure a file has been uploaded at some point
-  if (!isset($_SESSION['file_preview_file']) && !is_object(file_node_load($node)->file)) {
+  // Make sure a file has been uploaded at some point.
+  if (!isset($_SESSION['file_preview_file']) && !is_object(file_node_load($node)->file) && empty($node->file))
     form_set_error('file', t('A file upload must be provided.'));
-  }
 }
 
 /**
  * Implementation of hook_insert().
  */
 function file_node_insert($node) {
+  // File node is beeing created from the services.
+  if (is_string($node->file) && !empty($node->file))
+    $node->file = (object) array('uri' => bitcache_uri($node->file));
+
   $file = is_object($node->file) ? $node->file : NULL;
   if (!is_object($file) && isset($_SESSION['file_preview_file']))
     $file = file_save_upload('file');
@@ -800,5 +803,30 @@ function file_file_gallery($op) {
     case 'breadcrumb_home': return TRUE;
     case 'root_link': return 'node/'. $gid .'/gallery';
   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Services API hooks
+
+/**
+ * Implementation of hook_service().
+ */
+function file_service() {
+  return array(
+    array(
+      '#method'   => 'file.repository',
+      '#callback' => 'file_bitcache_repository',
+      '#return'   => 'string',
+      '#args'     => array(),
+      '#help'     => t('Returns the name of the bitcache repository used by the file framework.'),
+    ),
+  );
+}
+
+/**
+ * Returns the name of the bitcache repository used by the file framework.
+ */
+function file_bitcache_repository() {
+  return FILE_BITCACHE_REPOSITORY;
 }
 
