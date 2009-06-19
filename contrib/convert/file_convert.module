@@ -126,6 +126,7 @@ function file_get_mime_converters() {
       }
       $saved_converters = array_merge($saved_converters, variable_get($module .'_convert_pipelines', array()));
     }
+    drupal_alter('mime_converters', $converters);
     foreach ($converters as $from => $tos) {
       foreach ($tos as $to => $converter) {
         if (isset($saved_converters[$from][$to])) {

@@ -275,6 +275,7 @@ function file_get_mime_types() {
         $handlers = array_merge_recursive($handlers, $types);
       }
     }
+    drupal_alter('mime_types', $handlers);
   }
   return $handlers;
 }
