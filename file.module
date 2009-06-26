@@ -812,21 +812,68 @@ function file_file_gallery($op) {
  * Implementation of hook_service().
  */
 function file_service() {
-  return array(
-    array(
-      '#method'   => 'file.repository',
-      '#callback' => 'file_bitcache_repository',
-      '#return'   => 'string',
-      '#args'     => array(),
-      '#help'     => t('Returns the name of the bitcache repository used by the file framework.'),
-    ),
-  );
+  $services = array();
+
+  if (module_exists('node_service')) {
+    $services[] = array(
+      '#method' => 'file.save',
+      '#callback' => 'file_service_save',
+      '#access callback' => 'node_service_save_access',
+      '#file' => array(
+        'file' => 'inc',
+        'module' => 'node_service',
+      ),
+      '#args' => array(
+        array(
+          '#name' => 'node',
+          '#type' => 'struct',
+          '#optional' => FALSE,
+          '#description' => t('A node object.'),
+        ),
+        array(
+          '#name' => 'id',
+          '#type' => 'string',
+          '#optional' => FALSE,
+          '#description' => t('The bitstream\'s identifier (SHA-1 fingerprint).'),
+        ),
+        array(
+          '#name' => 'data',
+          '#type' => 'base64',
+          '#optional' => FALSE,
+          '#description' => t('The bitstream\'s contents.')
+        ),
+      ),
+      '#return' => 'struct',
+      '#help' => t('Uploads a file and save the file node object into the database.'),
+    );
+  }
+
+  return $services;
 }
 
 /**
- * Returns the name of the bitcache repository used by the file framework.
+ * Saves a file to the bitcache and creates a file node.
+ *
+ * @param $id
+ *   Bitstream's identifier (SHA-1 fingerprint).
+ * @param $data
+ *   Bitstream's contents.
+ * @param $edit
+ *   An array of the node fields' values, just like created on node edit form.
+ *
+ * @return
+ *   A file node ID or FALSE.
  */
-function file_bitcache_repository() {
-  return FILE_BITCACHE_REPOSITORY;
+function file_service_save($edit, $id, $data) {
+  bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
+  $hash = bitcache_put($id, $data);
+  bitcache_use_repository();
+  if (!$hash)
+    return FALSE;
+
+  $edit = (array)$edit;
+  $edit['type'] = 'file';
+  $edit['file'] = $hash;
+  return node_service_save($edit);
 }
 
