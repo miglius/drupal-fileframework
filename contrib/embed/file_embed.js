@@ -3,7 +3,9 @@
 Drupal.behaviors.file_embed = function(context) {
   // Body field text links
   $('a.file-embed-select').click(function() {
-    Drupal.file_embedPopup(this.href, 'Embed an existing file');
+    var textarea = $('textarea#' + this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1'));
+    var range = $(textarea).getSelection();
+    Drupal.file_embedPopup(this.href.replace(/(^.*)(TB_iframe.*$)/, '$1textarea_start=' + range.start + '&textarea_end=' + range.end + '&$2'), 'Embed an existing file');
     return false;
   });
 };
@@ -47,10 +49,6 @@ Drupal.file_embedInsert = function(options) {
 
   var textarea = $('textarea#' + textarea_id);
   var text = textarea.val();
-
-  // here we fetch our text range object using jquery-fieldselection
-  var range = $(textarea).getSelection();
-  
-  textarea.val(text.substring(0, range.start) + content + text.substring(range.end, text.length));
+  textarea.val(text.substring(0, options['textarea_start']) + content + text.substring(options['textarea_end'], text.length));
 }
 

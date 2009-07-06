@@ -420,6 +420,8 @@ function file_embed_options($node) {
       var options = {
         nid: $("#edit-nid").val(),
         textarea: $("#edit-textarea").val(),
+	textarea_start: '. check_plain($_GET['textarea_start']) .',
+	textarea_end: '. check_plain($_GET['textarea_end']) .',
         handler: $("#edit-handler").val(),
         align: $("#edit-align").val(),
         //padding: $("#edit-padding").val(),
@@ -459,8 +461,8 @@ function file_embed_file_gallery($op) {
       unset($query['q']);
       unset($query['page']);
       return $query;
-    case 'node_link': return array('link' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])));
-    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea'])), 'attributes' => array('title' => t('Embed file in the node.'))));
+    case 'node_link': return array('link' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea']), 'textarea_start' => check_plain($_GET['textarea_start']), 'textarea_end' => check_plain($_GET['textarea_end'])));
+    case 'file_links': return array('show' => array(), 'open' => array(), 'view' => array(), 'embed' => array('title' => t('Embed'), 'href' => 'file_embed/options/'. array_shift($args), 'query' => array('textarea' => check_plain($_GET['textarea']), 'textarea_start' => check_plain($_GET['textarea_start']), 'textarea_end' => check_plain($_GET['textarea_end'])), 'attributes' => array('title' => t('Embed file in the node.'))));
     case 'pager': return FILE_EMBED_POPUP_PER_PAGE;
     case 'thickbox': return FALSE;
     case 'filter': return TRUE;
