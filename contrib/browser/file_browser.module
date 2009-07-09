@@ -1026,7 +1026,7 @@ function _file_browser_select_nodes($tids = array(), $depth = 0, $order = 'n.sti
 
     $str_tids = implode(',', call_user_func_array('array_merge', $descendant_tids));
     if (!empty($str_tids)) {
-      $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
+      $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.vid = tn.vid AND tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
       $sql = db_rewrite_sql($sql);
       return db_query($sql);
     }
