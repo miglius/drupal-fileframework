@@ -79,7 +79,7 @@ function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); });', 'inline');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); }); });', 'inline');
 
     drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
   }

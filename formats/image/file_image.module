@@ -475,8 +475,8 @@ function _file_image_render_options($uri, $options = array()) {
   $height = is_object($height = rdf_value($uri, rdf_qname_to_uri('exif:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $height->value : 0;
 
   list($max_width, $max_height) = explode('x', FILE_IMAGE_PREVIEW_RESOLUTION);
-  $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : $max_width);
-  $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : $max_height);
+  $max_width = (int)(isset($options['max_width']) ? $options['max_width'] : $max_width);
+  $max_height = (int)(isset($options['max_height']) ? $options['max_height'] : $max_height);
 
   $scale = !isset($options['scale']) ? TRUE : !empty($options['scale']);
   $width = (int)($scale && !empty($options['width']) ? $options['width'] : $width);

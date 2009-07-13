@@ -48,6 +48,9 @@ function file_views_views_handlers() {
       'file_views_handler_field_file_attachments_parents' => array(
         'parent' => 'views_handler_field_prerender_list',
       ),
+      'file_views_handler_filter_node_attachments' => array(
+        'parent' => 'views_handler_filter',
+      ),
     ),
   );
 }
@@ -202,6 +205,17 @@ function file_views_views_data() {
       'title' => t('Attached to'),
       'help' => t('A list of all nodes the file is attached to.'),
       'handler' => 'file_views_handler_field_file_attachments_parents',
+    ),
+  );
+
+  // ----------------------------------------------------------------------
+  // nodetable
+
+  $data['node']['attachments'] = array(
+    'filter' => array(
+      'title' => t('File nodes'),
+      'help' => t('Whether file nodes are attachments.'),
+      'handler' => 'file_views_handler_filter_node_attachments'
     ),
   );
 

@@ -8,6 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+define('FILE_VIDEO_DISPLAY_WIDTH',      variable_get('file_video_display_width', 0));
 define('FILE_VIDEO_FLOWPLAYER_VERSION', variable_get('file_video_flowplayer_version', '3.0.0'));
 define('FILE_VIDEO_GETID3',             variable_get('file_video_getid3', 1));
 define('FILE_VIDEO_MODULE_PATH',        drupal_get_path('module', 'file_video'));
@@ -477,8 +478,9 @@ function _file_video_render_options($uri, $options = array()) {
   $width = is_object($width = rdf_value($uri, rdf_qname_to_uri('wordnet:width'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $width->value : 0;
   $height = is_object($height = rdf_value($uri, rdf_qname_to_uri('wordnet:height'), NULL, array('repository' => FILE_RDF_REPOSITORY))) ? $height->value : 0;
 
-  $max_width = (int)(!empty($options['max_width']) ? $options['max_width'] : NULL);
-  $max_height = (int)(!empty($options['max_height']) ? $options['max_height'] : NULL);
+  $max_width = FILE_VIDEO_DISPLAY_WIDTH > 0 ? FILE_VIDEO_DISPLAY_WIDTH : NULL;
+  $max_width = (int)(isset($options['max_width']) ? $options['max_width'] : $max_width);
+  $max_height = (int)(isset($options['max_height']) ? $options['max_height'] : NULL);
 
   $scale = !isset($options['scale']) ? TRUE : !empty($options['scale']);
   $width = (int)($scale && !empty($options['width']) ? $options['width'] : $width);
@@ -486,7 +488,7 @@ function _file_video_render_options($uri, $options = array()) {
   $width = (int)(!empty($options['min_width']) && $options['min_width']>$width ? $options['min_width'] : $width);
   $height = (int)($scale && !empty($options['height']) ? $options['height'] : $height);
 
-  // Scale image width and height, if requested
+  // Scale video width and height, if requested
   if ($scale && $width && $max_width && $width > $max_width) {
     $ratio = $max_width / $width;
     list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));

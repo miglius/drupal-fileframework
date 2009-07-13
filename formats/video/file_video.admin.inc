@@ -18,6 +18,17 @@
 function file_video_admin_settings() {
   $form = array();
 
+  // Display ettings
+  $form['display'] = array('#type' => 'fieldset', '#title' => t('Display settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['display']['file_video_display_width'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Max width'),
+    '#default_value' => FILE_VIDEO_DISPLAY_WIDTH,
+    '#size'          => 4,
+    '#maxlength'     => 255,
+    '#description'   => t('Maximum width of the video display in pixels. Wider objects will be scaled to this width preserving aspect ratio. Zero means no scaling will be performed.'),
+  );
+
   // Flowplayer ettings
   $form['flowplayer'] = array('#type' => 'fieldset', '#title' => t('Flowplayer settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['flowplayer']['file_video_flowplayer_version'] = array(
@@ -73,8 +84,12 @@ function file_video_admin_settings() {
  */
 function file_video_admin_settings_validate($form, &$form_state) {
   $op = $form_state['clicked_button']['#value'];
+  $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      if (!is_numeric($values['file_video_display_width'])) {
+        form_set_error('file_video_display_width', t('Width shoul be an integer.'));
+      }
       break;
   }
 }
@@ -87,6 +102,7 @@ function file_video_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_video_display_width', $values['file_video_display_width']);
       variable_set('file_video_flowplayer_version', $values['file_video_flowplayer_version']);
       variable_set('file_video_getid3', $values['file_video_getid3']);
       $getid3 = _file_video_getid3();
@@ -98,6 +114,7 @@ function file_video_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_video_display_width');
       variable_del('file_video_flowplayer_version');
       variable_del('file_video_getid3');
       variable_del('file_video_getid3_data');

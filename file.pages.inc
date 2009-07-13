@@ -71,7 +71,7 @@ function file_page_metadata($node) {
  *   A handler to display object.
  */
 function file_embed($node, $handler) {
-  if ($output = file_wrapper_html($node, $handler)) {
+  if ($output = file_wrapper_html($node, $handler, array('max_width' => 0, 'max_height' => 0))) {
     print $output;
   }
   else {
