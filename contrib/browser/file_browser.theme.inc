@@ -72,7 +72,7 @@ function theme_file_browser_file($data) {
   }
   $output .= '</div>';
   $output .= '</div>';
-  $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
+  $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); });</script>';
   return $output;
 }
 
@@ -115,7 +115,7 @@ function theme_file_browser_preview($data) {
     $output .= '</table>';
     $output .= '<script type=\'text/javascript\'>$(\'#file-preview-info\').find(\'span.file.with-menu\').click(function(event) { $(this).toggleClass(\'active\'); $(this).find(\'ul\').toggle(); });</script>';
     $output .= isset($url_preview) ? l($thumbnail, $url_preview, array('html' => TRUE, 'attributes' => array('title' => check_plain($node->title)))) : $thumbnail;
-    $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip();</script>';
+    $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); });</script>';
     $output .= '</div>';
 
     // Backreferences

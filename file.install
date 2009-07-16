@@ -229,3 +229,9 @@ function file_update_6001() {
   return $ret;
 }
 
+function file_update_6002() {
+  $ret = array();
+  db_change_field($ret, 'file_nodes', 'type', 'type', array('description' => t("The file's MIME type."), 'type' => 'varchar', 'length' => 255, 'default' => ''));
+  return $ret;
+}
+
