@@ -914,11 +914,12 @@ function _file_attach_save($node, $comment = NULL) {
 
       // Create new node.
       $file->name = trim($file->name);
-      $file_node = file_node_create(array('file' => $file));
+      $file_node = (object)array('file' => $file);
       if (FILE_ATTACH_OG_INHERITANCE)
         _file_propagate_og($node, $file_node);
       if (!$comment)
         _file_propagate_terms($node, $file_node, array('all' => FILE_ATTACH_VOCABULARIES_ALL, 'og' => FILE_ATTACH_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_ATTACH_VOCABULARIES)));
+      $file_node = file_node_create((array)$file_node);
       $file_attachment = (object)array('fnid' => $file_node->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_attachment);
       watchdog('file_attach', 'The file attachment with the nid=%fnid was created for the node nid=%nid.', array('%fnid' => $file_node->nid, '%nid' => $node->nid), WATCHDOG_NOTICE, isset($node->nid) ? l(t('view'), 'node/'. $node->nid) : NULL);
@@ -933,14 +934,12 @@ function _file_attach_save($node, $comment = NULL) {
       // Save a new file node title.
       $file_node = node_load($file->nid);
       if (node_access('update', $file_node)) {
-        if ($file_node->title != trim($file->name)) {
-          $file_node->title = trim($file->name);
-          node_save($file_node);
-        }
+        $file_node->title = trim($file->name);
         if (FILE_ATTACH_OG_INHERITANCE)
           _file_propagate_og($node, $file_node);
         if (!$comment)
           _file_propagate_terms($node, $file_node, array('all' => FILE_ATTACH_VOCABULARIES_ALL, 'og' => FILE_ATTACH_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_ATTACH_VOCABULARIES)));
+        node_save($file_node);
       }
     }
   }

@@ -1310,9 +1310,9 @@ function _file_propagate_og($node, $file_node) {
 
   global $user;
   $file_node->og_groups = array_unique(array_merge(isset($file_node->og_groups) ? $file_node->og_groups : array(), isset($node->og_groups) && !empty($node->og_groups) ? array_intersect($node->og_groups, array_keys($user->og_groups)) : array()));
+  $file_node->og_groups = array_combine($file_node->og_groups, $file_node->og_groups);
   if (isset($node->og_public) || isset($file_node->og_public))
     $file_node->og_public = isset($node->og_public) ? $node->og_public : $file_node->og_public;
-  og_save_ancestry($file_node);
 }
 
 /**
@@ -1337,7 +1337,6 @@ function _file_propagate_terms($node, $file_node, $settings = array()) {
     // Retrieve the list of vocabulary IDs from which we'll propagate
     // taxonomy terms associated with the containing parent node to any
     // contained file attachment nodes:
-
     $vocabularies = taxonomy_get_vocabularies('file');
     $og_vocabs = $og_vocabs_hidden = array();
     if (module_exists('og_vocab')) {
@@ -1368,49 +1367,42 @@ function _file_propagate_terms($node, $file_node, $settings = array()) {
       }
 
       if (!empty($taxonomy)) {
-        // We have to save the taxonomy first to get rid of the dublicates and get tids
-        // for a free tags. taxonomy_node_save() deletes old terms, so we have to make
-        // a copy first.
-        $terms = taxonomy_node_get_terms($file_node);
-        taxonomy_node_save($file_node, $taxonomy);
 
-        // Creates a union of the old and propagated tags. Can't use taxonomy_node_get_terms()
-        // any more because it has already cached the terms for this node ID.
-        $terms = _file_taxonomy_node_get_terms($file_node) + $terms;
-        taxonomy_node_save($file_node, $terms);
+        // Load file node taxonomy terms.
+        $file_node->taxonomy = array();
+        if (isset($file_node->nid)) {
+          foreach (taxonomy_node_get_terms($file_node) as $tag) {
+            $file_node->taxonomy[$tag->vid][$tag->tid] = $tag;
+          }
+        }
+
+        // Change to the taxonomy format to the one used in node update and merge in
+        // propagated values.
+        foreach ($file_node->taxonomy as $vid => $tags) {
+          $vocab = taxonomy_vocabulary_load($vid);
+          if ($vocab->tags) {
+            $file_node->taxonomy['tags'][$vid] = drupal_implode_tags(array_unique(array_merge(array_map(create_function('$a', 'return $a->name;'), $tags), isset($taxonomy['tags'][$vid]) ? drupal_explode_tags($taxonomy['tags'][$vid]) : array())));
+            unset($file_node->taxonomy[$vid]);
+            unset($taxonomy['tags'][$vid]);
+          }
+          else {
+            $file_node->taxonomy[$vid] = array_unique(array_merge(array_keys($file_node->taxonomy[$vid]), isset($taxonomy[$vid]) ? (is_array($taxonomy[$vid]) ? $taxonomy[$vid] : array($taxonomy[$vid])) : array()));
+            unset($taxonomy[$vid]);
+
+            if (!$vocab->multiple) {
+              $file_node->taxonomy[$vid] = isset($taxonomy[$vid]) ? $taxonomy[$vid] : reset($file_node->taxonomy[$vid]);
+              unset($taxonomy[$vid]);
+            }
+          }
+        }
+        if (count($tags = (isset($file_node->taxonomy['tags']) ? $file_node->taxonomy['tags'] : array()) + (isset($taxonomy['tags']) ? $taxonomy['tags'] : array())))
+          $file_node->taxonomy['tags'] = $tags;
+        $file_node->taxonomy = $file_node->taxonomy + $taxonomy;
       }
     }
   }
-  else {
-    // File node is saved.
-    taxonomy_node_save($file_node, isset($file_node->taxonomy) ? $file_node->taxonomy : array());
 
-    // Can't use taxonomy_node_get_terms()
-    // any more because it has already cached the terms for this node ID.
-    $terms = _file_taxonomy_node_get_terms($file_node);
-  }
-
-  $file_node->taxonomy = isset($terms) ? $terms : array();
   foreach (module_implements('file_propagate_terms') as $module)
     module_invoke($module, 'file_propagate_terms', $file_node);
-}
-
-/**
- * Gets taxonomy terns of the node instead of taxonomy_node_get_terms()
- * because the terms are already cached.
- *
- * @param $node
- *   A node object.
- *
- * @return
- *   An array of the term objects.
- */
-function _file_taxonomy_node_get_terms($node) {
-  $terms = array();
-  $result = db_query('SELECT tid FROM {term_node} WHERE nid = %d AND vid = %d', $node->nid, $node->vid);
-  while ($row = db_fetch_object($result)) {
-    $terms[$row->tid] = taxonomy_get_term($row->tid);
-  }
-  return $terms;
 }
 
