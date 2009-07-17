@@ -253,10 +253,11 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
           _file_cck_db_update(array('action' => $field['multiple'] != 1 ? 'remove' : 'delete', 'table' => $db_info['table'], 'column' => $db_info['columns']['value']['column'], 'multiple' => $multiple, 'delta' => $delta, 'vid' => $node->vid));
         }
         else if (($file = file_save_upload($field['field_name'] .'_'. $o, array_merge(file_get_validators(), array('file_cck_upload_validate' => array(isset($field['widget']['extensions_allowed']) ? $field['widget']['extensions_allowed'] : ''))))) || (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o]) && $file = $_SESSION['file_cck_files']['s_'. $field['field_name'] .'_'. $o])) {
-          $file_node = file_node_create(array('file' => $file));
+          $file_node = (object)array('file' => $file);
           if (FILE_CCK_OG_INHERITANCE)
             _file_propagate_og($node, $file_node);
           _file_propagate_terms($node, $file_node, array('all' => FILE_CCK_VOCABULARIES_ALL, 'og' => FILE_CCK_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_CCK_VOCABULARIES)));
+          $file_node = file_node_create((array)$file_node);
           $nid = $file_node->nid;
         }
         else {
@@ -266,6 +267,7 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
               if (FILE_CCK_OG_INHERITANCE)
                 _file_propagate_og($node, $file_node);
               _file_propagate_terms($node, $file_node, array('all' => FILE_CCK_VOCABULARIES_ALL, 'og' => FILE_CCK_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_CCK_VOCABULARIES)));
+              node_save($file_node);
             }
           }
           $nid = $nid ? $nid : NULL;
