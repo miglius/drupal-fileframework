@@ -483,11 +483,11 @@ function _file_image_render_options($uri, $options = array()) {
   $height = (int)($scale && !empty($options['height']) ? $options['height'] : $height);
 
   // Scale image width and height, if requested
-  if ($scale && $width && $width > $max_width) {
+  if ($scale && $width && $max_width && $width > $max_width) {
     $ratio = $max_width / $width;
     list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
   }
-  if ($scale && $height && $height > $max_height) {
+  if ($scale && $height && $max_height && $height > $max_height) {
     $ratio = $max_height / $height;
     list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
   }
@@ -496,7 +496,9 @@ function _file_image_render_options($uri, $options = array()) {
   $title = isset($node->title) ? $node->title : NULL;
   $src = bitcache_resolve_uri($uri, array('absolute' => FALSE, 'query' => isset($node->vid) ? array('vid' => $node->vid) : array()));
 
-  $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => "max-width: {$max_width}px; max-height: {$max_height}px;", 'border' => '0'), $options);
+  $style = implode(' ', array_filter(array(isset($max_width) && $max_width > 0 ? "max-width: {$max_width}px;" : '', isset($max_height) && $max_height > 0 ? "max-height: {$max_height}px;" : '')));
+
+  $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => $style, 'border' => '0'), $options);
   return array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));
 }
 
