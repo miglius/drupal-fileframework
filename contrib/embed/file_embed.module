@@ -420,8 +420,8 @@ function file_embed_options($node) {
       var options = {
         nid: $("#edit-nid").val(),
         textarea: $("#edit-textarea").val(),
-	textarea_start: '. check_plain($_GET['textarea_start']) .',
-	textarea_end: '. check_plain($_GET['textarea_end']) .',
+        textarea_start: '. ($_GET['textarea_start'] ? check_plain($_GET['textarea_start']) : '0') .',
+        textarea_end: '. ($_GET['textarea_end'] ? check_plain($_GET['textarea_end']) : '0') .',
         handler: $("#edit-handler").val(),
         align: $("#edit-align").val(),
         //padding: $("#edit-padding").val(),

@@ -105,7 +105,7 @@ function file_slideshow_mime_converters() {
         'handlers' => array('file_image_image'),
       ),
       'application/x-shockwave-flash' => array(
-        'pipeline' => '{pdf2swf} -lb "[in_file]" "[out_file]"',
+        'pipeline' => 'cd "[tmpdir]"; {pdf2swf} -lb "[in_file]" "[out_file]"',
         'handlers' => array('file_video_flash_swf'),
       ),
       'application/zip' => array(
