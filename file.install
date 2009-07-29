@@ -13,6 +13,9 @@
  * Implementation of hook_enable().
  */
 function file_enable() {
+  @rdf_create_repository('file', array('dc:title' => t('File framework'), 'dc:description' => 'A repository for the file framework managed files metadata.'));
+  @bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.', 'adapter' => 'file', 'module' => 'file', 'location' => '[file-directory-path]/bitcache/file'));
+
   drupal_set_message(t('File module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file'))));
 }
 
@@ -21,13 +24,6 @@ function file_enable() {
  */
 function file_install() {
   drupal_install_schema('file');
-  // Since drupal installs modules alphabetically, RDF files are not loaded at this moment,
-  // therefore we need to include them manually.
-  if (module_load_include('inc', 'rdf', 'rdf.db') !== FALSE)
-    rdf_db_create_repository('file', array('dc:title' => t('File framework'), 'dc:description' => 'A repository for the file framework managed files metadata.'));
-  else
-    drupal_set_message(t('RDF API module cannot be found. You should install RDF module first, and then reinstall File Framework.'));
-  bitcache_create_repository('file', array('title' => 'File framework', 'description' => 'A repository for the file framework managed files.', 'adapter' => 'file', 'module' => 'file'));
 }
 
 /**
@@ -58,10 +54,10 @@ function file_uninstall() {
   variable_del('file_og_browser_tab');
   variable_del('file_og_gallery_tab');
 
-  if (function_exists('bitcache_delete_repository'))
-    bitcache_delete_repository('file');
-  if (function_exists('rdf_db_delete_repository'))
-    rdf_db_delete_repository('file');
+  if (module_load_include('module', 'bitcache', 'bitcache') !== FALSE)
+    @bitcache_delete_repository('file');
+  if (module_load_include('module', 'rdf', 'rdf') !== FALSE)
+    @rdf_delete_repository('file');
 }
 
 /**
