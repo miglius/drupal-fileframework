@@ -1014,6 +1014,7 @@ function file_wrapper_ahah($handler, $hash, $vid) {
   }
   //header("HTTP/1.1 403 Forbidden");
   drupal_access_denied();
+  exit;
 }
 
 /*

@@ -102,7 +102,7 @@ function file_serve($node, $vid, $disposition = 'attachment') {
   }
   if ($node->type != 'file' || !is_object($node->file) || (!empty($vid) && !is_numeric($vid))) {
     drupal_not_found();
-    return;
+    exit;
   }
   $href = bitcache_resolve_uri($node->file->uri);
   $query = array('vid' => isset($vid) ? $vid : $node->vid, 'disposition' => $disposition, 'op' => ($disposition == 'attachment') ? 'download' : 'view');

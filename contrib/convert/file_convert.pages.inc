@@ -23,7 +23,7 @@ function file_convert_rerun($node, $vid) {
   }
   if (!user_access('re-run file conversions') || $node->type != 'file' || !is_object($node->file) || (!empty($vid) && !is_numeric($vid))) {
     drupal_not_found();
-    return;
+    exit;
   }
   $file = $node->file;
   $file->filename = $node->title;
