@@ -40,7 +40,7 @@ function theme_file_audio_mp3_render($options = array()) {
     'playlist_url' => url('file_audio/xspf/'. $src),
     'player_title' => $title,
   ));
-  $player_path = url() . drupal_get_path('module', 'file') .'/vendor/xspf_player';
+  $player_path = base_path() . drupal_get_path('module', 'file') .'/vendor/xspf_player';
 
   $url = $player_path .'/xspf_player_slim.swf?'. drupal_query_string_encode($options);
   $output .= '<object type="application/x-shockwave-flash" data="'. $url .'" width="400" height="15">';

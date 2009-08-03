@@ -103,7 +103,7 @@ function theme_file_video_flash_flv_render($options = array()) {
 
   $height += 24; // Accommodate video controls
   $width_min = 175; //smaller than that breaks player controls
-  $player_path = url() . drupal_get_path('module', 'file') .'/vendor/flowplayer';
+  $player_path = base_path() . drupal_get_path('module', 'file') .'/vendor/flowplayer';
 
   $output = '';
 

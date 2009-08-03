@@ -15,7 +15,7 @@
 function theme_file_document_mm_render($options = array()) {
   extract($options, EXTR_SKIP);
 
-  $player_path = url() . drupal_get_path('module', 'file') .'/vendor/freemind';
+  $player_path = base_path() . drupal_get_path('module', 'file') .'/vendor/freemind';
 
   $output = '<applet code="freemind.main.FreeMindApplet.class" archive="'. $player_path .'/freemind.jar" width="100%" height="500">'."\n";
   $output .= '<param name="type" value="application/x-java-applet;version=1.4" />'."\n";
