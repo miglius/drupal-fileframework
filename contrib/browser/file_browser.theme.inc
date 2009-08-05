@@ -132,8 +132,6 @@ function theme_file_browser_preview($data) {
     }
   }
 
-  $output .= '</div>'; // id=file-preview
-
   // File move form.
   if (isset($form)) {
     $output .= '<div id="file-move">';
@@ -141,6 +139,8 @@ function theme_file_browser_preview($data) {
     $output .= '</div>';
     $output .= '<iframe src="javascript:;" id="file_browser-move-submission-frame" name="file_browser-move-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   }
+
+  $output .= '</div>'; // id=file-preview
 
   return $output;
 }
