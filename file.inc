@@ -145,7 +145,7 @@ function file_data_save($file, $tier = NULL) {
   // Save metadata information to the RDF.
   $metadata = isset($file_save->metadata) ? array($uri => array_merge($parent, $file_save->metadata)) : array_merge_recursive(array($uri => $parent), file_get_metadata($file_save));
 
-  // A generated file can have several parent filess, for instance the same
+  // A generated file can have several parent files, for instance the same
   // video file with different audio codecs will have the same image preview.
   foreach (file_metadata_normalize(rdf_normalize(rdf_query($file_save->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))) as $p => $o) {
     if (in_array($p, array('dc:source', 'dc:creator'))) {
@@ -206,11 +206,12 @@ function file_node_create($node = array()) {
  *
  */
 function file_node_delete_node($file) {
-  if (!empty($file->uri) && db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == (isset($file->keep_blob) ? 1 : 0)) {
+  if (!empty($file->uri) && (isset($file->force_delete) || db_result(db_query("SELECT COUNT(f.nid) FROM {file_nodes} f WHERE f.uri = '%s'", $file->uri)) == (isset($file->keep_blob) ? 1 : 0))) {
     bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
 
     // The last reference to the blob. Search for a previews.
     if ($derived = rdf_normalize(rdf_query(NULL, NULL, $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
+
       // Delete all previews.
       foreach ($derived as $uri => $data) {
         $item = rdf_normalize(rdf_query($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
@@ -237,13 +238,17 @@ function file_node_delete_node($file) {
       }
     }
 
-    // Delete from the RDF.
-    if (!isset($file->keep_rdf) && !rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
-      watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
+    // Check if the file itself is not a derivative.
+    if (!count(rdf_normalize(rdf_query($file->uri, rdf_qname_to_uri('dc:source'), NULL, array('repository' => FILE_RDF_REPOSITORY))))) {
 
-    // Delete from a bitcache.
-    if (!isset($file->keep_blob) && !bitcache_delete(file_get_hash($file)))
-      watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+      // Delete from the RDF.
+      if (!isset($file->keep_rdf) && !rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
+        watchdog('file', 'The RDF data was not deleted for the subject s=%sub.', array('%sub' => $file->uri), WATCHDOG_ERROR);
+
+      // Delete from a bitcache.
+      if (!isset($file->keep_blob) && !bitcache_delete(file_get_hash($file)))
+        watchdog('file', 'The %uri blob was not deleted from the bitcache.', array('%uri' => $file->uri), WATCHDOG_ERROR);
+    }
 
     bitcache_use_repository();
   }
@@ -404,11 +409,13 @@ function file_mime_guess($filename) {
  * @param $filename
  *   Full filename of the file.
  *
+ * @param $force
+ *   Flaf which forces the detection.
  * @return
  *   A MIME type of the file.
  */
-function file_mime_detect($file) {
-  if (FILE_MIME_AUTODETECTION == 2) {
+function file_mime_detect($file, $force = FALSE) {
+  if (!$force && FILE_MIME_AUTODETECTION == 2) {
     $mimes = $exts = array();
     foreach (explode("\n", FILE_MIME_AUTODETECTION_CONDITIONS) as $line) {
       $line = trim($line);
@@ -436,7 +443,7 @@ function file_mime_detect($file) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
     $filename = realpath($file->filepath);
-    $output = exec('file -bi '. escapeshellarg($file->filepath), $ignore, $status);
+    $output = exec('file -b --mime '. escapeshellarg($file->filepath), $ignore, $status);
     if ($status == 0 && preg_match('!([\w-]+/[\w\d_+-]+)!', $output, $matches))
       return $matches[1];
   }

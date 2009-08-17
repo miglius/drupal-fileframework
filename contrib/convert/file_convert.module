@@ -203,7 +203,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
     // Copy file to the temporal file.
     $input = bitcache_get_stream(file_get_hash($file_convert->uri));
     $tmpfile = tempnam($options['tmpdir'], 'drupal_file_convert_');
-    $output  = fopen($tmpfile, 'wb');
+    $output = fopen($tmpfile, 'wb');
     stream_copy_to_stream($input, $output);
     fclose($input);
     fclose($output);

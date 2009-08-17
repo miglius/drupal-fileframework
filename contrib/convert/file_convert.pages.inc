@@ -29,6 +29,7 @@ function file_convert_rerun($node, $vid) {
   $file->filename = $node->title;
   $file->filemime = $file->type;
   unset($file->type);
+  $file->force_delete = TRUE;
   $file->keep_blob = TRUE;
   $file->keep_rdf = TRUE;
   file_node_delete_node($file);
