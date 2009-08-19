@@ -306,6 +306,9 @@ function _file_embed_add_headers() {
     drupal_add_js(drupal_get_path('module', 'file_embed') .'/jquery/fieldselection/jquery-fieldselection.js');
     drupal_add_css(drupal_get_path('module', 'file_embed') .'/file_embed.css');
     drupal_add_js(drupal_get_path('module', 'file_embed') .'/file_embed.js');
+    drupal_add_js(array('file_embed' => array(
+      'popupTitle' => t('Embed an existing file'),
+    )), 'setting');
   }
 }
 

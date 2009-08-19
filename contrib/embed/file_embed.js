@@ -3,6 +3,7 @@
 Drupal.file_embedBookmarks = {};
 
 Drupal.behaviors.file_embed = function(context) {
+  var translate = Drupal.settings.file_embed;
   // Body field text links.
   $('a.file-embed-select').click(function() {
     var textareaId = this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1');
@@ -36,12 +37,12 @@ Drupal.behaviors.file_embed = function(context) {
         // haven't done so already).
         editor.setContent(html.replace(insertionKey, ''));
       }
-      Drupal.file_embedPopup(this.href, 'Embed an existing file');
+      Drupal.file_embedPopup(this.href, translate.popupTitle );
     }
     else {
       var textarea = $('textarea#' + this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1'));
       var range = $(textarea).getSelection();
-      Drupal.file_embedPopup(this.href.replace(/(^.*)(TB_iframe.*$)/, '$1textarea_start=' + range.start + '&textarea_end=' + range.end + '&$2'), 'Embed an existing file');
+      Drupal.file_embedPopup(this.href.replace(/(^.*)(TB_iframe.*$)/, '$1textarea_start=' + range.start + '&textarea_end=' + range.end + '&$2'), translate.popupTitle);
     }
     return false;
   });

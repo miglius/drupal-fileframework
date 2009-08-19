@@ -361,12 +361,6 @@ function _file_attach_form($object) {
       '#suffix' => '</div>',
     );
 
-    drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
-    list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
-    $query = array('module' => 'file_attach', 'layout' => 'off');
-    $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
-    $url = array('url' => 'file_gallery', 'query' => array_merge(file_attach_file_gallery('query'), $query));
-
     $form['attach_saved_description'] = array(
       '#type' => 'item',
       '#title' => t('Attach existing file'),
@@ -380,6 +374,9 @@ function _file_attach_form($object) {
 
     if (module_exists('file_gallery')) {
       drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
+      drupal_add_js(array('file_attach' => array(
+        'popupTitle' => t('Attach an existing file'),
+      )), 'setting');
       list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
       $query = array('module' => 'file_attach', 'layout' => 'off');
       $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
@@ -572,7 +569,9 @@ function file_attach_js() {
   );
 
   // Remember file gallery page.
-  $form['attach_browse_url']['#value'] = $form_state['values']['attach_browse_url'];
+  if (module_exists('file_gallery')) {
+    $form['attach_browse_url']['#value'] = $form_state['values']['attach_browse_url'];
+  }
 
   drupal_alter('form', $form, array(), 'file_attach_js');
   $form_state = array('submitted' => FALSE);

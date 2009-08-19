@@ -1,13 +1,14 @@
 // $Id$
 
 Drupal.behaviors.file_attach = function(context) {
+  var translate = Drupal.settings.file_attach;
   // Attach existing file
   $('a.file-attach-select').click(function() {
-    Drupal.file_attachPopup(this.href, 'Attach an existing file');
+    Drupal.file_attachPopup(this.href, translate.popupTitle);
     return false;
   });
   $('#edit-attach-browse').click(function() {
-    Drupal.file_attachPopup($('#edit-attach-browse-url').val(), 'Attach an existing file');
+    Drupal.file_attachPopup($('#edit-attach-browse-url').val(), translate.popupTitle);
     return false;
   });
 };	
