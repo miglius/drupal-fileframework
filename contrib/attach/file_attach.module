@@ -669,9 +669,13 @@ function file_attach_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
     case 'insert':
     case 'update':
-      if (variable_get('file_attach_node_'. $node->type, TRUE)) {
-        if (user_access('attach files')) {
+      if (user_access('attach files') && variable_get('file_attach_node_'. $node->type, TRUE)) {
+        // nodeapi hooks can be fired several times, but
+        // the attachments should be saved only once.
+        static $file_attach_saved = FALSE;
+        if (!$file_attach_saved) {
           _file_attach_save($node);
+          $file_attach_saved = TRUE;
         }
       }
       break;
@@ -883,10 +887,8 @@ function _file_attach_view($object) {
 function _file_attach_save($node, $comment = NULL) {
   $files = isset($comment) ? (isset($comment->files) ? $comment->files : array()) : (isset($node->files) ? $node->files : array());
   $cid = isset($comment) ? $comment->cid : 0;
-
-  if (empty($files)) {
+  if (empty($files))
     return;
-  }
 
   // An array of the file node nids currently attached to the node.
   $node_files = array();
@@ -942,6 +944,7 @@ function _file_attach_save($node, $comment = NULL) {
       }
     }
   }
+
   // Empty the session storage after save. We use this variable to track files
   // that haven't been related to the node yet.
   unset($_SESSION['file_attach_files']);

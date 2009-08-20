@@ -77,7 +77,7 @@ function file_cck_menu() {
 function file_cck_nodeapi(&$node, $op, $a3, $a4) {
   switch ($op) {
     case 'prepare':
-      // The session variable is cleared from the unsaved file uploads..
+      // The session variable is cleared from the unsaved file uploads.
       unset($_SESSION['file_cck_files']);
       break;
     case 'insert':
@@ -105,8 +105,8 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
               $fid = $nid;
             }
             if (isset($fid) && (!isset($_POST[$field .'_remove']) || !isset($_POST[$field .'_remove'][$o]))) {
-              // The items array is populated just for the first itemy, therefore I copy it
-              // and populate with the right value and the wirght.
+              // The items array is populated just for the first item, therefore I copy it
+              // and populate with the right value and the weight.
               if ($delta > 0)
                 $node->content[$field]['field']['items'][$delta] = $node->content[$field]['field']['items'][0];
               $node->content[$field]['field']['items'][$delta]['#item']['value'] = $fid;
@@ -125,8 +125,8 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
  */
 function file_cck_form_alter(&$form, $form_state, $form_id) {
   if (isset($form['type']) && isset($form['#node'])) {
-    // Node form.
-    // If the file is already uploaded, the corresponding message
+    // A node form.
+    // If a file is already uploaded, the corresponding message
     // is set next to the file upload field.
     if ($form['type']['#value'] .'_node_form' == $form_id) {
       $node = $form['#node'];
@@ -245,8 +245,8 @@ function file_cck_field($op, &$node, $field, &$items, $teaser, $page) {
       $delta = 0;
 
       foreach ($order as $o) {
-        // I cannot modify field entry here since cck module resets the changes made to the fields.
-        // Therefore I create a updates queue which is executed from the hook_nodeapi().
+        // I cannot modify field entry here since cck module resets changes made to the fields.
+        // Therefore I create updates queue which is executed from the hook_nodeapi().
 
         $nid = NULL;
         if (isset($_POST[$field['field_name'] .'_remove'][$o])) {
@@ -527,7 +527,7 @@ function file_cck_js() {
   $form = $cache->data;
   $form_state = array('values' => $_POST);
 
-  // Handle new uploads, and merge tmp files into node-files.
+  // Handle new uploads and merge tmp files into node-files.
   file_cck_form_submit($form, $form_state);
 
   // Build a replacement form.
@@ -748,9 +748,7 @@ function _file_cck_db_update($action = array()) {
 }
 
 /**
- * Since hook_field() does not allow changing of the field value and
- * direct writes to the database are overwritten in the content.module,
- * here we accumulate the field change sqls which are executted later.
+ * A file upload validation function.
  *
  * @param $file
  *   A file object.
