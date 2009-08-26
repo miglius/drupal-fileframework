@@ -21,5 +21,5 @@ Drupal.file_attachPopup = function(url, title) {
   $("#TB_overlay").remove();
   $("#TB_window").remove();
   tb_show(title || 'Add files', url, false);
-}
+};
 

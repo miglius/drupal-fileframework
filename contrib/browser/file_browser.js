@@ -37,7 +37,7 @@ Drupal.behaviors.file_browser = function(context) {
 Drupal.file_browserInit = function(block) {
   var ratio = block == 'page' ? 0.75 : 0.3;
   $('div.file-system').height('' + (Drupal.file_browserGetWindowHeight() * ratio) + 'px');
-}
+};
 
 /**
  * Set the vocabulary and term IDs on the folder folder.
@@ -78,7 +78,7 @@ Drupal.file_browserUploadCheck = function(id) {
   var block = id.match(/-b([^-]+)/)[1];
   if (block == 'page') 
     $('#block-file_browser-newterm').show();
-}
+};
 
 /**
  * Toggle upload button.
@@ -86,7 +86,7 @@ Drupal.file_browserUploadCheck = function(id) {
 Drupal.file_browserToggleUpload = function() {
   var button = $('input#edit-upload-submit');
   Drupal.file_browserVars.currentItem == 't' ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
-}
+};
 
 /**
  * Toggle newterm  button.
@@ -94,7 +94,7 @@ Drupal.file_browserToggleUpload = function() {
 Drupal.file_browserToggleNewterm = function(id) {
   var button = $('input#edit-newterm-submit');
   Drupal.file_browserVars.currentItem != 'f' && $('#' + id).hasClass('hierarchy') ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
-}
+};
 
 /**
  * Gets window height.
@@ -107,7 +107,7 @@ Drupal.file_browserGetWindowHeight = function() {
   if (document.body && document.body.clientHeight)
     return document.body.clientHeight; // MSIE4
   return 600; // reasonable default
-}
+};
 
 /**
  * Dynamically add the new Term to the DOM in the correct location
@@ -157,7 +157,7 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
   $('#' + term + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
   Drupal.file_browserSetMsg(msg);
   $('#file-browser-newterm-form input#newterm-name').val(''); // resetting the value in the text field
-}
+};
 
 /**
  * Dynamically add the new node to the DOM in the correct location
@@ -205,7 +205,7 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
       }
     });
   }
-}
+};
 
 /**
  * Adds informational messages to the screen for the user to see
@@ -216,7 +216,7 @@ Drupal.file_browserSetMsg = function(msg) {
     $('<div id="file-upload-messages" class="messages status"></div>').insertBefore('.file-system');
   $('#file-upload-messages').append(msg);
   setTimeout(function() { $('#file-upload-messages').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
-}
+};
 
 /**
  * Display any error messages on the screen since we do not do full page refreshes for actions
@@ -227,7 +227,7 @@ Drupal.file_browserErrorMsg = function(msg) {
     $('<div id="file-upload-errors" class="messages error"></div>').insertBefore('.file-system');
   $('#file-upload-errors').append(msg);
   setTimeout(function() { $('#file-upload-errors').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
-}
+};
 
 /**
  * Display any notice messages on the screen since we do not do full page refreshes for actions
@@ -238,7 +238,7 @@ Drupal.file_browserNoticeMsg = function(msg) {
     $('<div id="file-upload-notices" class="messages notice"></div>').insertBefore('.file-system');
   $('#file-upload-notices').append(msg);
   setTimeout(function() { $('#file-upload-notices').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
-}
+};
 
 /**
  * Highlights the selected row and adds necessary css classes to the pertinent rows
@@ -256,7 +256,7 @@ Drupal.file_browserSelectRow = function(obj, id, folder, link) {
 
   if (folder)
     $(obj).parent().toggleClass('expanded');
-}
+};
 
 /*
  * Expands or collapses the folder that was selected based on the current DOM information
@@ -321,7 +321,7 @@ Drupal.file_browserFolderClick = function(obj, elm) {
     });
   }
   return false;
-}
+};
 
 /**
  * Handle operations when one of the file rows is clicked
@@ -349,7 +349,7 @@ Drupal.file_browserFileClick = function(obj) {
     };
   });
   return false;
-}
+};
 
 /**
  * Adds upload widget.
@@ -380,7 +380,7 @@ Drupal.file_browserAddFileWidget = function() {
     Drupal.file_restrictionExtensions('#edit-upload-' + Drupal.file_browserVars.filecount);
   }
   Drupal.file_browserVars.filecount++;
-}
+};
 
 /**
  * Removes upload widgets.
@@ -393,7 +393,7 @@ Drupal.file_browserDelFileWidget = function() {
   $('#file-browser-upload-form input#edit-upload-0').val(''); // resetting the value in the text field
   $('.file-restriction').hide();
   $('#file-upload-spinner').hide();
-}
+};
 
 /**
  * Sets parent term values on the file upload.
@@ -405,7 +405,7 @@ Drupal.file_browserUpdateTerm = function(id, size, files) {
       $(this).find('.file-date').text(files);
     }
   })
-}
+};
 
 /**
  * Handle operations when file upload is clicked
@@ -413,5 +413,5 @@ Drupal.file_browserUpdateTerm = function(id, size, files) {
  */
 Drupal.file_browserFileUploadClick = function(obj) {
   $('#file-upload-spinner').show();
-}
+};
 
