@@ -189,10 +189,10 @@ function file_convert($file, $pipeline, $tier, $handlers = array(), $options = a
  *
  * @return
  *   A converted file's filename or NULL. Calling function
- *   should delete the tomporal file.
+ *   should delete the temporal file.
  */
 function _file_convert($file, $pipeline, $tier, $options) {
-  $options['filename'] = $file->filename;
+  $options['filename'] = preg_replace('/"/', '\"', $file->filename);
   $options['tmpdir'] = file_directory_temp();
   $file_convert = ($tier > 0) ? $file->converted[$tier - 1] : $file;
   if (isset($file_convert->filepath)) {
