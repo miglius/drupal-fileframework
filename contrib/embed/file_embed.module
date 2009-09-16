@@ -382,7 +382,7 @@ function file_embed_options_form($form_state, $node) {
   */
   $form['embed']['link'] = array(
     '#type'          => 'checkbox',
-    '#title'         => 'Link embedded file to the file\'s node',
+    '#title'         => t('Link embedded file to the file\'s node'),
     '#default_value' => 1,
   );
   $form['embed']['insert'] = array(
