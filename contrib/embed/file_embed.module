@@ -183,12 +183,14 @@ function file_embed_textarea_process($element) {
       /*
       static $counter = 0;
       if (++$counter == 1) {
-        $element['#suffix'] = _file_embed_textarea_link($element, $type);
+        $element['#suffix'] = isset($element['#suffix']) ? $element['#suffix'] : '';
+        $element['#suffix'] .= _file_embed_textarea_link($element, $type);
       }
       */
       // For the comment the textarea is proccesed twice, therefore commenting out
       // this section for now.
-      $element['#suffix'] = _file_embed_textarea_link($element, $type);
+      $element['#suffix'] = isset($element['#suffix']) ? $element['#suffix'] : '';
+      $element['#suffix'] .= _file_embed_textarea_link($element, $type);
     }
   }
   return $element;
