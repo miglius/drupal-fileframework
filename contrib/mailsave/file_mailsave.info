@@ -1,0 +1,8 @@
+; $Id$
+name = Mailsave
+description = Creates file attachments from email attachments.
+package = File management
+dependencies[] = file
+dependencies[] = mailsave
+core = 6.x
+php = 5.2
