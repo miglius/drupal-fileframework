@@ -8,6 +8,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+define('FILE_ATTACH_REUSE',            variable_get('file_attach_reuse', 1));
 define('FILE_ATTACH_REUSE_NODES',      variable_get('file_attach_reuse_nodes', '0'));
 define('FILE_ATTACH_SHOW_ATTACHMENTS', variable_get('file_attach_show_attachments', 1));
 define('FILE_ATTACH_SHOW_PREVIEWS',    variable_get('file_attach_show_previews', 1));
@@ -361,44 +362,46 @@ function _file_attach_form($object) {
       '#suffix' => '</div>',
     );
 
-    $form['attach_saved_description'] = array(
-      '#type' => 'item',
-      '#title' => t('Attach existing file'),
-      '#description' => t('Put a file node id in square brackets, like [123], or type in a file name for the selection.'),
-    );
-    $form['attach_saved'] = array(
-      '#type' => 'textfield',
-      '#autocomplete_path' => 'file_attach/autocomplete',
-      '#maxlength' => 255,
-    );
-
-    if (module_exists('file_gallery')) {
-      drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
-      drupal_add_js(array('file_attach' => array(
-        'popupTitle' => t('Attach an existing file'),
-      )), 'setting');
-      list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
-      $query = array('module' => 'file_attach', 'layout' => 'off');
-      $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
-      $query = array_merge(file_attach_file_gallery('query'), $query);
-      $form['attach_saved_description']['#description'] .= t(' You can also click on "Browse..." to choose a file.');
-
-      $form['attach_browse'] = array(
-        '#type'  => 'submit',
-        '#value' => t('Browse...'),
+    if (FILE_ATTACH_REUSE) {
+      $form['attach_saved_description'] = array(
+        '#type' => 'item',
+        '#title' => t('Attach existing file'),
+        '#description' => t('Put a file node id in square brackets, like [123], or type in a file name for the selection.'),
       );
-      $form['attach_browse_url'] = array('#type' => 'hidden', '#value' => url('file_gallery', array('query' => $query)));
+      $form['attach_saved'] = array(
+        '#type' => 'textfield',
+        '#autocomplete_path' => 'file_attach/autocomplete',
+        '#maxlength' => 255,
+      );
 
-      // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
-      drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
-      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+      if (module_exists('file_gallery')) {
+        drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach.js');
+        drupal_add_js(array('file_attach' => array(
+          'popupTitle' => t('Attach an existing file'),
+        )), 'setting');
+        list($width, $height) = explode('x', FILE_ATTACH_POPUP_SIZE);
+        $query = array('module' => 'file_attach', 'layout' => 'off');
+        $query += array('TB_iframe' => 'true', 'height' => $height, 'width' => $width);
+        $query = array_merge(file_attach_file_gallery('query'), $query);
+        $form['attach_saved_description']['#description'] .= t(' You can also click on "Browse..." to choose a file.');
 
-      // Cluetip for metadata.
-      drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
-      drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+        $form['attach_browse'] = array(
+          '#type'  => 'submit',
+          '#value' => t('Browse...'),
+        );
+        $form['attach_browse_url'] = array('#type' => 'hidden', '#value' => url('file_gallery', array('query' => $query)));
 
-      drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+        // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+        drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+        drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+        // Cluetip for metadata.
+        drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+        drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
+        drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+
+        drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+      }
     }
   }
   return $form;
@@ -569,7 +572,7 @@ function file_attach_js() {
   );
 
   // Remember file gallery page.
-  if (module_exists('file_gallery')) {
+  if (FILE_ATTACH_REUSE && module_exists('file_gallery')) {
     $form['attach_browse_url']['#value'] = $form_state['values']['attach_browse_url'];
   }
 
@@ -998,5 +1001,86 @@ function file_attach_file_gallery($op) {
     case 'breadcrumb_root': return array('file_gallery/all' => t('All files'));
     case 'page_js': return "$(document).ready(function() { parent.$('#edit-attach-browse-url').val(String(parent.$('#edit-attach-browse-url').val()).replace(/(file_gallery.*)\?/, String(location.href).match(/(file_gallery.*)\?/)[1] + '?')); });";
   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Services API hooks
+
+/**
+ * Implementation of hook_service().
+ */
+function file_attach_service() {
+  return array(
+    array(
+      '#method' => 'file_attach.attach',
+      '#callback' => 'file_attach_service_attach',
+      '#access callback' => 'file_attach_service_attach_access',
+      '#args' => array(
+        array(
+          '#name' => 'nid',
+          '#type' => 'int',
+          '#optional' => FALSE,
+          '#description' => t('A parent node ID.'),
+        ),
+        array(
+          '#name' => 'fnid',
+          '#type' => 'int',
+          '#optional' => FALSE,
+          '#description' => t('A file node ID.'),
+        ),
+        array(
+          '#name' => 'cid',
+          '#type' => 'int',
+          '#optional' => TRUE,
+          '#description' => t('A comment ID.'),
+        ),
+      ),
+      '#return' => 'boolean',
+      '#help' => t('Attaches a file node to the parent node.'),
+    ),
+  );
+}
+
+/**
+ * Access check.
+ *
+ * @param $nid
+ *   A parent node ID.
+ *
+ * @return
+ *   TRUE if access granted.
+ */
+function file_attach_service_attach_access($nid) {
+  $node = node_load($nid);
+  return user_access('attach files') && node_access('edit', $node);
+}
+
+/**
+ * Attaches a file node to the parent node.
+ *
+ * @param $nid
+ *   A parent node ID.
+ * @param $fnid
+ *   A file node ID.
+ * @param $cid
+ *   A comment ID.
+ *
+ * @return
+ *   TRUE if a file was successfully attached.
+ */
+function file_attach_service_attach($nid, $fnid, $cid = 0) {
+  $node = node_load($nid);
+  if ($cid == 0 && !variable_get('file_attach_node_'. $node->type, 1) || $cid > 0 && !variable_get('file_attach_comment_'. $node->type, 1))
+    return FALSE;
+
+  if (!($file_node = node_load($fnid)) || $file_node->type != 'file')
+    return FALSE;
+
+  // File is already attached.
+  if (db_result(db_query("SELECT fnid FROM {file_attachments} WHERE nid = %d AND vid = %d AND cid = %d AND fnid = %d", $node->nid, $node->vid, $cid, $file_node->nid)))
+    return TRUE;
+
+  $record = (object)array('nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'fnid' => $file_node->nid, 'list' => 1);
+  return !!drupal_write_record('file_attachments', $record);
 }
 

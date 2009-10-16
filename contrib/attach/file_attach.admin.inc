@@ -20,6 +20,12 @@ function file_attach_admin_settings() {
 
   // Attachments settings.
   $form['attachments'] = array('#type' => 'fieldset', '#title' => t('Attachments settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  $form['attachments']['file_attach_reuse'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Enable attach of already uploaded files.'),
+    '#description'   => t('Already uploaded files can be reused by attaching them to other nodes.'),
+    '#default_value' => FILE_ATTACH_REUSE,
+  );
   $form['attachments']['file_attach_reuse_nodes'] = array(
     '#type'          => 'radios',
     '#title'         => t('Attaching already uploaded files'),
@@ -145,6 +151,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
+      variable_set('file_attach_reuse', $values['file_attach_reuse']);
       variable_set('file_attach_reuse_nodes', $values['file_attach_reuse_nodes']);
       variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
       variable_set('file_attach_show_previews', $values['file_attach_show_previews']);
@@ -162,6 +169,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
+      variable_del('file_attach_reuse');
       variable_del('file_attach_reuse_nodes');
       variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
