@@ -16,15 +16,18 @@
  *   The form structure.
  */
 function file_audio_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_audio') .'/file_audio_admin.js');
   $form = array();
 
-  // getID3 settings
+  // getID3 settings.
   $form['getid3'] = array('#type' => 'fieldset', '#title' => t('getID3 settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['getid3']['file_audio_getid3'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable Extraction of the audio\'s <a href="http://getid3.sourceforge.net" title="getID()">getID</a> metadata'),
     '#default_value' => FILE_AUDIO_GETID3,
-    '#description'   => t('Check this box if you want to extract any of the following metadata.'),
+    '#description'   => t('Check this box if you want to extract any of the getID3 metadata.'),
+    '#prefix' => '<div class="file-audio-getid3-file-audio-getid3-setting">',
+    '#suffix' => '</div>',
   );
   $getid3 = _file_audio_getid3();
   foreach ($getid3 as $name => $data) {

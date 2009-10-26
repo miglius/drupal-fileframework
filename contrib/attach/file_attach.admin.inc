@@ -16,6 +16,7 @@
  *   The form structure.
  */
 function file_attach_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_attach') .'/file_attach_admin.js');
   $form = array();
 
   // Attachments settings.
@@ -25,6 +26,8 @@ function file_attach_admin_settings() {
     '#title'         => t('Enable attach of already uploaded files.'),
     '#description'   => t('Already uploaded files can be reused by attaching them to other nodes.'),
     '#default_value' => FILE_ATTACH_REUSE,
+    '#prefix' => '<div class="file-attach-attachments-file-attach-reuse-setting">',
+    '#suffix' => '</div>',
   );
   $form['attachments']['file_attach_reuse_nodes'] = array(
     '#type'          => 'radios',
@@ -32,6 +35,8 @@ function file_attach_admin_settings() {
     '#options'       => array(FALSE => t('Create a copy of the file node'), TRUE => t('Use existing file node')),
     '#description'   => t('When already uploaded file is selected to be attached to the node, a new file node might be created pointing to the same file or existing file node can be reused and attached to the node.'),
     '#default_value' => FILE_ATTACH_REUSE_NODES,
+    '#prefix' => '<div class="file-attach-attachments-file-attach-reuse-nodes-setting'. (FILE_ATTACH_REUSE ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
   );
 
   // Visibility settings.
@@ -62,6 +67,8 @@ function file_attach_admin_settings() {
       '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
       '#description'   => t('Select the vocabularies from which file attachments will inherit the taxonomy terms of the parent node on the creation of the attachment.'),
       '#default_value' => FILE_ATTACH_VOCABULARIES_ALL,
+      '#prefix' => '<div class="file-attach-vocabs-file-attach-vocabularies-all-setting">',
+      '#suffix' => '</div>',
     );
     $form['vocabs']['file_attach_vocabularies'] = array(
       '#type'          => 'select',
@@ -70,6 +77,8 @@ function file_attach_admin_settings() {
       '#multiple'      => TRUE,
       '#description'   => t('If "Only bellow selected vocabularies" are selected, then choose the vocabularies.'),
       '#default_value' => unserialize(FILE_ATTACH_VOCABULARIES),
+      '#prefix' => '<div class="file-attach-vocabs-file-attach-vocabularies-setting'. (!FILE_ATTACH_VOCABULARIES_ALL ? '' : ' js-hide') .'">',
+      '#suffix' => '</div>',
     );
   }
 

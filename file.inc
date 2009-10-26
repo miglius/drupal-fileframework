@@ -26,10 +26,10 @@ function file_node_save($node, $file) {
     return FALSE;
   }
 
+  $file->filename = isset($file->filename) ? $file->filename : (isset($file->name) ? $file->name : $node->title);
+
   if (isset($file->uri)) {
     // Sanity check if we are saving a file which is already put in bitcche.
-
-    $file->filename = isset($file->filename) ? $file->filename : $node->title;
 
     // Check if file exists in the bitcache.
     if (!bitcache_exists(file_get_hash($file->uri))) {
@@ -37,14 +37,26 @@ function file_node_save($node, $file) {
       return FALSE;
     }
 
+    // size and type shuld always be set.
     $file->size = isset($file->size) ? $file->size : bitcache_get_size(file_get_hash($file->uri));
     $file->type = isset($file->type) ? $file->type : bitcache_get_type(file_get_hash($file->uri));
   }
-
-  if (!isset($file->uri)) {
+  else {
     // Note that at this point, we have a transient file object with a path,
     // MIME type and file size. The file is still located in the temporary
     // directory.
+
+    // Unless a hash is set when file is comming from services. In this case
+    // the file is already saved in bitcache.
+    if (isset($file->hash)) {
+      // Copy file to the temporal file.
+      $input = bitcache_get_stream($file->hash);
+      $file->filepath = tempnam(file_directory_temp(), 'drupal_file_save_');
+      $output = fopen($file->filepath, 'wb');
+      stream_copy_to_stream($input, $output);
+      fclose($input);
+      fclose($output);
+    }
 
     // If we didn't get a proper MIME type from the client, attempt to guess
     // it from the uploaded file name
@@ -82,7 +94,7 @@ function file_node_save($node, $file) {
   }
 
   // Create a file object for the node and saving it to the db.
-  $node->file = (object)array('nid' => isset($node->nid) ? $node->nid : NULL, 'vid' => isset($node->vid) ? $node->vid : NULL, 'uri' => $file->uri, 'size' => isset($file->filesize) ? $file->filesize : $file->size, 'type' => isset($file->filemime) ? $file->filemime : $file->type, 'name' => isset($file->filename) ? $file->filename : (isset($file->name) ? $file->name : NULL));
+  $node->file = (object)array('nid' => isset($node->nid) ? $node->nid : NULL, 'vid' => isset($node->vid) ? $node->vid : NULL, 'uri' => $file->uri, 'size' => isset($file->filesize) ? $file->filesize : $file->size, 'type' => isset($file->filemime) ? $file->filemime : $file->type, 'name' => $file->filename);
   if (isset($node->nid) && !isset($node->nosave)) {
     if ($no_revision = (empty($node->is_new) && empty($node->revision)))
       $uri_old = db_result(db_query('SELECT fn.uri FROM {file_nodes} fn JOIN {node} n ON fn.nid = n.nid AND fn.vid = n.vid WHERE fn.nid = %d', $node->nid));
@@ -443,9 +455,10 @@ function file_mime_detect($file, $force = FALSE) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
     $filename = realpath($file->filepath);
-    $output = exec('file -b --mime '. escapeshellarg($file->filepath), $ignore, $status);
-    if ($status == 0 && preg_match('!([\w-]+/[\w\d_+-]+)!', $output, $matches))
-      return $matches[1];
+    if (_file_command_run('file -b --mime '. escapeshellarg($file->filepath), $pipes) === 0) {
+      if (preg_match('!([\w-]+/[\w\d_+-]+)!', $pipes['stdout'], $matches))
+        return $matches[1];
+    }
   }
 
   // Default MIME type if the file extension is not registerd.
@@ -1394,23 +1407,71 @@ function _file_propagate_terms($node, $file_node, $settings = array()) {
             unset($taxonomy['tags'][$vid]);
           }
           else {
-            $file_node->taxonomy[$vid] = array_unique(array_merge(array_keys($file_node->taxonomy[$vid]), isset($taxonomy[$vid]) ? (is_array($taxonomy[$vid]) ? $taxonomy[$vid] : array($taxonomy[$vid])) : array()));
-            unset($taxonomy[$vid]);
-
-            if (!$vocab->multiple) {
-              $file_node->taxonomy[$vid] = isset($taxonomy[$vid]) ? $taxonomy[$vid] : reset($file_node->taxonomy[$vid]);
-              unset($taxonomy[$vid]);
+            if ($vocab->multiple) {
+              $file_node->taxonomy[$vid] = array_unique(array_merge(array_keys($file_node->taxonomy[$vid]), isset($taxonomy[$vid]) ? (is_array($taxonomy[$vid]) ? $taxonomy[$vid] : array($taxonomy[$vid])) : array()));
+              $file_node->taxonomy[$vid] = array_combine($file_node->taxonomy[$vid], $file_node->taxonomy[$vid]);
             }
+            else
+              $file_node->taxonomy[$vid] = isset($taxonomy[$vid]) ? $taxonomy[$vid] : reset($file_node->taxonomy[$vid]);
+            unset($taxonomy[$vid]);
           }
         }
+        // Add vocabulaies which only prent node have.
         if (count($tags = (isset($file_node->taxonomy['tags']) ? $file_node->taxonomy['tags'] : array()) + (isset($taxonomy['tags']) ? $taxonomy['tags'] : array())))
           $file_node->taxonomy['tags'] = $tags;
         $file_node->taxonomy = $file_node->taxonomy + $taxonomy;
       }
     }
   }
+}
 
-  foreach (module_implements('file_propagate_terms') as $module)
-    module_invoke($module, 'file_propagate_terms', $file_node);
+/**
+ * Run a shell command.
+ *
+ * @param $command
+ *   A shell command to execute.
+ * @param $data
+ *   A reference to an array. If stdin key exists, it will be
+ *   piped to the command. stdout and stderr keys will be filled
+ *   with the output of the program respectively.
+ *
+ * @return
+ *   Termination status of the program or FALSE if execution failed.
+ */
+function _file_command_run($command, &$data) {
+  if ($proc = proc_open($command, array(0 => array('pipe', 'r'), 1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipes)) {
+    list($stdin, $stdout, $stderr) = $pipes;
+    if (isset($data['stdin'])) {
+      fwrite($stdin, $data['stdin']);
+      unset($data['stdin']);
+    }
+    fclose($stdin);
+    $data['stdout'] = stream_get_contents($stdout);
+    $data['stderr'] = stream_get_contents($stderr);
+    fclose($stdout);
+    fclose($stderr);
+    return proc_close($proc);
+  }
+  return FALSE;
+}
+
+/**
+ * Check if a shell command exists.
+ *
+ * @param $command
+ *   A shell command to check.
+ *
+ * @return
+ *   A path to the commnd or FALSE.
+ */
+function _file_command_exists($command) {
+  static $commands = array();
+  if (isset($commands[$command]))
+    return $commands[$command];
+
+  if (_file_command_run('which '. escapeshellarg($command), $pipes) === 0)
+    $result = !empty($pipes['stdout']) ? $pipes['stdout'] : FALSE;
+  $commands[$command] = isset($result) ? $result : FALSE;
+  return $commands[$command];
 }
 

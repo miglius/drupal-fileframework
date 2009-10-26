@@ -16,6 +16,9 @@
  *   The form structure.
  */
 function file_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file') .'/file_admin.js');
+  $form = array();
+
   // Bitcache settings
   $form['bitcache'] = array('#type' => 'fieldset', '#title' => t('Bitcache'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['bitcache']['file_bitcache_repository'] = array(
@@ -99,6 +102,9 @@ function file_admin_settings() {
     '#options'       => array(FALSE => t('Disabled'), TRUE => t('Enabled')),
     '#default_value' => FILE_CRON,
     '#description'   => t('Enables automatic sanity checks and repairs for the converted files and metadata extraction. Normally you would always want to have this enabled.'),
+    '#prefix' => '<div class="file-maintenance-file-cron-setting">',
+    '#suffix' => '</div>',
+
   );
   $form['maintenance']['file_cron_limit_size'] = array(
     '#type'          => 'select',
@@ -106,6 +112,8 @@ function file_admin_settings() {
     '#default_value' => FILE_CRON_LIMIT_SIZE,
     '#options'       => drupal_map_assoc(array(16, 32, 64, 128, 256, 512, 1024, 2048, 4096)),
     '#description'   => t('The cron job will proccess uploaded files and create missing previews or files in other MIME types. The maximum amount of megabytes that will be processed in one cron run. Set this number lower if your cron is timing out or if PHP is running out of memory. Note that individual files larger than this limit will never be processed.'),
+    '#prefix' => '<div class="file-maintenance-file-cron-limit-size-setting'. (FILE_CRON ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
   );
   $form['maintenance']['file_cron_limit_total'] = array(
     '#type'          => 'textfield',
@@ -113,6 +121,8 @@ function file_admin_settings() {
     '#default_value' => FILE_CRON_LIMIT_TOTAL,
     '#size'          => 6,
     '#description'   => t('The cron job will inspect only chosen number of files per run. Set it to zero to make it unlimited.'),
+    '#prefix' => '<div class="file-maintenance-file-cron-limit-total-setting'. (FILE_CRON ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
   );
 
   // OG integration.
@@ -259,6 +269,8 @@ function file_admin_settings_submit($form, &$form_state) {
  *   The form structure.
  */
 function file_admin_handler_settings() {
+  $form = array();
+
   // Handler settings
   $mime_types = file_get_mime_types();
   $mime_handlers = file_get_mime_handlers();
@@ -356,6 +368,9 @@ function file_admin_handler_settings_submit($form, &$form_state) {
  *   The form structure.
  */
 function file_admin_mime() {
+  drupal_add_js(drupal_get_path('module', 'file') .'/file_admin.js');
+  $form = array();
+
   // MIME type autodetection
   $form['autodetection'] = array('#type' => 'fieldset', '#title' => t('Additional MIME detection'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['autodetection']['file_mime_autodetection'] = array(
@@ -364,6 +379,8 @@ function file_admin_mime() {
     '#options'       => array(t('Disabled'), t('Enabled'), t('Conditional')),
     '#default_value' => FILE_MIME_AUTODETECTION,
     '#description'   => t('Whether to always attempt MIME type autodetection on the server side for any uploaded file from the contents of the file, regardless of whether the client supplied MIME type information or the MIME type can be extracted from the file extension using the table below. The MIME type extraction will be done using \'fileinfo \' PHP extension or \'file\' unix utility whichever is available on the server. Your choice here depends on how well-setup your server is for proper MIME detection and how much you trust your users\' web browsers to report correct MIME types. Unless you are very sure of what you are doing, you are advised to leave this disabled, which corresponds with Drupal\'s default behavior.'),
+    '#prefix' => '<div class="file-autodetection-file-mime-autodetection-setting">',
+    '#suffix' => '</div>',
   );
   $form['autodetection']['file_mime_autodetection_conditions'] = array(
     '#type'          => 'textarea',
@@ -371,6 +388,8 @@ function file_admin_mime() {
     '#default_value' => FILE_MIME_AUTODETECTION_CONDITIONS,
     '#rows'          => 3,
     '#description'   => t('If "Server-side MIME type autodetection after upload" is set to "Conditional", please specify for which uploaded files MIME types or file extensions the autodetection should be performed on the server side. One MIME type or file extension without leading dot per line.'),
+    '#prefix' => '<div class="file-autodetection-file-mime-autodetection-conditions-setting'. (FILE_MIME_AUTODETECTION == 2 ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
   );
 
   // MIME types

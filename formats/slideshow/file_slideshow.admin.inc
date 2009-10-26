@@ -16,15 +16,19 @@
  *   The form structure.
  */
 function file_slideshow_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_slideshow') .'/file_slideshow_admin.js');
   $form = array();
 
-  // PDF settings
-  $form['pdf'] = array('#type' => 'fieldset', '#title' => t('PDF settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  // PDF settings.
+  $form['pdf'] = array('#type' => 'fieldset', '#title' => t('PDF settings'), '#description' => _file_command_exists('pdfinfo') ? t('"pdfinfo" utility is installed in the system.') : t('"pdfinfo" utility is not installed in the system.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['pdf']['file_slideshow_pdf'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable Extraction of the PDF metadata'),
-    '#default_value' => FILE_SLIDESHOW_PDF,
+    '#default_value' => _file_command_exists('pdfinfo') ? FILE_SLIDESHOW_PDF : 0,
     '#description'   => t('Check this box if you want to extract any of the following metadata.'),
+    '#disabled'      => _file_command_exists('pdfinfo') ? FALSE : TRUE,
+    '#prefix' => '<div class="file-slideshow-pdf-file-slideshow-pdf-setting">',
+    '#suffix' => '</div>',
   );
   $pdf = _file_slideshow_pdf();
   foreach ($pdf as $name => $data) {

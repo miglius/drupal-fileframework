@@ -105,7 +105,7 @@ function file_slideshow_mime_converters() {
         'handlers' => array('file_image_image'),
       ),
       'application/x-shockwave-flash' => array(
-        'pipeline' => 'cd "[tmpdir]"; {pdf2swf} -lb "[in_file]" "[out_file]"',
+        'pipeline' => 'cd "[tmpdir]"; {pdf2swf} -lb "[in_file_base]" "[out_file_base]"',
         'handlers' => array('file_video_flash_swf'),
       ),
       'application/zip' => array(
@@ -174,8 +174,7 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
   if ($mimetype != 'application/pdf')
     return NULL;
 
-  $pdfinfo = exec('which pdfinfo');
-  if (empty($pdfinfo))
+  if (!($pdfinfo = _file_command_exists('pdfinfo')))
     return NULL;
 
   $metadata = array();
@@ -186,12 +185,11 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
   }
   $pdf_data = variable_get('file_slideshow_pdf_data', $pdf_data_default);
 
-  $line = exec('pdfinfo '. $filename, $output);
-  if (!preg_match('/^Error:/', $line) && !empty($output)) {
+  if (_file_command_run('pdfinfo '. escapeshellarg($filename), $pipes) === 0 && !empty($pipes['stdout'])) {
     $info = array();
-    foreach ($output as $line) {
-      preg_match('/^([^:]+):(.*)$/', $line, $matches);
-      $info[trim($matches[1])] = trim($matches[2]);
+    foreach (explode("\n", $pipes['stdout']) as $line) {
+      if (preg_match('/^([^:]+):(.*)$/', $line, $matches))
+        $info[trim($matches[1])] = trim($matches[2]);
     }
 
     $rdf_pdf = array();

@@ -24,7 +24,12 @@ function theme_file_slideshow_admin_settings($form) {
       unset($form['pdf'][$name]);
     }
   }
-  $form['pdf']['pdf'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
+  $form['pdf']['pdf'] = array(
+    '#type' => 'markup',
+    '#value' => theme('table', NULL, $rows),
+    '#prefix' => '<div class="file-slideshow-pdf-file-slideshow-pdf-data-setting'. (_file_command_exists('pdfinfo') && FILE_SLIDESHOW_PDF ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
+    );
   return drupal_render($form);
 }
 

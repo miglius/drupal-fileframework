@@ -16,9 +16,10 @@
  *   The form structure.
  */
 function file_video_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_video') .'/file_video_admin.js');
   $form = array();
 
-  // Display ettings
+  // Display ettings.
   $form['display'] = array('#type' => 'fieldset', '#title' => t('Display settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['display']['file_video_display_width'] = array(
     '#type'          => 'textfield',
@@ -29,7 +30,7 @@ function file_video_admin_settings() {
     '#description'   => t('Maximum width of the video display in pixels. Wider objects will be scaled to this width preserving aspect ratio. Zero means no scaling will be performed.'),
   );
 
-  // Flowplayer ettings
+  // Flowplayer ettings.
   $form['flowplayer'] = array('#type' => 'fieldset', '#title' => t('Flowplayer settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['flowplayer']['file_video_flowplayer_version'] = array(
     '#type'          => 'textfield',
@@ -40,13 +41,15 @@ function file_video_admin_settings() {
     '#description'   => t('Specify version of the installed !flowplayer player. It is recommended that you install this player in order to play video files in the browser. To install, !download the latest version of the player and unzip it to !path under the Drupal directory.', array('!flowplayer' => l('Flowplayer', 'http://flowplayer.org/'), '!download' => l(t('download'), 'http://flowplayer.org/download.html'), '!path' => drupal_get_path('module', 'file') .'/vendor/flowplayer/')),
   );
 
-  // getID3 settings
+  // getID3 settings.
   $form['getid3'] = array('#type' => 'fieldset', '#title' => t('getID3 settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['getid3']['file_video_getid3'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable Extraction of the <a href="http://getid3.sourceforge.net" title="getID()">getID</a> metadata'),
     '#default_value' => FILE_VIDEO_GETID3,
-    '#description'   => t('Check this box if you want to extract any of the following metadata.'),
+    '#description'   => t('Check this box if you want to extract any of the getID3 metadata.'),
+    '#prefix' => '<div class="file-video-getid3-file-video-getid3-setting">',
+    '#suffix' => '</div>',
   );
   $getid3 = _file_video_getid3();
   foreach ($getid3 as $name => $data) {

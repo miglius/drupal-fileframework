@@ -24,7 +24,12 @@ function theme_file_image_admin_settings($form) {
       unset($form['exif'][$name]);
     }
   }
-  $form['exif']['exif'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
+  $form['exif']['exif'] = array(
+    '#type' => 'markup',
+    '#value' => theme('table', NULL, $rows),
+    '#prefix' => '<div class="file-image-exif-file-image-exif-data-setting'. (function_exists('exif_read_data') && FILE_IMAGE_EXIF ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
+  );
   return drupal_render($form);
 }
 

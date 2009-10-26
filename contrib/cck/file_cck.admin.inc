@@ -16,6 +16,7 @@
  *   The form structure.
  */
 function file_cck_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_cck') .'/file_cck_admin.js');
   $form = array();
 
   // Vocabulary settings.
@@ -31,6 +32,9 @@ function file_cck_admin_settings() {
       '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
       '#description'   => t('Select the vocabularies from which field file will inherit the taxonomy terms of the parent node on the creation of the field.'),
       '#default_value' => FILE_CCK_VOCABULARIES_ALL,
+      '#prefix' => '<div class="file-cck-vocabs-file-cck-vocabularies-all-setting">',
+      '#suffix' => '</div>',
+
     );
     $form['vocabs']['file_cck_vocabularies'] = array(
       '#type'          => 'select',
@@ -39,6 +43,9 @@ function file_cck_admin_settings() {
       '#multiple'      => TRUE,
       '#description'   => t('If "Only bellow selected vocabularies" are selected, then choose the vocabularies.'),
       '#default_value' => unserialize(FILE_CCK_VOCABULARIES),
+      '#prefix' => '<div class="file-cck-vocabs-file-cck-vocabularies-setting'. (!FILE_CCK_VOCABULARIES_ALL ? '' : ' js-hide') .'">',
+      '#suffix' => '</div>',
+
     );
   }
 

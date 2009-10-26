@@ -24,7 +24,12 @@ function theme_file_audio_admin_settings($form) {
       unset($form['getid3'][$name]);
     }
   }
-  $form['getid3']['getid3'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
+  $form['getid3']['getid3'] = array(
+    '#type' => 'markup',
+    '#value' => theme('table', NULL, $rows),
+    '#prefix' => '<div class="file-audio-getid3-file-audio-getid3-data-setting'. (FILE_AUDIO_GETID3 ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
+    );
   return drupal_render($form);
 }
 

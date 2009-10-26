@@ -226,7 +226,7 @@ function _file_convert($file, $pipeline, $tier, $options) {
       $in_file = $out_file;
     }
     $out_file = tempnam($options['tmpdir'], 'drupal_file_convert_');
-    if (!_file_convert_execute_pipeline($in_file, $out_file, $pipe, $options)) {
+    if (!_file_convert_execute_pipeline($file, $in_file, $out_file, $pipe, $options)) {
       watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Execution of the pipeline failed.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       if (!$keep_in_file)
         file_delete($in_file);
@@ -305,9 +305,8 @@ function _file_convert_check_command($command) {
       }
       else {
         // shell command.
-        if (!exec('which '. escapeshellarg($function) .' 2>/dev/null')) {
+        if (!_file_command_exists($function))
           return FALSE;
-        }
       }
     }
   }
@@ -316,18 +315,24 @@ function _file_convert_check_command($command) {
 }
 
 /**
- * Executes a pipeine to convert a file.
+ * Executes a pipeline to convert a file.
  */
-function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
+function _file_convert_execute_pipeline($file, $from, $to, $pipeline, $options) {
   $result = TRUE;
+
+  $debug = array(
+    'pipeline' => $pipeline,
+    'from' => $from,
+    'to' => $to,
+  );
 
   // Escaping '{', '}', '[', ']'.
   $args = array('/\\\\{/', '/\\\\}/', '/\\\\\[/', '/\\\\\]/');
   $replacements = array('-left-curly-bracket-', '-right-curly-bracket-', '-left-square-bracket-', '-right-square-bracket-');
   $pipeline = preg_replace($args, $replacements, $pipeline);
 
-  $args = array('/{\S+:\d+}/', '/{{/', '/}}/', '/{/', '/}/', '/\[in_file\]/', '/\[out_file\]/', '/\[in_content\]/', '/\[out_content\]/');
-  $replacements = array('', '', '', '', '', $from, $to, '$in_content', '$out_content');
+  $args = array('/{\S+:\d+}/', '/{{/', '/}}/', '/{/', '/}/', '/\[in_file\]/', '/\[out_file\]/', '/\[in_file_base\]/', '/\[out_file_base\]/', '/\[in_content\]/', '/\[out_content\]/');
+  $replacements = array('', '', '', '', '', $from, $to, basename($from), basename($to), '$in_content', '$out_content');
   foreach ($options as $name => $val) {
     array_push($args, '/\['. $name .'\]/');
     array_push($replacements, $val);
@@ -338,6 +343,7 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
   $args = array('/-left-curly-bracket-/', '/-right-curly-bracket-/', '/-left-square-bracket-/', '/-right-square-bracket-/');
   $replacements = array('{', '}', '[', ']');
   $pipeline = preg_replace($args, $replacements, $pipeline);
+  $debug['pilpeline_expanded'] = $pipeline;
 
   if (preg_match('/\$in_content/', $pipeline)) {
     // Read content from file.
@@ -349,18 +355,23 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
       $result = FALSE;
     }
+    $debug['type'] = 'php';
   }
   else {
     // shell command.
-    $out = array();
-    if (!exec($pipeline .'; echo "End of the output."  2>&1', $out)) {
+    $exitcode = _file_command_run($pipeline, $pipes) ;
+    if ($exitcode === FALSE) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
       $result = FALSE;
     }
-    if (FILE_CONVERT_DEBUG) {
-    $out = array_slice($out, -FILE_CONVERT_DEBUG_LINES);
-      watchdog('file_convert', 'Debug: Last five lines of the output of the execution of pipeline %pipeline: %out', array('%pipeline' => $pipeline, '%out' => !empty($out) ? implode("\n", $out) : t('Output is empty.')), WATCHDOG_NOTICE);
-    }
+    $debug = array_merge($debug, array(
+      'type' => 'shell',
+      'stdout' => $pipes['stdout'],
+      'stderr' => $pipes['stderr'],
+      'exit_code' => $exitcode,
+      'from_size' => filesize($from),
+      'to_size' => filesize($to),
+    ));
   }
   if (preg_match('/\$out_content/', $pipeline)) {
     // Save content to file.
@@ -369,6 +380,18 @@ function _file_convert_execute_pipeline($from, $to, $pipeline, $options) {
       $result = FALSE;
     }
   }
+  $debug['result'] = $result && filesize($to) ? 'OK' : 'FAILED';
+  if (FILE_CONVERT_DEBUG) {
+    $out = array();
+    foreach ($debug as $key => $val) {
+      $out[] = '-- '. $key .' --';
+      $val = trim($val);
+      if (!empty($val))
+        $out[] = implode("\n", array_slice(explode("\n", $val), -FILE_CONVERT_DEBUG_LINES));
+    }
+    watchdog('file_convert', 'Debug of the conversion:<br/>!out', array('!out' => implode('<br/>', $out)), $result ? WATCHDOG_NOTICE : WATCHDOG_ERROR);
+  }
+  $file->debug[] = $debug;
   return $result;
 }
 

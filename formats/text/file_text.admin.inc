@@ -18,7 +18,7 @@
 function file_text_admin_settings() {
   $form = array();
 
-  // Preview settings
+  // Preview settings.
   $form['preview'] = array('#type' => 'fieldset', '#title' => t('Preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['preview']['file_text_preview_lines'] = array(
     '#type'          => 'textfield',
@@ -37,13 +37,14 @@ function file_text_admin_settings() {
     '#description'   => t('The string that will be displayed at the end of the text preview to indicate that the preview is not a complete text file.'),
   );
 
-  // Code preview settings
-  $form['code'] = array('#type' => 'fieldset', '#title' => t('Code preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  // Code preview settings.
+  $form['code'] = array('#type' => 'fieldset', '#title' => t('Code preview settings'), '#description' => _file_command_exists('code2html') ? t('"code2html" utility is installed in the system.') : t('"code2html" utility is not installed in the system.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['code']['file_text_code'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable <a href="http://www.palfrader.org/code2html" title="Code2HTML">Code2HTML</a> syntax highlighted HTML preview'),
-    '#default_value' => FILE_TEXT_CODE,
-    '#description'   => t('Check this box if you want a syntax highlighted HTML previews to be created for the "text/plain" MIME files. The "code2html" utility should be in the system\'s path.'),
+    '#default_value' => _file_command_exists('code2html') ? FILE_TEXT_CODE : 0,
+    '#description'   => t('Check this box if you want a syntax highlighted HTML previews to be created for the "text/plain" MIME files.'),
+    '#disabled'      => _file_command_exists('code2html') ? FALSE : TRUE,
   );
 
   $form['submit'] = array(
@@ -70,9 +71,7 @@ function file_text_admin_settings_validate($form, &$form_state) {
       if (!ctype_digit($preview_lines)) {
         form_set_error('file_text_preview_lines', t('Invalid value %value specified for the number of lines.', array('%value' => $preview_lines)));
       }
-      $code = $values['file_text_code'];
-      $code2html = exec('which code2html 2>/dev/null');
-      if (!empty($code) && empty($code2html)) {
+      if (!empty($values['file_text_code']) && !_file_command_exists('code2html')) {
         form_set_error('file_text_code', t('Code2HTML cannot be enabled because code2html utility is not found in the system path.'));
       }
       break;

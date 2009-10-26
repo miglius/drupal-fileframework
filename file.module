@@ -547,7 +547,7 @@ function file_node_validate($node) {
 function file_node_insert($node) {
   // File node is beeing created from the services.
   if (is_string($node->file) && !empty($node->file))
-    $node->file = (object) array('uri' => bitcache_uri($node->file));
+    $node->file = (object) array('hash' => $node->file);
 
   $file = is_object($node->file) ? $node->file : NULL;
   if (!is_object($file) && isset($_SESSION['file_preview_file']))
@@ -557,7 +557,7 @@ function file_node_insert($node) {
 
   if (is_object($file)) {
     file_node_save($node, $file);
-    module_invoke_all('file', 'insert', $node);
+    module_invoke_all('file', $node, 'insert');
     unset($_SESSION['file_preview_file']);
   }
 }
@@ -574,7 +574,7 @@ function file_node_update($node) {
 
   if (is_object($file)) {
     file_node_save($node, $file);
-    module_invoke_all('file', 'update', $node);
+    module_invoke_all('file', $node, 'update');
     unset($_SESSION['file_preview_file']);
   }
 }
@@ -583,7 +583,7 @@ function file_node_update($node) {
  * Implementation of hook_delete().
  */
 function file_node_delete($node) {
-  module_invoke_all('file', 'delete', $node);
+  module_invoke_all('file', $node, 'delete');
   $result = db_query('SELECT * FROM {file_nodes} WHERE nid = %d', $node->nid);
   while ($file = db_fetch_object($result)) {
     db_query('DELETE FROM {file_nodes} WHERE nid = %d AND vid = %d', $node->nid, $file->vid);
@@ -826,19 +826,19 @@ function file_service() {
           '#name' => 'node',
           '#type' => 'struct',
           '#optional' => FALSE,
-          '#description' => t('A node object.'),
-        ),
-        array(
-          '#name' => 'id',
-          '#type' => 'string',
-          '#optional' => FALSE,
-          '#description' => t('The bitstream\'s identifier (SHA-1 fingerprint).'),
+          '#description' => t('A node object. Must include "type" and "title".'),
         ),
         array(
           '#name' => 'data',
           '#type' => 'base64',
           '#optional' => FALSE,
           '#description' => t('The bitstream\'s contents.')
+        ),
+        array(
+          '#name' => 'id',
+          '#type' => 'string',
+          '#optional' => TRUE,
+          '#description' => t('The bitstream\'s identifier (SHA-1 fingerprint) to verify file\'s integrity.'),
         ),
       ),
       '#return' => 'struct',
@@ -852,25 +852,31 @@ function file_service() {
 /**
  * Saves a file to the bitcache and creates a file node.
  *
- * @param $id
- *   Bitstream's identifier (SHA-1 fingerprint).
- * @param $data
- *   Bitstream's contents.
  * @param $edit
  *   An array of the node fields' values, just like created on node edit form.
+ * @param $data
+ *   Bitstream's contents.
+ * @param $id
+ *   Bitstream's identifier (SHA-1 fingerprint).
  *
  * @return
  *   A file node ID or FALSE.
  */
-function file_service_save($edit, $id, $data) {
+function file_service_save($edit, $data, $id = NULL) {
+  $edit = (array)$edit + array('type' => 'file');
+  if ($edit['type'] != 'file')
+    return services_error(t('Node should be of the file type.'));
+
+  $data = base64_decode($data);
+  if (!empty($id) && $id != bitcache_id($data))
+    return services_error(t('File integrity check failure.'));
+
   bitcache_use_repository(FILE_BITCACHE_REPOSITORY);
   $hash = bitcache_put($id, $data);
   bitcache_use_repository();
   if (!$hash)
-    return FALSE;
+    return services_error(t('Saving to bitcache failure.'));
 
-  $edit = (array)$edit;
-  $edit['type'] = 'file';
   $edit['file'] = $hash;
   return node_service_save($edit);
 }

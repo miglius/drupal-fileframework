@@ -24,7 +24,12 @@ function theme_file_video_admin_settings($form) {
       unset($form['getid3'][$name]);
     }
   }
-  $form['getid3']['getid3'] = array('#type' => 'markup', '#value' => theme('table', NULL, $rows));
+  $form['getid3']['getid3'] = array(
+    '#type' => 'markup',
+    '#value' => theme('table', NULL, $rows),
+    '#prefix' => '<div class="file-video-getid3-file-video-getid3-data-setting'. (FILE_VIDEO_GETID3 ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
+  );
   return drupal_render($form);
 }
 

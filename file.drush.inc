@@ -28,8 +28,9 @@ function file_drush_command() {
       'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
       'options' => array(
         '-a' => 'Process all files.',
-        '-d' => 'Delete existing file derivatives first.',
+        '-e' => 'Delete existing file derivatives first.',
         '-f' => 'Run the conversion even if prefious conversion for the file failed.',
+        '-d' => 'Print debug information about failed conversions.',
         '--type=<MIME type>' => 'Only process files with the specified MIME type.',
         '--nid=<NID>' => 'Only process file with the specified node ID.',
         '--vid=<VID>' => 'Only process file with the specified node revision ID.',
@@ -37,7 +38,7 @@ function file_drush_command() {
       'examples' => array(
         'drush file convert -a' => 'Create all missing derivatives.',
         'drush file convert -type=image/jpeg' => 'Create all missing derivatives for the files of the image/jpeg MIME type.',
-        'drush file convert -d -nid=1234' => 'Recreate all derivatives for the file node with the NID=1234 and it\'s revisions.',
+        'drush file convert -e -nid=1234' => 'Recreate all derivatives for the file node with the NID=1234 and it\'s revisions.',
       ),
     ),
     'file change type' => array(
@@ -140,7 +141,7 @@ function drush_file_convert() {
   $result = db_query($sql, $args);
   $current = 0;
   while ($file = db_fetch_object($result)) {
-    if (drush_get_option('d')) {
+    if (drush_get_option('e')) {
       $file->force_delete = TRUE;
       $file->keep_blob = TRUE;
       $file->keep_rdf = TRUE;
@@ -149,11 +150,37 @@ function drush_file_convert() {
     else if (drush_get_option('f')) {
       rdf_delete($file->uri, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY));
     }
+    if (drush_get_option('d')) {
+      drush_print(str_repeat('-', FILE_DRUSH_CONSOLE_LENGTH));
+      $debug = array('nid', 'vid', 'uri', 'size', 'filemime', 'filename');
+      $rows = array();
+      foreach ($debug as $var)
+        $rows[] = array($var, $file->$var);
+      drush_print_table($rows, 2);
+      drush_print();
+    }
     file_generate_previews($file, TRUE);
     $converts += isset($file->converts) ? $file->converts : 0;
     $byte_counter = isset($file->converts) ? $byte_counter + $file->size : $byte_counter;
     $errors += isset($file->errors) ? $file->errors : 0;
-    _file_drush_indicator($total, $current);
+    if (drush_get_option('d') && $file->debug) {
+      foreach ($file->debug as $entry) {
+        foreach ($entry as $key => $val) {
+          drush_print('-- '. $key .' --');
+          $val = trim($val);
+          if (!empty($val))
+            drush_print(trim($val));
+        }
+        drush_print();
+      }
+    }
+    if (drush_get_option('d')) {
+      drush_print(($current + 1) .'/'. $total);
+      drush_print();
+    }
+    else {
+      _file_drush_indicator($total, $current);
+    }
     $current++;
   }
 

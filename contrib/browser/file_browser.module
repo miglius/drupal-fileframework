@@ -192,40 +192,40 @@ function file_browser_block($op = 'list', $delta = 0, $edit = array()) {
 // File API hooks
 
 /**
- * Uncategorized files are put in unfiled folder.
- *
- * @param $node
- *   A node object.
- *
- * @return
+ * Implementation of hook_file().
  */
-function file_browser_file_propagate_terms(&$node) {
-  if (!FILE_BROWSER_OG_UNFILED || !isset($node->og_groups) || !module_exists('og_vocab'))
-    return;
+function file_browser_file(&$node, $op) {
+  switch ($op) {
+    case 'insert':
+    case 'update':
+      if (!FILE_BROWSER_OG_UNFILED || !isset($node->og_groups) || !module_exists('og_vocab'))
+        return;
 
-  $vocabs = array();
-  foreach ($node->taxonomy as $tid => $term)
-    $vocabs[$term->vid][] = $tid;
+      foreach ($node->og_groups as $gid) {
+        foreach (og_vocab_get_vocabularies($gid) as $vid => $vocab) {
+          if (in_array('file', $vocab->nodes)) {
+            if ($vocab->tags) {
 
-  foreach ($node->og_groups as $gid) {
-    foreach (og_vocab_get_vocabularies($gid) as $vid => $vocabulary) {
-      if (in_array('file', $vocabulary->nodes)) {
-        if ($tid = _file_browser_get_unfiled_term($vid)) {
-          // If no categories were selected, associate the node with unfiled category:
-          if (empty($vocabs[$vid])) {
-            $node->taxonomy[$tid] = taxonomy_get_term($tid);
-            taxonomy_node_save($node, $node->taxonomy);
-          }
-          // If any categories were selected, make sure the unfiled category isn't selected:
-          else if (isset($vocabs[$vid]) && in_array($tid, $vocabs[$vid])) {
-            if (count($vocabs[$vid]) > 1) {
-              unset($node->taxonomy[$tid]);
-              taxonomy_node_save($node, $node->taxonomy);
+              $tags = isset($node->taxonomy['tags'][$vid]) ? drupal_explode_tags($node->taxonomy['tags'][$vid]) : array();
+              if (empty($tags))
+                $node->taxonomy['tags'][$vid] = FILE_BROWSER_OG_UNFILED;
+              elseif (count($tags) > 1 && in_array(FILE_BROWSER_OG_UNFILED, $tags))
+                $node->taxonomy['tags'][$vid] = drupal_implode_tags(array_diff($tags, array(FILE_BROWSER_OG_UNFILED)));
+            }
+            else {
+              $tid = _file_browser_get_unfiled_term($vid);
+              if ($vocab->multiple) {
+                $node->taxonomy[$vid] = array_diff(isset($node->taxonomy[$vid]) ? $node->taxonomy[$vid] : array(), array($tid));
+                $node->taxonomy[$vid] = array_merge($node->taxonomy[$vid], !count(array_filter($node->taxonomy[$vid])) ? array($tid => $tid) : array());
+              }
+              else {
+                $node->taxonomy[$vid] = !empty($node->taxonomy[$vid]) ? $node->taxonomy[$vid] : $tid;
+              }
             }
           }
         }
       }
-    }
+      break;
   }
 }
 

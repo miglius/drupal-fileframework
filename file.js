@@ -1,5 +1,8 @@
 // $Id$
 
+/**
+ * Show popup menus.
+ */
 Drupal.behaviors.file = function() {
   $('span.file.with-menu span.label').hover(function(event) { 
     $(this).find('.highlight').show();   

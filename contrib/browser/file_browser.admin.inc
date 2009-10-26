@@ -16,6 +16,7 @@
  *   The form structure.
  */
 function file_browser_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_browser') .'/file_browser_admin.js');
   $form = array();
 
   // General settings
@@ -39,6 +40,9 @@ function file_browser_admin_settings() {
     '#options'       => array(TRUE => t('All'), FALSE => t('Only bellow selected vocabularies')),
     '#description'   => t('Select the vocabularies which will be shown in the file browser.'),
     '#default_value' => FILE_BROWSER_VOCABULARIES_ALL,
+    '#prefix' => '<div class="file-browser-vocabs-file-browser-vocabularies-all-setting">',
+    '#suffix' => '</div>',
+
   );
   $form['vocabs']['file_browser_vocabularies'] = array(
     '#type'          => 'select',
@@ -47,6 +51,8 @@ function file_browser_admin_settings() {
     '#options'       => $options,
     '#multiple'      => TRUE,
     '#description'   => t('Only the selected vocabularies will be shown in the file browser.'),
+    '#prefix' => '<div class="file-browser-vocabs-file-browser-vocabularies-setting'. (!FILE_BROWSER_VOCABULARIES_ALL ? '' : ' js-hide') .'">',
+    '#suffix' => '</div>',
   );
 
   // Display settings

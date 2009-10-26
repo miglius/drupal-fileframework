@@ -16,17 +16,19 @@
  *   The form structure.
  */
 function file_image_admin_settings() {
+  drupal_add_js(drupal_get_path('module', 'file_image') .'/file_image_admin.js');
   $form = array();
 
-  // Processing settings
-  $form['process'] = array('#type' => 'fieldset', '#title' => t('Processing settings'), '#description' => t('Image Magic "convert" utility !installed installed in the system.', array('!installed' => exec('which convert 2>/dev/null') ? t('is') : t('is not'))), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  // Processing settings.
+  $form['process'] = array('#type' => 'fieldset', '#title' => t('Processing settings'), '#description' => _file_command_exists('convert') ? t('Image Magic "convert" utility is installed in the system.') : t('Image Magic "convert" utility is not installed in the system.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['process']['file_image_use_image_magic'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Use Image Magic'),
-    '#default_value' => FILE_IMAGE_USE_IMAGE_MAGIC,
+    '#default_value' => _file_command_exists('convert') ? FILE_IMAGE_USE_IMAGE_MAGIC : 0,
     '#description'   => t('Use command line Image Magic program "convert" to scale images instead of php extensions. This might be slower, but will not consume php memory.'),
+    '#disabled'      => _file_command_exists('convert') ? FALSE : TRUE,
   );
-  // Preview settings
+  // Preview settings.
   $form['preview'] = array('#type' => 'fieldset', '#title' => t('Preview settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['preview']['file_image_preview_resolution'] = array(
     '#type'          => 'textfield',
@@ -60,13 +62,17 @@ function file_image_admin_settings() {
     '#description'   => t('Specify the maximum pixel width and height to use followed by the computer readable short version of the preview name (composed from lowecase letters and underscore) followed by the name of the preview, like %default. One preview definition per line.', array('%default' => '200x200 custom_size Custom size image')),
   );
 
-  // Exif settings
-  $form['exif'] = array('#type' => 'fieldset', '#title' => t('EXIF settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+  // Exif settings.
+  $form['exif'] = array('#type' => 'fieldset', '#title' => t('EXIF settings'), '#description' => function_exists('exif_read_data') ? t('Exif extensions are installed in the system.') : t('Exif extensions are not installed in the system.'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['exif']['file_image_exif'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable Extraction of the image\'s <a href="http://en.wikipedia.org/wiki/Exif" title="Exchangeable image file format">EXIF</a> metadata'),
-    '#default_value' => FILE_IMAGE_EXIF,
-    '#description'   => t('Check this box if you want to extract any of the following metadata.'),
+    '#default_value' => function_exists('exif_read_data') ? FILE_IMAGE_EXIF : 0,
+    '#description'   => t('Check this box if you want to extract any of the exif metadata.'),
+    '#disabled'      => function_exists('exif_read_data') ? FALSE : TRUE,
+    '#prefix' => '<div class="file-image-exif-file-image-exif-setting">',
+    '#suffix' => '</div>',
+
   );
   $exif = _file_image_exif();
   foreach ($exif as $name => $data) {
@@ -87,13 +93,16 @@ function file_image_admin_settings() {
     }
   }
 
-  // Geo settings
+  // Geo settings.
   $form['geo'] = array('#type' => 'fieldset', '#title' => t('Geo location settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
   $form['geo']['file_image_geo'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Save image\'s geo location to the <a href="@rdf" title="Resource Description Framework">RDF</a>', array('@rdf' => url('admin/settings/rdf'))),
-    '#default_value' => FILE_IMAGE_GEO,
+    '#default_value' => function_exists('exif_read_data') && FILE_IMAGE_EXIF ? FILE_IMAGE_GEO : 0,
     '#description'   => t('EXIF extraction should be enabled under the "EXIF settings" for the geo location saving to take effect.'),
+    '#disabled'      => function_exists('exif_read_data') && FILE_IMAGE_EXIF ? FALSE : TRUE,
+    '#prefix' => '<div class="file-image-geo-file-image-geo-setting">',
+    '#suffix' => '</div>',
   );
 
   $form['submit'] = array(
@@ -116,7 +125,7 @@ function file_image_admin_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   switch ($op) {
     case t('Save configuration'):
-      if ($values['file_image_use_image_magic'] && !exec('which convert 2>/dev/null')) {
+      if ($values['file_image_use_image_magic'] && !_file_command_exists('convert')) {
         form_set_error('file_image_use_image_magic', t('Image Magic utility "convert" is not installed.'));
       }
       $preview_resolution = $values['file_image_preview_resolution'];

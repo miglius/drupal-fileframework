@@ -1,6 +1,9 @@
 // $Id$
 
-Drupal.behaviors.file = function() {
+/**
+ * Populate the title field.
+ */
+Drupal.behaviors.file_form = function() {
   $('input[@type=file]').change(function() {
     if (this.value != '' && $('#edit-title').val() == '') {
       var title = this.value.match(/([^\/\\]+)$/)[1];

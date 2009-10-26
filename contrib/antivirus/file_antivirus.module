@@ -65,8 +65,9 @@ function file_antivirus_scan_clamav($file) {
 
   if (FILE_ANTIVIRUS_CLAMAV_METHOD) {
     // Command line.
-    $clamav_path = FILE_ANTIVIRUS_CLAMAV_PATH ? FILE_ANTIVIRUS_CLAMAV_PATH : exec('which clamscan');
-    if (!file_exists($clamav_path) || !_file_antivirus_check_clamav(array('path' => $clamav_path))) {
+    $clamav_path = FILE_ANTIVIRUS_CLAMAV_PATH ? FILE_ANTIVIRUS_CLAMAV_PATH : _file_command_exists('clamscan');
+    // file_exists() can return FALSE for the $clamav_path due to the save mode, so skip it.
+    if (!$clamav_path || !_file_antivirus_check_clamav(array('path' => $clamav_path))) {
       $file->scanned = FALSE;
       watchdog('file_antivirus', 'The \'clamscan\' utility is not installed at %path.', array('%path' => $clamav_path), WATCHDOG_ERROR);
       if (!FILE_ANTIVIRUS_CLAMAV_ALLOW)
@@ -74,16 +75,20 @@ function file_antivirus_scan_clamav($file) {
       else
         return NULL;
     }
-    if (exec(escapeshellcmd($clamav_path) .' '. escapeshellarg($file->filepath), $output)) {
-      if (preg_match('/FOUND$/', $output[0])) {
-        $result = preg_replace('/^.* (\S+) FOUND$/', '$1', $output[0]);
-        watchdog('file_antivirus', 'The file %file uploaded by %user contained a virus %virus and was deleted.', array('%file' => $file->filename, '%user' => $user->name, '%virus' => $result), WATCHDOG_NOTICE);
-        return t('A virus %virus has been found in the uploaded file.', array('%virus' => $result));
+    $status = _file_command_run(escapeshellcmd($clamav_path) .' '. escapeshellarg($file->filepath), $pipes);
+    if ($status === 0 || $status === 1) {
+      if (preg_match('/^.* (\S+) FOUND/', $pipes['stdout'], $matches)) {
+        watchdog('file_antivirus', 'The file %file uploaded by %user contained a virus %virus and was deleted.', array('%file' => $file->filename, '%user' => $user->name, '%virus' => $matches[1]), WATCHDOG_NOTICE);
+        return t('A virus %virus has been found in the uploaded file.', array('%virus' => $matches[1]));
       }
       else {
         watchdog('file_antivirus', 'The file %file uploaded by %user and scanned by ClamAV is not infected.', array('%file' => $file->filename, '%user' => $user->name), WATCHDOG_NOTICE);
       }
     }
+    elseif (!FILE_ANTIVIRUS_CLAMAV_ALLOW)
+      return t('Antivirus utility cannot be executed. Please contact site administrator.');
+    else
+      return NULL;
   }
   else {
     // Daemon.
@@ -95,26 +100,26 @@ function file_antivirus_scan_clamav($file) {
       else
         return NULL;
     }
-    $handler = @fsockopen(FILE_ANTIVIRUS_CLAMAV_HOST, FILE_ANTIVIRUS_CLAMAV_PORT);
-    if (!$handler) {
-      watchdog('file_antivirus', 'The \'clamav-daemon\' is not running at %host host %port port.', array('%host' => FILE_ANTIVIRUS_CLAMAV_HOST, '%port' => FILE_ANTIVIRUS_CLAMAV_PORT), WATCHDOG_ERROR);
+    if ($handler = @fsockopen(FILE_ANTIVIRUS_CLAMAV_HOST, FILE_ANTIVIRUS_CLAMAV_PORT)) {
+      fwrite($handler, 'SCAN '. $file->filepath ."\n");
+      $content = fgets($handler);
+      fclose($handler);
+      if (preg_match('/ERROR/', $content)) {
+        watchdog('file_antivirus', 'The \'clamav-daemon\' SCAN command failed to scan a file %file with the following error %error.', array('%file' => $file->filename, '%error' => $content), WATCHDOG_ERROR);
+        return NULL;
+      }
+      if (preg_match('/^.* (\S+) FOUND$/', $content, $matches)) {
+        watchdog('file_antivirus', 'The file %file uploaded by %user contained a virus %virus and was deleted.', array('%file' => $file->filename, '%user' => $user->name, '%virus' => $matches[1]), WATCHDOG_NOTICE);
+        return t('A virus %virus has been found in the uploaded file.', array('%virus' => $matches[1]));
+      }
+      else {
+        watchdog('file_antivirus', 'The file %file uploaded by %user and scanned by ClamAV is not infected.', array('%file' => $file->filename, '%user' => $user->name), WATCHDOG_NOTICE);
+      }
+    }
+    elseif (!FILE_ANTIVIRUS_CLAMAV_ALLOW)
+      return t('Connection to antivirus daemon failed. Please contact site administrator.');
+    else
       return NULL;
-    }
-    fwrite($handler, 'SCAN '. $file->filepath ."\n");
-    $content = fgets($handler);
-    fclose($handler);
-    if (preg_match('/ERROR/', $content)) {
-      watchdog('file_antivirus', 'The \'clamav-daemon\' SCAN command failed to scan a file %file with the following error %error.', array('%file' => $file->filename, '%error' => $content), WATCHDOG_ERROR);
-      return NULL;
-    }
-    if (preg_match('/FOUND$/', $content)) {
-      $result = preg_replace('/^.* (\S+) FOUND\n$/', '$1', $content);
-      watchdog('file_antivirus', 'The file %file uploaded by %user contained a virus %virus and was deleted.', array('%file' => $file->filename, '%user' => $user->name, '%virus' => $result), WATCHDOG_NOTICE);
-      return t('A virus %virus has been found in the uploaded file.', array('%virus' => $result));
-    }
-    else {
-      watchdog('file_antivirus', 'The file %file uploaded by %user and scanned by ClamAV is not infected.', array('%file' => $file->filename, '%user' => $user->name), WATCHDOG_NOTICE);
-    }
   }
   return NULL;
 }
@@ -128,7 +133,10 @@ function file_antivirus_scan_clamav($file) {
 function _file_antivirus_check_clamav($data) {
   if (isset($data['path'])) {
     // clamscan utility
-    return exec(escapeshellcmd($data['path']) .' -V');
+
+    if (_file_command_run(escapeshellcmd($data['path']) .' -V', $pipes) === 0)
+      return !empty($pipes['stdout']) ? $pipes['stdout'] : FALSE;
+    return FALSE;
   }
   if (isset($data['host']) && isset($data['port'])) {
     // tcp connection

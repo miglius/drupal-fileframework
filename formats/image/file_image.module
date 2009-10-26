@@ -378,7 +378,7 @@ function file_image_image_generate($file, $tier = NULL) {
     $ratio = min($max_width / $width, $max_height / $height);
     list($width, $height) = array((int)floor($width * $ratio), (int)floor($height * $ratio));
 
-    $file->converters[$tier] = array('pipeline' => FILE_IMAGE_USE_IMAGE_MAGIC ? '{convert} -geometry [width]x[height] "[in_file]" "[out_file]"' : "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", 'options' => array('resize' => 'resize', 'width' => $width, 'height' => $height));
+    $file->converters[$tier] = array('pipeline' => FILE_IMAGE_USE_IMAGE_MAGIC && _file_command_exists('convert') ? '{convert} -geometry [width]x[height] "[in_file]" "[out_file]"' : "{image_toolkit_invoke}('[resize]', array('[in_file]', '[out_file]', '[width]', '[height]'))", 'options' => array('resize' => 'resize', 'width' => $width, 'height' => $height));
     $file->handlers[$tier] = $data['handler'];
     $file->mimes[$tier] = $mime;
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
