@@ -6,11 +6,18 @@ Drupal.behaviors.file_embed = function(context) {
   var translate = Drupal.settings.file_embed;
   // Body field text links.
   $('a.file-embed-select').click(function() {
-    var textareaId = this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1');
-    var editor = tinyMCE.get(textareaId);
-    if (typeof tinyMCE != 'undefined' && editor != null) {
+    /*
+     * Insetion key to calculate a current position index.
+     */
+    function insertionKey() {
+      return '[file-' + (new Date()).valueOf() + ']';
+    }
+
+    var textarea_id = this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1');
+    if (typeof tinyMCE != 'undefined' && tinyMCE.get(textarea_id) != null) {
+      var editor = tinyMCE.get(textarea_id);
       if (editor.selection.getContent().length > 0) {
-        Drupal.file_embedBookmarks[textareaId] = editor.selection.getBookmark();
+        Drupal.file_embedBookmarks[textarea_id] = editor.selection.getBookmark();
       }
       else if (tinymce.isIE && editor.getContent().length > 0) {
         // This is a big ugly hack for IE because for some reason
@@ -21,9 +28,9 @@ Drupal.behaviors.file_embed = function(context) {
 
         // First we store of the current text area id, for use in the thickbox
         // close method (just in case we need it).
-        Drupal.file_embedCurrentTextArea = textareaId;
+        Drupal.file_embedCurrentTextArea = textarea_id;
         // Create a key to insert into the content.
-        var insertionKey = '[file-'+ (new Date()).valueOf() +']';
+        var insertionKey = insertionKey();
         // Insert the key.  This insert works.  For some reason when
         // you start mixing in the thickbox and its iframe, the mceInsertContent
         // command loses position in IE.  Go figure.
@@ -37,7 +44,22 @@ Drupal.behaviors.file_embed = function(context) {
         // haven't done so already).
         editor.setContent(html.replace(insertionKey, ''));
       }
-      Drupal.file_embedPopup(this.href, translate.popupTitle );
+      Drupal.file_embedPopup(this.href, translate.popupTitle);
+    }
+    else if (typeof FCKeditor != 'undefined' && fckLaunchedTextareaId.indexOf(textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)]).css("display") != "none") {
+      // The last condition is needed as no surprise for the IE.
+      // Similar to tinyMCE IE case.
+      var editorId = fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)];
+      var editor = FCKeditorAPI.GetInstance(editorId);
+      if (editor.EditMode != FCK_EDITMODE_WYSIWYG) {
+        return false;
+      }
+      var insertionKey = insertionKey();
+      editor.InsertHtml(insertionKey);
+      var html = editor.GetHTML();
+      Drupal.file_embedInsertIndex = html.indexOf(insertionKey);
+      editor.SetHTML(html.replace(insertionKey, ''));
+      Drupal.file_embedPopup(this.href, translate.popupTitle);
     }
     else {
       var textarea = $('textarea#' + this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1'));
@@ -59,9 +81,24 @@ Drupal.file_embedPopup = function(url, title) {
 };
 
 Drupal.file_embedInsert = function(options) {
+  /*
+   * Insetrts string at given index.
+   */
+  function insertHTML(html, content) {
+    // If index puts us inside a closing html tag, append a space and
+    // move to the inside of the tag.
+    var addSpace = false;
+    if (html.substr(Drupal.file_embedInsertIndex-1, 1) == '<' && html.substr(Drupal.file_embedInsertIndex).match(/^\/\w+\>/)) {
+      Drupal.file_embedInsertIndex -= 1;
+      addSpace = true;
+    }
+
+    // Build up our new string.
+    return html.slice(0, Drupal.file_embedInsertIndex) + (addSpace ? ' ' : '') + content + html.slice(html.slice(0, Drupal.file_embedInsertIndex).length);
+  }
+
   var textarea_id = options['textarea'];
   var nid = options['nid'];
-
   var content = '[file:' + nid + (options['handler'] ? ' handler=' + options['handler'] : '') + (options['align'] ? ' align=' + options['align'] : '') +
     //(Number(options['padding']) > 0 ? ' padding=' + options['padding'] : '') +
     (options['link'] ? ' link=1' : '') + (options['caption'] ? ' caption=' + options['caption'] : '') + ']';
@@ -84,24 +121,23 @@ Drupal.file_embedInsert = function(options) {
       // Otherwise, IE is acting normal and not following the rules
       // so we have to beat it into submission.
       else if (tinymce.isIE && Drupal.file_embedInsertIndex > 0) {
-        var html = editor.getContent();
-        // If index puts us inside a closing html tag, append a space and
-        // move to the inside of the tag.
-        var addSpace = false;
-        if (html.substr(Drupal.file_embedInsertIndex-1,1) == '<' && html.substr(Drupal.file_embedInsertIndex).match(/^\/\w+\>/)) {
-          Drupal.file_embedInsertIndex -= 1;
-          addSpace = true;
-        }
-
-        // Build up our new string.
-        var newHtml = html.slice(0, Drupal.file_embedInsertIndex) + (addSpace ? ' ' : '') + content + html.slice(html.slice(0, Drupal.file_embedInsertIndex).length);
-        editor.setContent(newHtml);
+        editor.setContent(insertHTML(editor.getContent(), content));
         Drupal.file_embedInsertIndex = null;
       }
       // And all other browsers... yes, that's 1 line there.
       else {
-        editor.execCommand('mceInsertContent',false,content);
+        editor.execCommand('mceInsertContent', false, content);
       }
+    } catch(e) {}
+  }
+  else if (typeof FCKeditor != 'undefined' && fckLaunchedTextareaId.indexOf(textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)]).css("display") != "none") {
+    // The last condition is needed as no surprise for the IE.
+    // Similar to tinyMCE IE case.
+    try {
+      var editorId = fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)];
+      var editor = FCKeditorAPI.GetInstance(editorId);
+      editor.SetHTML(insertHTML(editor.GetHTML(), content));
+      Drupal.file_embedInsertIndex = null;
     } catch(e) {}
   }
   else {
@@ -110,4 +146,18 @@ Drupal.file_embedInsert = function(options) {
     textarea.val(text.substring(0, options['textarea_start']) + content + text.substring(options['textarea_end'], text.length));
   }
 };
+
+/*
+ * It occurs that indexOf is not defined in IE.
+ */
+if(Array.indexOf = 'undefined' || !Array.indexOf) {
+  Array.prototype.indexOf = function(obj) {
+    for(var i=0; i<this.length; i++) {
+      if(this[i] == obj) {
+        return i;
+      }
+    }
+    return -1;
+  }
+}
 

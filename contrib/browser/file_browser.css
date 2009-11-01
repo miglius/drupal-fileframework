@@ -6,6 +6,7 @@ div.file-system {
   padding-right: 5px;
   height: 100%;
   overflow: auto;
+  position: relative;
 }
 
 div.file-dropdown {
