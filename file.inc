@@ -1446,10 +1446,10 @@ function _file_command_run($command, &$data) {
       unset($data['stdin']);
     }
     fclose($stdin);
-    $data['stdout'] = stream_get_contents($stdout);
     $data['stderr'] = stream_get_contents($stderr);
-    fclose($stdout);
     fclose($stderr);
+    $data['stdout'] = stream_get_contents($stdout);
+    fclose($stdout);
     return proc_close($proc);
   }
   return FALSE;
