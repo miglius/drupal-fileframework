@@ -146,7 +146,7 @@ function file_schema() {
         'type' => array(
           'description' => t("The file's MIME type."),
           'type' => 'varchar',
-          'length' => 64,
+          'length' => 255,
           'default' => '',
         ),
         'views' => array(
@@ -229,5 +229,10 @@ function file_update_6002() {
   $ret = array();
   db_change_field($ret, 'file_nodes', 'type', 'type', array('description' => t("The file's MIME type."), 'type' => 'varchar', 'length' => 255, 'default' => ''));
   return $ret;
+}
+
+function file_update_6003() {
+  // The file_schema() was not changed when update 6002 was introduced, so need to re-run it.
+  return file_update_6002();
 }
 

@@ -155,7 +155,7 @@ function file_document_mime_converters() {
     ),
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => array(
       'text/plain' => array(
-        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].docx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f txtf "[in_file].docx"; {mv} "[in_file].docx" "[in_file]"; {mv} "[in_file].txt" "[out_file]"',
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].docx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f txt "[in_file].docx"; {mv} "[in_file].docx" "[in_file]"; {mv} "[in_file].txt" "[out_file]"',
         'handlers' => array('file_text_text'),
       ),
       'application/pdf' => array(

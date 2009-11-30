@@ -42,13 +42,8 @@ function file_mailsave_mailsave($node, $result, $i, $header, $mailbox) {
   foreach ($node->mailsave_attachments as $file) {
     $file = (object)$file;
 
-    // Call the validation functions.
-    $errors = array();
-    foreach (file_get_validators() as $function => $args) {
-      array_unshift($args, $file);
-      $errors = array_merge($errors, call_user_func_array($function, $args));
-    }
-
+    // Validate file upload.
+    $errors = file_validate_file($file);
     if (!empty($errors)) {
       $account = user_load($node->uid);
       $variables = array('!filename' => $file->filename, '!subject' => $header->subject, '!errors' => strip_tags(implode("\n", $errors)));

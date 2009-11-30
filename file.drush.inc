@@ -256,19 +256,20 @@ function drush_file_change_type() {
     stream_copy_to_stream($input, $output);
     fclose($input);
     fclose($output);
+    $filemime_old = $file->filemime;
     if (!isset($mime)) {
-      $filemime = file_mime_detect($file, TRUE);
+      file_mime_detect($file, TRUE);
+      $file->filemime = !empty($file->filemime) ? $file->filemime : 'application/octet-stream';
       $detected++;
     }
     else {
-      $filemime = $mime;
+      $file->filemime = $mime;
     }
-    if ($filemime && $filemime != $file->filemime) {
+    if ($file->filemime != $filemime_old) {
       $file->force_delete = TRUE;
       $file->keep_blob = TRUE;
       file_node_delete_node($file);
 
-      $file->filemime = $filemime;
       unset($file->uri);
       db_query("UPDATE {file_nodes} f SET type = '%s' WHERE f.nid = %d AND f.vid = %d", $file->filemime, $file->nid, $file->vid);
 

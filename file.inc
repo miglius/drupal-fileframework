@@ -27,6 +27,7 @@ function file_node_save($node, $file) {
   }
 
   $file->filename = isset($file->filename) ? $file->filename : (isset($file->name) ? $file->name : $node->title);
+  $file->filemime = isset($file->filemime) ? $file->filemime : (isset($file->type) ? $file->type : 'application/octet-stream');
 
   if (isset($file->uri)) {
     // Sanity check if we are saving a file which is already put in bitcche.
@@ -58,15 +59,10 @@ function file_node_save($node, $file) {
       fclose($output);
     }
 
-    // If we didn't get a proper MIME type from the client, attempt to guess
-    // it from the uploaded file name
-    if (empty($file->filemime) || $file->filemime == 'application/octet-stream')
-      $file->filemime = file_mime_guess($file->filepath);
-
     // If specified by the administrator, we'll always try and autodetect the
-    // MIME type on the server-side for any uploaded files
-    if (FILE_MIME_AUTODETECTION > 0 && ($mime = file_mime_detect($file)))
-      $file->filemime = $mime;
+    // MIME type on the server-side for any uploaded files.
+    if (FILE_MIME_AUTODETECTION > 0)
+      file_mime_detect($file);
 
     // Assign nid and vid to the file object for the logging.
     if (isset($node->nid)) {
@@ -98,6 +94,7 @@ function file_node_save($node, $file) {
   if (isset($node->nid) && !isset($node->nosave)) {
     if ($no_revision = (empty($node->is_new) && empty($node->revision)))
       $uri_old = db_result(db_query('SELECT fn.uri FROM {file_nodes} fn JOIN {node} n ON fn.nid = n.nid AND fn.vid = n.vid WHERE fn.nid = %d', $node->nid));
+
     $return = drupal_write_record('file_nodes', $node->file, $no_revision ? array('nid', 'vid') : array());
   }
   else {
@@ -396,35 +393,33 @@ function file_mime_extensions_for($type) {
 /**
  * Finds the first matching MIME content type based on a file's extension.
  *
- * @param $filename
- *   Full filename of the file.
+ * @param $file
+ *   A file object.
  *
  * @return
  *   A MIME type of the file.
  */
-function file_mime_guess($filename) {
+function file_mime_guess($file) {
   $registry = file_mime_extensions();
-  $pathinfo = pathinfo($filename);
+  $pathinfo = pathinfo($file->filename);
   $extension = $pathinfo['extension'];
   foreach ($registry as $type => $extensions) {
-    if (in_array($extension, $extensions))
-      return $type;
+    if (in_array($extension, $extensions)) {
+      $file->filemime = $type;
+      return;
+    }
   }
-
-  // Default MIME type if the file extension is not registerd.
-  return 'application/octet-stream';
 }
 
 /**
  * Tries to detect the file MIME type using other utilities.
  *
- * @param $filename
- *   Full filename of the file.
- *
+ * @param $file
+ *   A file object.
  * @param $force
- *   Flaf which forces the detection.
+ *   Flag which forces the detection.
+ *
  * @return
- *   A MIME type of the file.
  */
 function file_mime_detect($file, $force = FALSE) {
   if (!$force && FILE_MIME_AUTODETECTION == 2) {
@@ -442,27 +437,32 @@ function file_mime_detect($file, $force = FALSE) {
     }
     $ext = preg_replace('/^.*\.([^\.]+)$/', '$1', drupal_strtolower($file->filename));
     if (!in_array($ext, $exts) && !in_array($file->filemime, $mimes))
-      return FALSE;
+      return;
   }
 
+  $detected = FALSE;
   if (extension_loaded('fileinfo') && ($finfo = finfo_open(FILEINFO_MIME))) {
     // Use 'fileinfo' php extension
-    $type = finfo_file($finfo, $file->filepath);
+    $file->filemime = finfo_file($finfo, $file->filepath);
+    $detected = TRUE;
     finfo_close($finfo);
-    return $type;
   }
   else if (file_exists($file->filepath)) {
     // Attempts to detect a file's MIME type using the Unix `file' utility.
     // MIME content type format defined in http://www.ietf.org/rfc/rfc1521.txt
     $filename = realpath($file->filepath);
     if (_file_command_run('file -b --mime '. escapeshellarg($file->filepath), $pipes) === 0) {
-      if (preg_match('!([\w-]+/[\w\d_+-]+)!', $pipes['stdout'], $matches))
-        return $matches[1];
+      if (preg_match('!([\w-]+/[\w\d_+-]+)!', $pipes['stdout'], $matches)) {
+        $file->filemime = $matches[1];
+        $detected = TRUE;
+      }
     }
   }
 
-  // Default MIME type if the file extension is not registerd.
-  return $file->filemime;
+  // If the MIME type is not detected, we try guessing it from the file name.
+  // MS Office files are detected as msword or x-zip type, so then we check the file name.
+  if ($file->filemime == 'application/octet-stream' || ($detected && in_array($file->filemime, array('application/msword', 'application/x-zip'))))
+    file_mime_guess($file);
 }
 
 /**
@@ -1195,6 +1195,31 @@ function file_get_validators() {
     $validators = is_array($validators) ? $validators : array();
   }
   return $validators;
+}
+
+/**
+ * Validates the uploaded file.
+ * This function should be used when a file is uploaded via
+ * WebDAV, services or other non browser method.
+ *
+ * @file
+ *   A file object.
+ *
+ * @return
+ *   An array of validate errors.
+ */
+function file_validate_file($file) {
+  // If file size is unknown, set it to one byte.
+  $file->filesize = isset($file->filesize) ? $file->filesize : 1;
+
+  $errors = array();
+  foreach (file_get_validators() as $function => $args) {
+    array_unshift($args, $file);
+    // Make sure $file is passed around by reference.
+    $args[0] = &$file;
+    $errors = array_merge($errors, call_user_func_array($function, $args));
+  }
+  return $errors;
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -709,7 +709,7 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
 function file_file_validate($file) {
   $errors = array();
   if ($file->filesize == 0) {
-    $errors[] = t('The file is  empty.');
+    $errors[] = t('The file is empty.');
   }
   return $errors;
 }
@@ -866,6 +866,12 @@ function file_service_save($edit, $data, $id = NULL) {
   $edit = (array)$edit + array('type' => 'file');
   if ($edit['type'] != 'file')
     return services_error(t('Node should be of the file type.'));
+
+  // Validate file upload.
+  $file = (object)array('filename' => $edit['title']);
+  $errors = file_validate_file($file);
+  if (!empty($errors))
+    return services_error(implode(' ', $errors));
 
   $data = base64_decode($data);
   if (!empty($id) && $id != bitcache_id($data))
