@@ -50,6 +50,8 @@ function file_node_save($node, $file) {
     // Unless a hash is set when file is comming from services. In this case
     // the file is already saved in bitcache.
     if (isset($file->hash)) {
+      $file->size = bitcache_get_size($file->hash);
+
       // Copy file to the temporal file.
       $input = bitcache_get_stream($file->hash);
       $file->filepath = tempnam(file_directory_temp(), 'drupal_file_save_');
