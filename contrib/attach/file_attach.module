@@ -914,7 +914,8 @@ function _file_attach_save($node, $comment = NULL) {
       continue;
     }
 
-    if (!empty($file->sid) || (!FILE_ATTACH_REUSE_NODES && is_numeric($file->nid) && !in_array($file->nid, $node_files))) {
+    if (!empty($file->sid) || (!FILE_ATTACH_REUSE_NODES && is_numeric($file->nid) && !in_array($file->nid, $node_files) && !$file->reuse)) {
+      // $file->reuse can be set when a file is created and being attached from the services to avoid duplicates.
 
       // Create new node.
       $file->name = trim($file->name);
