@@ -16,6 +16,7 @@ define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_al
 define('FILE_ATTACH_VOCABULARIES',     serialize(variable_get('file_attach_vocabularies', array())));
 define('FILE_ATTACH_OG_INHERITANCE',   variable_get('file_attach_og_inheritance', 0));
 define('FILE_ATTACH_OG_VOCABULARIES',  variable_get('file_attach_og_vocabularies', 0));
+define('FILE_ATTACH_NOTIFICATION',     variable_get('file_attach_notification', 0));
 define('FILE_ATTACH_POPUP_SIZE',       variable_get('file_attach_popup_size', '590x500'));
 define('FILE_ATTACH_POPUP_PER_PAGE',   variable_get('file_attach_popup_per_page', '6'));
 
@@ -133,6 +134,7 @@ function file_attach_init() {
 
     // Load the form from the Form API cache.
     $cache = cache_get('form_'. $_POST['form_build_id'], 'cache_form');
+    $cache->data['#post'] = $_POST;
 
     $form_state = array('values' => $_POST);
     unset($form_state['values']['files']['upload']);
@@ -930,6 +932,8 @@ function _file_attach_save($node, $comment = NULL) {
         _file_propagate_og($node, $file_node);
       if (!$comment)
         _file_propagate_terms($node, $file_node, array('all' => FILE_ATTACH_VOCABULARIES_ALL, 'og' => FILE_ATTACH_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_ATTACH_VOCABULARIES)));
+      if (module_exists('notifications_content') && !FILE_ATTACH_NOTIFICATION)
+        $file_node->notifications_content_disable = 1;
       $file_node = file_node_create((array)$file_node);
       $file_attachment = (object)array('fnid' => $file_node->nid, 'nid' => $node->nid, 'vid' => $node->vid, 'cid' => $cid, 'list' => $file->list, 'weight' => $file->weight);
       drupal_write_record('file_attachments', $file_attachment);
@@ -950,6 +954,8 @@ function _file_attach_save($node, $comment = NULL) {
           _file_propagate_og($node, $file_node);
         if (!$comment)
           _file_propagate_terms($node, $file_node, array('all' => FILE_ATTACH_VOCABULARIES_ALL, 'og' => FILE_ATTACH_OG_VOCABULARIES, 'vocabs' => unserialize(FILE_ATTACH_VOCABULARIES)));
+        if (module_exists('notifications_content') && !FILE_ATTACH_NOTIFICATION)
+          $file_node->notifications_content_disable = 1;
         node_save($file_node);
       }
     }

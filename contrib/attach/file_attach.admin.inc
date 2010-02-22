@@ -101,6 +101,17 @@ function file_attach_admin_settings() {
     }
   }
 
+  // Notifications integration.
+  if (module_exists('notifications_content')) {
+    $form['notifications'] = array('#type' => 'fieldset', '#title' => t('Notifications integration'), '#collapsible' => TRUE, '#collapsed' => FALSE);
+    $form['notifications']['file_attach_notification'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Attachment notifications'),
+      '#description'   => t('Should notifications be sent when attachments are created or updated.'),
+      '#default_value' => FILE_ATTACH_NOTIFICATION,
+    );
+  }
+
   if (module_exists('file_gallery')) {
     // Popup settings
     $form['popup'] = array('#type' => 'fieldset', '#title' => t('Popup settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -171,6 +182,8 @@ function file_attach_admin_settings_submit($form, &$form_state) {
         if (module_exists('og_vocab'))
           variable_set('file_attach_og_vocabularies', $values['file_attach_og_vocabularies']);
       }
+      if (module_exists('notifications_content'))
+        variable_set('file_attach_notification', $values['file_attach_notification']);
       if (module_exists('file_gallery')) {
         variable_set('file_attach_popup_size', $values['file_attach_popup_size']);
         variable_set('file_attach_popup_per_page', $values['file_attach_popup_per_page']);
@@ -186,6 +199,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
       variable_del('file_attach_vocabularies');
       variable_del('file_attach_og_inheritance');
       variable_del('file_attach_og_vocabularies');
+      variable_del('file_attach_notification');
       variable_del('file_attach_popup_size');
       variable_del('file_attach_popup_per_page');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
