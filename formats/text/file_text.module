@@ -161,6 +161,20 @@ function file_text_metadata_parse($filename, $mimetype) {
   );
 }
 
+/**
+ * Implementation of hook_file().
+ */
+function file_text_file(&$node, $op) {
+  switch ($op) {
+    case 'insert':
+    case 'update':
+      if (module_exists('autotag') && ($content = _file_get_plain_text($node))) {
+        $node->file_autotag = $content;
+      }
+      break;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // MIME handlers
 

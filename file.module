@@ -599,23 +599,8 @@ function file_nodeapi(&$node, $op, $teaser, $page) {
     case 'update index':
 
       // We index a plain text version of the files.
-      if (isset($node->file) && ($file = $node->file) && is_object($file)) {
-        if ($file->type == 'text/plain' ) {
-          $uri_txt = $file->uri;
-        }
-        else {
-          if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
-            foreach ($generated as $uri => $data) {
-              if (rdf_value($uri, rdf_qname_to_uri('dc:format'), NULL, array('repository' => FILE_RDF_REPOSITORY)) == 'text/plain') {
-                // A plain text preview.
-                $uri_txt = $uri;
-                break;
-              }
-            }
-          }
-        }
-      }
-      return isset($uri_txt) ? array(bitcache_get_contents(file_get_hash($uri_txt))) : array();
+      $content = _file_get_plain_text($node);
+      return $content ? $content : '';
       break;
 
     case 'delete revision':
@@ -885,5 +870,37 @@ function file_service_save($edit, $data, $id = NULL) {
 
   $edit['file'] = $hash;
   return node_service_save($edit);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Auxiliary functions
+
+/**
+ * Get file's or it's derivative's plain text content if available.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   A plain text content or FALSE.
+ */
+function _file_get_plain_text($node) {
+  if (isset($node->file) && ($file = $node->file) && is_object($file)) {
+    if ($file->type == 'text/plain' ) {
+      $uri_txt = $file->uri;
+    }
+    else {
+      if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
+        foreach ($generated as $uri => $data) {
+          if (rdf_value($uri, rdf_qname_to_uri('dc:format'), NULL, array('repository' => FILE_RDF_REPOSITORY)) == 'text/plain') {
+            // A plain text preview.
+            $uri_txt = $uri;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return isset($uri_txt) ? bitcache_get_contents(file_get_hash($uri_txt)) : FALSE;
 }
 

@@ -124,6 +124,10 @@ function file_attach_init() {
     // This is the only place to save the upload and alter the saved
     // cached form to add the latest preview.
 
+    // ajax_comments module sets pid attribute. In this case we do nothing.
+    if (isset($_POST['pid']))
+      return;
+
     // Following include might be not loaded yet.
     require_once drupal_get_path('module', 'file') .'/file.inc';
 
@@ -241,7 +245,9 @@ function file_attach_form_alter(&$form, $form_state, $form_id) {
 
     // Comment form. It does not execute file_attach_form_submit function
     // when #submit form element is set. Have to do it manually from here.
-    $node = node_load($form['nid']['#value']);
+
+    // ajax_comments uses #default_value instead of the #value.
+    $node = node_load(isset($form['nid']['#value']) ? $form['nid']['#value'] : $form['nid']['#default_value']);
     if (variable_get('file_attach_comment_'. $node->type, 1) && user_access('attach files')) {
       $cid = $form['cid']['#value'];
       $object_files = isset($cid) ? _file_attach_load($node->nid, $node->vid, $cid) : array();
