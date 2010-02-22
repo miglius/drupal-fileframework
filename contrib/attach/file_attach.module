@@ -190,7 +190,13 @@ function file_attach_link($type, $node, $teaser = NULL) {
   $links = array();
   // Display a link with the number of attachments when the node teaser is shown
   if (isset($teaser) && $type == 'node' && !empty($node->files) && user_access('view attached files')) {
-    $num_files = isset($node->files) ? count($node->files) : 0;
+    $num_files = 0;
+    if (isset($node->files)) {
+      foreach ($node->files as $file) {
+        if ($file->list)
+          $num_files++;
+      }
+    }
     if ($num_files) {
       $type = node_get_types('type', $node);
       $links['attachments'] = array(

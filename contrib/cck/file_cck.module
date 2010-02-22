@@ -90,29 +90,31 @@ function file_cck_nodeapi(&$node, $op, $a3, $a4) {
       break;
     case 'view':
       $type = content_types($node->type);
-      foreach ($type['fields'] as $field => $data) {
-        if ($data['type'] == 'file_cck' && is_array($node->$field)) {
-          $db_info = content_database_info($data);
-          $order = isset($_POST[$field]) ? array_keys($_POST[$field]) : array_keys($node->$field);
-          $multiple = count($order) > 1;
-          $delta = 0;
-          foreach ($order as $o) {
-            unset($fid);
-            if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && is_object($file)) {
-              $fid = 's_'. $field .'_'. $o;
+      if (is_array($type['fields'])) {
+        foreach ($type['fields'] as $field => $data) {
+          if ($data['type'] == 'file_cck' && is_array($node->$field)) {
+            $db_info = content_database_info($data);
+            $order = isset($_POST[$field]) ? array_keys($_POST[$field]) : array_keys($node->$field);
+            $multiple = count($order) > 1;
+            $delta = 0;
+            foreach ($order as $o) {
+              unset($fid);
+              if (isset($_SESSION['file_cck_files']) && isset($_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && ($file = $_SESSION['file_cck_files']['s_'. $field .'_'. $o]) && is_object($file)) {
+                $fid = 's_'. $field .'_'. $o;
+              }
+              else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
+                $fid = $nid;
+              }
+              if (isset($fid) && (!isset($_POST[$field .'_remove']) || !isset($_POST[$field .'_remove'][$o]))) {
+                // The items array is populated just for the first item, therefore I copy it
+                // and populate with the right value and the weight.
+                if ($delta > 0)
+                  $node->content[$field]['field']['items'][$delta] = $node->content[$field]['field']['items'][0];
+                $node->content[$field]['field']['items'][$delta]['#item']['value'] = $fid;
+                $node->content[$field]['field']['items'][$delta]['#weight'] = $delta;
+              }
+              $delta++;
             }
-            else if ($nid = db_result(db_query('SELECT '. $db_info['columns']['value']['column'] .' FROM {'. $db_info['table'] .'} WHERE vid = %d'. ($multiple ? ' AND delta = '. $o : ''), $node->vid))) {
-              $fid = $nid;
-            }
-            if (isset($fid) && (!isset($_POST[$field .'_remove']) || !isset($_POST[$field .'_remove'][$o]))) {
-              // The items array is populated just for the first item, therefore I copy it
-              // and populate with the right value and the weight.
-              if ($delta > 0)
-                $node->content[$field]['field']['items'][$delta] = $node->content[$field]['field']['items'][0];
-              $node->content[$field]['field']['items'][$delta]['#item']['value'] = $fid;
-              $node->content[$field]['field']['items'][$delta]['#weight'] = $delta;
-            }
-            $delta++;
           }
         }
       }
