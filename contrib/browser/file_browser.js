@@ -37,6 +37,8 @@ Drupal.behaviors.file_browser = function(context) {
 Drupal.file_browserInit = function(block) {
   var ratio = block == 'page' ? 0.75 : 0.3;
   $('div.file-system').height('' + (Drupal.file_browserGetWindowHeight() * ratio) + 'px');
+  var translate = Drupal.settings.file_browser;
+  $('#file-preview').show().html(translate.no_file_selected)
 };
 
 /**

@@ -134,15 +134,15 @@ div.file-cells div.file-date {
 /* PREVIEW */
 
 div#block-file_browser-newterm {
-  display: none;
+  /*display: none;*/
 }
 
 div#block-file_browser-upload {
-  display: none;
+  /*display: none;*/
 }
 
 div#block-file_browser-preview {
-  display: none;
+  /*display: none;*/
 }
 
 div#file-preview-spinner {

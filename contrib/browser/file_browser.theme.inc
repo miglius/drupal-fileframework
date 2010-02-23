@@ -166,8 +166,10 @@ function theme_file_browser_block($data) {
  */
 function theme_file_browser_newterm($form) {
   $output = '<div id="file_browser-newterm">';
+  $output .= t('Select a folder to create a new subfolder.');
   $output .= $form;
   $output .= '</div>';
+  $output .= '<script type="text/javascript">$(document).ready(function() { $(\'#edit-newterm-submit\').attr(\'disabled\', \'disabled\'); });</script>';
   $output .= '<iframe src="javascript:;" id="file_browser-newterm-submission-frame" name="file_browser-newterm-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   return $output;
 }
@@ -178,6 +180,7 @@ function theme_file_browser_newterm($form) {
 function theme_file_browser_upload($form) {
   $output = '<div id="file-upload-spinner" style="display: none;"></div>';
   $output .= '<div id="file-upload">';
+  $output .= t('Select a folder to upload files to.');
   $output .= $form;
   $output .= '</div>';
   $output .= '<iframe src="javascript:;" id="file_browser-upload-submission-frame" name="file_browser-upload-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
