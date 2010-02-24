@@ -10,7 +10,7 @@ Drupal.behaviors.file_embed = function(context) {
      * Insetion key to calculate a current position index.
      */
     function insertionKey() {
-      return '[file-' + (new Date()).valueOf() + ']';
+      return '--file-' + (new Date()).valueOf() + '--';
     }
 
     var textarea_id = this.href.replace(/^.*[?|&]textarea=([^&]+).*$/, '$1');
@@ -39,17 +39,17 @@ Drupal.behaviors.file_embed = function(context) {
         var html = editor.getContent();
         // Use the position of the key as our insertion index
         // and store it for future reference
-        Drupal.file_embedInsertIndex = html.indexOf(insertionKey);
+        Drupal.file_embedInsertIndex = Drupal.file_embedIndexOf(html, insertionKey);
         // Now remove the key so we don't scare anyone (if we
         // haven't done so already).
         editor.setContent(html.replace(insertionKey, ''));
       }
       Drupal.file_embedPopup(this.href, translate.popupTitle);
     }
-    else if (typeof FCKeditor != 'undefined' && fckLaunchedTextareaId.indexOf(textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)]).css("display") != "none") {
+    else if (typeof FCKeditor != 'undefined' && Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id)]).css("display") != "none") {
       // The last condition is needed as no surprise for the IE.
       // Similar to tinyMCE IE case.
-      var editorId = fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)];
+      var editorId = fckLaunchedJsId[Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id)];
       var editor = FCKeditorAPI.GetInstance(editorId);
       if (editor.EditMode != FCK_EDITMODE_WYSIWYG) {
         return false;
@@ -57,7 +57,7 @@ Drupal.behaviors.file_embed = function(context) {
       var insertionKey = insertionKey();
       editor.InsertHtml(insertionKey);
       var html = editor.GetHTML();
-      Drupal.file_embedInsertIndex = html.indexOf(insertionKey);
+      Drupal.file_embedInsertIndex = Drupal.file_embedIndexOf(html, insertionKey);
       editor.SetHTML(html.replace(insertionKey, ''));
       Drupal.file_embedPopup(this.href, translate.popupTitle);
     }
@@ -130,11 +130,11 @@ Drupal.file_embedInsert = function(options) {
       }
     } catch(e) {}
   }
-  else if (typeof FCKeditor != 'undefined' && fckLaunchedTextareaId.indexOf(textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)]).css("display") != "none") {
+  else if (typeof FCKeditor != 'undefined' && Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id) != -1 && $('#fck_' + fckLaunchedJsId[Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id)]).css("display") != "none") {
     // The last condition is needed as no surprise for the IE.
     // Similar to tinyMCE IE case.
     try {
-      var editorId = fckLaunchedJsId[fckLaunchedTextareaId.indexOf(textarea_id)];
+      var editorId = fckLaunchedJsId[Drupal.file_embedIndexOf(fckLaunchedTextareaId, textarea_id)];
       var editor = FCKeditorAPI.GetInstance(editorId);
       editor.SetHTML(insertHTML(editor.GetHTML(), content));
       Drupal.file_embedInsertIndex = null;
@@ -147,17 +147,10 @@ Drupal.file_embedInsert = function(options) {
   }
 };
 
-/*
- * It occurs that indexOf is not defined in IE.
- */
-if(Array.indexOf = 'undefined' || !Array.indexOf) {
-  Array.prototype.indexOf = function(obj) {
-    for(var i=0; i<this.length; i++) {
-      if(this[i] == obj) {
-        return i;
-      }
-    }
-    return -1;
+Drupal.file_embedIndexOf = function(obj, str) {
+  if (typeof(obj) != 'string') {
+    obj = obj.toString();
   }
+  return obj.search(RegExp(str));
 }
 
