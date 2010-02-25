@@ -723,7 +723,7 @@ function file_generate_previews($file, $cron = FALSE) {
         }
       }
 
-      // Delete converted fie.
+      // Delete converted file.
       if (isset($file->converted[0]) && isset($file->converted[0]->filepath))
         file_delete($file->converted[0]->filepath);
       unset($file->converted);

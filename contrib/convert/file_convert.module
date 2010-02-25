@@ -226,6 +226,12 @@ function _file_convert($file, $pipeline, $tier, $options) {
       $in_file = $out_file;
     }
     $out_file = tempnam($options['tmpdir'], 'drupal_file_convert_');
+
+    foreach (module_implements('convert_options') as $module) {
+      if (($options_custom = module_invoke($module, 'convert_options', $file)) && is_array($options_custom))
+        $options = array_merge($options, $options_custom);
+    }
+
     if (!_file_convert_execute_pipeline($file, $in_file, $out_file, $pipe, $options)) {
       watchdog('file_convert', 'File %name, uri=%uri was not converted by executing a pipeline %pipeline. Execution of the pipeline failed.', array('%name' => $file->filename, '%uri' => $file->uri, '%pipeline' => $pipe), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       if (!$keep_in_file)

@@ -141,7 +141,9 @@ function theme_file_video_flash_flv_render($options = array()) {
 
     $output .= '<div id="file-player-'. $nid .'-'. $id .'" style="width: '. ($width > $width_min ? $width : $width_min) .'px; height: '. $height .'px;"></div>';
     $output .= '<script language="JavaScript">';
-    $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ '. (isset($image) ? '{ url: "'. $image .'", type: "jpg" }, ' : '') .'{ url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\')';
+    $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'", "'. $player_path .'/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.swf", { playlist: [ '. (isset($image) ? '{ url: "'. $image .'", type: "jpg" }, ' : '') .'{ url: "'. $src .'", autoPlay: false, autoBuffering: true } ] });\', \'100\');';
+    if (node_access('update', node_load($nid)))
+      $output .= 'setTimeout(\'flowplayer("file-player-'. $nid .'-'. $id .'").onPause(function() { Drupal.file_videoFrameLink(flowplayer("file-player-'. $nid .'-'. $id .'").getTime()); });\', \'100\');';
     $output .= '</script>';
   }
 
