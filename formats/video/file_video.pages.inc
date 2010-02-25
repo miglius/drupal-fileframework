@@ -30,7 +30,7 @@ function file_video_select_frame($node, $frame) {
     if ($data['handler'] == 'file_video_flash_flv')
       $has_flash_preview = TRUE;
   }
-  if (!$has_flash_preview) {
+  if (!$has_flash_preview && $file->type != 'video/x-flv') {
     drupal_access_denied();
     exit;
   }

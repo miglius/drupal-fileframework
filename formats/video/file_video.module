@@ -101,13 +101,13 @@ function file_video_link($type, $node = NULL, $teaser = FALSE) {
           'html'  => TRUE,
         );
       }
-      if (node_access('update', $node)) {
+      if (!$teaser && node_access('update', $node)) {
         $has_flash_preview = FALSE;
         foreach (file_generated_for($node->file) as $uri => $data) {
           if ($data['handler'] == 'file_video_flash_flv')
             $has_flash_preview = TRUE;
         }
-        if ($has_flash_preview) {
+        if ($has_flash_preview || $node->file->type == 'video/x-flv') {
           drupal_add_js(drupal_get_path('module', 'file_video') .'/file_video.js');
           $links['file_video_select_frame'] = array(
             'title' => l(t('Select cover frame'), 'node/'. $node->nid .'/frame/0', array('attributes' => array('id' => 'file-video-select-frame-link', 'title' => t('Pause the video to select the frame.')))),
