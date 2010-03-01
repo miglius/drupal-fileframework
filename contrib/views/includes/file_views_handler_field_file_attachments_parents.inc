@@ -43,7 +43,7 @@ class file_views_handler_field_file_attachments_parents extends views_handler_fi
       if (!empty($this->options['only_listed'])) {
         $where = " AND fa.list <> 0";
       }
-      $result = db_query("SELECT fa.fnid, fa.nid, n.title FROM {file_attachments} fa INNER JOIN {node} n ON fa.vid = n.vid WHERE fa.nid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
+      $result = db_query("SELECT fa.fnid, fa.nid, n.title FROM {file_attachments} fa INNER JOIN {node} n ON fa.vid = n.vid WHERE fa.fnid IN (". implode(', ', $nids) .")". $where ." ORDER BY fa.weight");
       while ($row = db_fetch_object($result)) {
         $this->items[$row->fnid][$row->nid] = $this->render_link(check_plain($row->title), $row->nid);
       }
