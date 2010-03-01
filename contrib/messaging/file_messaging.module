@@ -1,0 +1,120 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Integrates fileframework with the messaging.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+
+define('FILE_MESSAGING_MAX_SIZE', variable_get('file_messaging_max_size', 0));
+
+//////////////////////////////////////////////////////////////////////////////
+// Core API hooks
+
+/**
+ * Implementation of hook_menu().
+ */
+function file_messaging_menu() {
+  return array(
+    'admin/settings/file/messaging' => array(
+      'title' => 'Messaging',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('file_messaging_admin_settings'),
+      'access arguments' => array('administer site configuration'),
+      'file' => 'file_messaging.admin.inc',
+    ),
+  );
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Messaging API hooks
+
+/**
+ * Implementation of hook_message_alter().
+ */
+function file_message_alter(&$message, $info) {
+  $account = $message->account;
+  foreach ($message->events as $event) {
+    if ($event->module == 'node' && $event->type == 'node') {
+      $node = $event->objects['node'];
+      if (in_array($event->action, array('insert', 'update'))) {
+        if (is_object($node->file) && node_access('view', $node, $account)) {
+          // For the file node we attach the file.
+          _file_messenging_attach($message, $node, $account);
+        }
+        if (isset($node->files) && is_array($node->files)) {
+          foreach ($node->files as $file) {
+            $node_file = node_load($file->nid);
+            if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
+              // File attachment. Don't attach a file if previous revision of the node had the file attached.
+              if (!(($vid_old = db_result(db_query("SELECT vid FROM {node_revisions} WHERE nid = %d AND vid <> %d ORDER BY vid DESC LIMIT %d", $node->nid, $node->vid, 1))) && db_result(db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND fnid = %d AND cid = %d", $vid_old, $file->nid, 0))))
+                _file_messenging_attach($message, $node_file, $account);
+            }
+          }
+        }
+      }
+      if (in_array($event->action, array('comment'))) {
+        $comment = $event->objects['comment'];
+        $result = db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND cid = %d", $node->vid, $comment->cid);
+        while ($row = db_fetch_object($result)) {
+          $node_file = node_load($row->fnid);
+          if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
+            // Attachment to the comment.
+            _file_messenging_attach($message, $node_file, $account);
+          }
+        }
+      }
+    }
+  }
+
+  // Don't sent files if total size exeed max configured size.
+  if (is_array($message->files) && count($message->files) > 0 && FILE_MESSAGING_MAX_SIZE > 0) {
+    if (array_reduce($message->files, create_function('$a, $b', 'return $a + $b->filesize;')) > FILE_MESSAGING_MAX_SIZE * 1024*1024)
+      $message->files = array();
+  }
+}
+
+/**
+ * Add file attachment.
+ *
+ * $message
+ *   A reference to the message object.
+ * $node
+ *   A node object.
+ * $account
+ *   A user object.
+ */
+function _file_messenging_attach(&$message, $node, $account) {
+  // First we check if the file is already retrieved from the bitcache.
+  if (!($tmpfile = db_result(db_query("SELECT filepath FROM {files} WHERE filename = '%s'", 'file_messaging cache vid='. $node->vid)))) {
+    // Copy file to a temporal storage.
+    $input = bitcache_get_stream(file_get_hash($node->file->uri));
+    $tmpfile = tempnam(file_directory_temp(), 'drupal_file_messaging_');
+    $output = fopen($tmpfile, 'wb');
+    stream_copy_to_stream($input, $output);
+    fclose($input);
+    fclose($output);
+
+    // Mark file for the drupal garbage collector.
+    $record = (object)array(
+      'uid' => $account->uid,
+      'filename' => 'file_messaging cache vid='. $node->vid,
+      'filepath' => $tmpfile,
+      'filemime' => $node->file->type,
+      'filesize' => $node->file->size,
+      'status' => FILE_STATUS_TEMPORARY,
+      'timestamp' => time(),
+    );
+    drupal_write_record('files', $record);
+  }
+
+  $message->files[] = (object)array(
+    'filepath' => $tmpfile,
+    'filename' => $node->title,
+    'filemime' => $node->file->type,
+    'filesize' => $node->file->size,
+  );
+}
+

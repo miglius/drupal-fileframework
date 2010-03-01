@@ -1,0 +1,8 @@
+; $Id$
+name = Messaging
+description = Integrates files with the messaging.
+package = File management
+dependencies[] = file
+dependencies[] = messaging
+core = 6.x
+php = 5.2

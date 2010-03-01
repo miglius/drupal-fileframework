@@ -1,0 +1,30 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * File messaging module installation and upgrade code.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// Module installation/uninstallation
+
+/**
+ * Implementation of hook_enable().
+ */
+function file_messaging_enable() {
+  drupal_set_message(t('File messaging module successfully installed. Please review the available <a href="@settings">configuration settings</a>.', array('@settings' => url('admin/settings/file/messaging'))));
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function file_messaging_install() {}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function file_messaging_uninstall() {
+  variable_del('file_messaging_max_size');
+}
+
