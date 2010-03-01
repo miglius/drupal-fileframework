@@ -115,7 +115,7 @@ function file_restriction_admin_settings_validate($form, &$form_state) {
     case t('Save configuration'):
       $exceed_max_msg = t('Your PHP settings limit the maximum file size per upload to %size.', array('%size' => format_size(file_upload_max_size())));
       if (!is_numeric($values['file_restriction_size']) || $values['file_restriction_size'] < 0) {
-        form_set_error('file_restriction_size', t('A file size should be a positive inumber.'));
+        form_set_error('file_restriction_size', t('A file size should be a positive number.'));
       }
       if ($values['file_restriction_size'] * 1024 * 1024 > file_upload_max_size()) {
         form_set_error('file_restriction_size', $exceed_max_msg);
