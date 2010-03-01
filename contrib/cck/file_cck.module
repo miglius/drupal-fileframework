@@ -432,7 +432,7 @@ function file_cck_widget_info() {
       'field types' => array('file_cck'),
       'multiple values' => CONTENT_HANDLE_CORE,
       'callbacks' => array(
-        'default value' => CONTENT_CALLBACK_DEFAULT,
+        'default value' => CONTENT_CALLBACK_CUSTOM,
       ),
     ),
   );
