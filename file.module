@@ -333,15 +333,13 @@ function file_block($op = 'list', $delta = 0, $edit = array()) {
 function file_link($type, $node = NULL, $teaser = FALSE) {
   $links = array();
   if ($type == 'node' && $node->type == 'file' && !empty($node->file)) {
-    /*
-    if (FILE_VIEW_LINK) {
+    if (FILE_VIEW_LINK && preg_match('/^image\//', $node->file->type)) {
       $links['file_view'] = array(
         'title' => t('View'),
         'href' => 'file/'. $node->nid .'/view/'. $node->vid,
         'attributes' => array('title' => t('View this file inline in browser.')),
       );
     }
-    */
     $links['file_download'] = array(
       'title' => t('Download'),
       'href' => 'file/'. $node->nid .'/download/'. $node->vid,
