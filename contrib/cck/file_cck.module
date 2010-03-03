@@ -20,7 +20,16 @@ define('FILE_CCK_OG_VOCABULARIES',  variable_get('file_cck_og_vocabularies', 0))
  * Implementation of hook_theme().
  */
 function file_cck_theme() {
-  return array(
+  $theme_image = array();
+  foreach (array_keys(_file_cck_file_image_handlers()) as $handler) {
+    $theme_image = array_merge($theme_image, array(
+      'file_cck_formatter_'. $handler => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+      'file_cck_formatter_'. $handler .'_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+      'file_cck_formatter_'. $handler .'_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
+    ));
+  }
+
+  return array_merge(array(
     'file_cck_file' => array(
       'arguments' => array('element' => NULL),
     ),
@@ -30,13 +39,10 @@ function file_cck_theme() {
     'file_cck_formatter_preview_file' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_preview_formats' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_formatter_preview_formats_file' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_thumbnail' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_thumbnail_open' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
-    'file_cck_formatter_thumbnail_download' => array('arguments' => array('element' => NULL), 'function' => 'theme_file_cck_formatter_generic'),
     'file_cck_field_remove' => array(
       'arguments' => array('form' => NULL),
     ),
-  );
+  ), $theme_image);
 }
 
 function theme_file_cck_field_remove(&$form) {
@@ -298,17 +304,23 @@ function file_cck_content_is_empty($item, $field) {
  * Implementation of hook_field_formatter_info().
  */
 function file_cck_field_formatter_info() {
-  return array(
+  $info_image = array();
+  foreach (_file_cck_file_image_handlers() as $handler => $data) {
+    $info_image = array_merge($info_image, array(
+      $handler => array('label' => t('image "!name"', array('!name' => $data['name'])), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+      $handler .'_open' => array('label' => t('image "!name" with an open link', array('!name' => $data['name'])), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+      $handler .'_download' => array('label' => t('image "!name" with a download link', array('!name' => $data['name'])), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
+    ));
+  }
+
+  return array_merge(array(
     'default' => array('label' => t('first handler'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'file' => array('label' => t('file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview' => array('label' => t('preview'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview_file' => array('label' => t('preview and file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview_formats' => array('label' => t('preview and other formats'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
     'preview_formats_file' => array('label' => t('preview, other formats and file'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'thumbnail' => array('label' => t('thumbnail'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'thumbnail_open' => array('label' => t('thumbnail with an open link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-    'thumbnail_download' => array('label' => t('thumbnail with a download link'), 'multiple values' => CONTENT_HANDLE_CORE, 'field types' => array('file_cck')),
-  );
+  ), $info_image);
 }
 
 /**
@@ -335,33 +347,45 @@ function theme_file_cck_formatter_generic($element) {
     return '';
   }
 
+  if (preg_match('/^file_image_/', $element['#formatter'])) {
+    $handler = preg_replace(array('/_open$/', '/_download$/'), array('', ''), $element['#formatter']);
+    $image_handlers = _file_cck_file_image_handlers();
+    if (in_array($handler, array_keys($image_handlers))) {
+      if (isset($image_handlers[$handler]['dimensions']))
+        $image = file_get_image($file, $handler, explode('x', $image_handlers[$handler]['dimensions']));
+      $image = isset($image) ? $image : t('no image');
+
+      if (preg_match('/_open$/', $element['#formatter']))
+        return !empty($file->nid) ? l($image, 'node/'. $file->nid, array('html' => TRUE)) : $image;
+      if (preg_match('/_download$/', $element['#formatter']))
+        return !empty($file->nid) ? l($image, 'file/'. $file->nid .'/download/'. $file->vid, array('html' => TRUE)) : $image;
+      return $image;
+    }
+  }
+
   switch ($element['#formatter']) {
     case 'file':
       $data = array(
         'file' => theme('file_render', $file),
       );
       return theme('file_show', $data);
-      break;
     case 'preview':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
       );
       return theme('file_show', $data);
-      break;
     case 'preview_file':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
         'file' => theme('file_render', $file),
       );
       return theme('file_show', $data);
-      break;
     case 'preview_formats':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
         'generated' => FILE_SHOW_GENERATED ? file_render_generated($file, 'files_'. $id) : '',
       );
       return theme('file_show', $data);
-      break;
     case 'preview_formats_file':
       $data = array(
         'preview' => FILE_SHOW_PREVIEWS ? file_render_previews($file, 'files_'. $id) : '',
@@ -369,24 +393,6 @@ function theme_file_cck_formatter_generic($element) {
         'file' => theme('file_render', $file),
       );
       return theme('file_show', $data);
-      break;
-    case 'thumbnail':
-      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
-        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      return isset($thumbnail) ? $thumbnail : t('no thumbnail');
-      break;
-    case 'thumbnail_open':
-      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
-        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
-      return !empty($file->nid) ? l($thumbnail, 'node/'. $file->nid, array('html' => TRUE)) : $thumbnail;
-      break;
-    case 'thumbnail_download':
-      if (defined('FILE_IMAGE_THUMBNAIL_RESOLUTION'))
-        $thumbnail = file_get_image($file, 'file_image_thumbnail', explode('x', FILE_IMAGE_THUMBNAIL_RESOLUTION));
-      $thumbnail = isset($thumbnail) ? $thumbnail : t('no thumbnail');
-      return !empty($file->nid) ? l($thumbnail, 'file/'. $file->nid .'/download/'. $file->vid, array('html' => TRUE)) : $thumbnail;
-      break;
     case 'default':
     default:
       $file_handlers = file_handlers_for($file);
@@ -396,7 +402,6 @@ function theme_file_cck_formatter_generic($element) {
         }
       }
       return isset($handler) ? file_wrapper_html($node, $handler) : '';
-      break;
   }
 }
 
@@ -763,5 +768,18 @@ function _file_cck_db_update($action = array()) {
 function file_cck_upload_validate($file, $extensions = '') {
   $extensions = trim($extensions);
   return !empty($extensions) ? file_validate_extensions($file, $extensions) : array();
+}
+
+/**
+ * Returns enabled file image handlers.
+ *
+ * @return
+ *   An array of the image handlers.
+ */
+function _file_cck_file_image_handlers() {
+  static $image_mime_handlers = array();
+  if (module_exists('file_image') && empty($image_mime_handlers))
+    $image_mime_handlers = array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'module\'] == \'file_image\' && $a[\'enabled\'];'));
+  return $image_mime_handlers;
 }
 
