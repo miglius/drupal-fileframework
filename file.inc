@@ -195,6 +195,7 @@ function file_node_create($node = array()) {
   $node_type_default = variable_get('node_options_'. $node->type, array('status', 'promote'));
   $node->title = isset($node->title) ? $node->title : (isset($node->file->name) ? $node->file->name : $node->file->filename);
   $node->uid = isset($node->uid) ? $node->uid : $user->uid;
+  $node->name = isset($node->name) ? $node->name : $user->name;
   $node->status = isset($node->status) ? $node->status : in_array('status', $node_type_default);
   $node->comment = isset($node->comment) ? $node->comment : variable_get('comment_'. $node->type, 2);
   $node->promote = isset($node->promote) ? $node->promote : in_array('promote', $node_type_default);
