@@ -777,6 +777,10 @@ function file_cck_upload_validate($file, $extensions = '') {
  *   An array of the image handlers.
  */
 function _file_cck_file_image_handlers() {
+  // file.inc is not included when update.php is run.
+  if (!function_exists('file_get_mime_handlers'))
+    module_load_include('inc', 'file');
+
   static $image_mime_handlers = array();
   if (module_exists('file_image') && empty($image_mime_handlers))
     $image_mime_handlers = array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'module\'] == \'file_image\' && $a[\'enabled\'];'));
