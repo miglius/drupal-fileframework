@@ -36,33 +36,37 @@ function file_messaging_menu() {
  */
 function file_message_alter(&$message, $info) {
   $account = $message->account;
-  foreach ($message->events as $event) {
-    if ($event->module == 'node' && $event->type == 'node') {
-      $node = $event->objects['node'];
-      if (in_array($event->action, array('insert', 'update'))) {
-        if (is_object($node->file) && node_access('view', $node, $account)) {
-          // For the file node we attach the file.
-          _file_messenging_attach($message, $node, $account);
-        }
-        if (isset($node->files) && is_array($node->files)) {
-          foreach ($node->files as $file) {
-            $node_file = node_load($file->nid);
-            if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
-              // File attachment. Don't attach a file if previous revision of the node had the file attached.
-              if (!(($vid_old = db_result(db_query("SELECT vid FROM {node_revisions} WHERE nid = %d AND vid <> %d ORDER BY vid DESC LIMIT %d", $node->nid, $node->vid, 1))) && db_result(db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND fnid = %d AND cid = %d", $vid_old, $file->nid, 0))))
-                _file_messenging_attach($message, $node_file, $account);
+  if (isset($message->notifications['events'])) {
+    // $message->notifications is set only for not digest notifications in the
+    // notifications_process_compose() function.
+    foreach ($message->notifications['events'] as $event) {
+      if ($event->module == 'node' && $event->type == 'node') {
+        $node = $event->objects['node'];
+        if (in_array($event->action, array('insert', 'update'))) {
+          if (is_object($node->file) && node_access('view', $node, $account)) {
+            // For the file node we attach the file.
+            _file_messenging_attach($message, $node, $account);
+          }
+          if (isset($node->files) && is_array($node->files)) {
+            foreach ($node->files as $file) {
+              $node_file = node_load($file->nid);
+              if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
+                // File attachment. Don't attach a file if previous revision of the node had the file attached.
+                if (!(($vid_old = db_result(db_query("SELECT vid FROM {node_revisions} WHERE nid = %d AND vid <> %d ORDER BY vid DESC LIMIT %d", $node->nid, $node->vid, 1))) && db_result(db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND fnid = %d AND cid = %d", $vid_old, $file->nid, 0))))
+                  _file_messenging_attach($message, $node_file, $account);
+              }
             }
           }
         }
-      }
-      if (in_array($event->action, array('comment'))) {
-        $comment = $event->objects['comment'];
-        $result = db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND cid = %d", $node->vid, $comment->cid);
-        while ($row = db_fetch_object($result)) {
-          $node_file = node_load($row->fnid);
-          if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
-            // Attachment to the comment.
-            _file_messenging_attach($message, $node_file, $account);
+        if (in_array($event->action, array('comment'))) {
+          $comment = $event->objects['comment'];
+          $result = db_query("SELECT fnid FROM {file_attachments} WHERE vid = %d AND cid = %d", $node->vid, $comment->cid);
+          while ($row = db_fetch_object($result)) {
+            $node_file = node_load($row->fnid);
+            if (is_object($node_file->file) && node_access('view', $node_file, $account)) {
+              // Attachment to the comment.
+              _file_messenging_attach($message, $node_file, $account);
+            }
           }
         }
       }

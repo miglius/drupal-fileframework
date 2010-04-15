@@ -29,16 +29,17 @@ function file_drush_command() {
       'options' => array(
         '-a' => 'Process all files.',
         '-e' => 'Delete existing file derivatives first.',
-        '-f' => 'Run the conversion even if prefious conversion for the file failed.',
+        '-f' => 'Run the conversion even if previous conversion for the file failed.',
         '-d' => 'Print debug information about failed conversions.',
         '--type=<MIME type>' => 'Only process files with the specified MIME type.',
         '--nid=<NID>' => 'Only process file with the specified node ID.',
         '--vid=<VID>' => 'Only process file with the specified node revision ID.',
+        '--exclude=<NID1,NID2,NID3>' => 'Exclude files with the specified node IDs.',
       ),
       'examples' => array(
-        'drush file convert -a' => 'Create all missing derivatives.',
-        'drush file convert -type=image/jpeg' => 'Create all missing derivatives for the files of the image/jpeg MIME type.',
-        'drush file convert -e -nid=1234' => 'Recreate all derivatives for the file node with the NID=1234 and it\'s revisions.',
+        'drush file convert -a --exclude=1234,1235' => 'Create missing derivatives for all files except files with the NID=1234 and NID=1235.',
+        'drush file convert --type=image/jpeg' => 'Create all missing derivatives for the files of the image/jpeg MIME type.',
+        'drush file convert -e --nid=1234' => 'Recreate all derivatives for the file node with the NID=1234 and it\'s revisions.',
       ),
     ),
     'file change type' => array(
@@ -52,8 +53,8 @@ function file_drush_command() {
         '--vid=<VID>' => 'Only process file with the specified node revision ID.',
       ),
       'examples' => array(
-        'drush file change type -mime-old=image/gif -mime=application/pdf' => 'Change MIME type for files which currently have an \'image/gif\' MIME type to a \'application/pdf\' type.',
-        'drush file change type -nid=1234 -vid=2345' => 'Detect MIME type for a file node with the NID=1234 and VID=2345 which currently has a MIME type \'application/octet-stream\'.',
+        'drush file change type --mime-old=image/gif --mime=application/pdf' => 'Change MIME type for files which currently have an \'image/gif\' MIME type to a \'application/pdf\' type.',
+        'drush file change type --nid=1234 --vid=2345' => 'Detect MIME type for a file node with the NID=1234 and VID=2345 which currently has a MIME type \'application/octet-stream\'.',
       ),
     ),
     'file failed clear' => array(
@@ -137,10 +138,19 @@ function drush_file_convert() {
     }
   }
 
+  $exclude = drush_get_option('exclude');
+  $exclude = isset($exclude) ? explode(',', $exclude) : array();
+  $exclude = array_filter($exclude, create_function('$a', 'return is_numeric($a);'));
+
   $total = db_result(db_query($sql_count, $args));
   $result = db_query($sql, $args);
   $current = 0;
   while ($file = db_fetch_object($result)) {
+    if (in_array($file->nid, $exclude)) {
+      $total--;
+      continue;
+    }
+
     if (drush_get_option('e')) {
       $file->force_delete = TRUE;
       $file->keep_blob = TRUE;
