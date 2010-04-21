@@ -829,9 +829,8 @@ function _file_browser_ajax_term($block, $t, $columns) {
   }
 
   foreach (_file_browser_term_nodes($t, $t, 0) as $node) {
-    if (is_object($node)) {
+    if (is_object($node))
       $output .= _file_browser_node($block, $t->tid, $node, FALSE, $columns);
-    }
   }
 
   return $output;
@@ -862,10 +861,10 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
     }
   }
 
-  $size = array_sum(array_map(create_function('$node', 'return isset($node->file) ? $node->file->size : 0;'), $term->nodes));
+  $size = array_sum(array_map(create_function('$file', 'return isset($file->size) ? $file->size : 0;'), $term->files));
   $size = FILE_BROWSER_FOLDER_PROPERTIES ? format_size($size) : '&mdash;';
   $is_vocab = isset($term->tid) ? FALSE : TRUE;
-  $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? array_sum(array_map(create_function('$node', 'return isset($node->file) ? 1 : 0;'), $term->nodes)) : '&mdash;';
+  $count_files = FILE_BROWSER_FOLDER_PROPERTIES ? count($term->files) : '&mdash;';
   $count_terms = count(taxonomy_get_children(isset($term->tid) ? $term->tid : 0, $term->vid));
   $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
   $xhtml_id = (empty($term->tid) ? 'file-folder-v'. $term->vid : 'file-folder-t'. $term->tid) .'-g'. $gid .'-b'. $block;
@@ -951,6 +950,7 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
       drupal_set_title(check_plain($vocabulary->name));
     }
   }
+
   if (!empty($terms)) {
     foreach ($terms as $term) {
       $term = clone($term);
@@ -981,21 +981,17 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
  *   A term object or term's nodes.
  */
 function _file_browser_term_nodes($term, $childterm, $getnodes = NULL) {
-  if ($nodes = _file_browser_select_nodes(isset($childterm->tid) ? array($childterm->tid) : array(), 0, 'n.sticky DESC, n.title ASC, n.created DESC')) {
-    while ($node = db_fetch_object($nodes)) {
-      $node = node_load($node->nid);
-      if ($node = clone((object)$node)) {
-        if ($node->type == 'file' && !empty($node->file)) {
-          $term->nodes[] = $node;
-        }
-      }
+  if (!isset($term->files))
+    $term->files = array();
+
+  if ($result = _file_browser_select_nodes(isset($childterm->tid) ? array($childterm->tid) : array(), 0, 'n.sticky DESC, n.title ASC, n.created DESC')) {
+    while ($node = db_fetch_object($result)) {
+      $node->file = (object)array('nid' => $node->nid, 'vid' => $node->vid, 'uri' => $node->uri, 'type' => $node->type, 'size' => $node->size);
+      $term->files[] = $node;
     }
   }
 
-  if (!isset($term->nodes)) {
-    $term->nodes = array();
-  }
-  return is_null($getnodes) ? $term : $term->nodes;
+  return is_null($getnodes) ? $term : $term->files;
 }
 
 /**
@@ -1026,7 +1022,7 @@ function _file_browser_select_nodes($tids = array(), $depth = 0, $order = 'n.sti
 
     $str_tids = implode(',', call_user_func_array('array_merge', $descendant_tids));
     if (!empty($str_tids)) {
-      $sql = 'SELECT DISTINCT(n.nid), n.sticky, n.title, n.created FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.vid = tn.vid AND tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
+      $sql = 'SELECT DISTINCT(n.nid), n.vid, n.sticky, n.title, n.created, n.changed, fn.size, fn.type, fn.uri FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.vid = fn.vid AND n.vid = tn.vid AND tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
       $sql = db_rewrite_sql($sql);
       return db_query($sql);
     }
@@ -1103,8 +1099,8 @@ function _file_browser_term_data($vid, $tid) {
     $term = taxonomy_get_term($tid);
     $t = _file_browser_term_nodes($t, $term, NULL);
   }
-  $size = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? $node->file->size : 0;'), $t->nodes));
-  $count = array_sum(array_map(create_function('$node', 'return is_object($node->file) ? 1 : 0;'), $t->nodes));
+  $size = array_sum(array_map(create_function('$file', 'return isset($file->size) ? $file->size : 0;'), $t->files));
+  $count = count($t->files);
   return array('size' => format_size($size), 'count' => $count);
 }
 

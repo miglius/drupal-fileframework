@@ -182,15 +182,12 @@ function file_metadata($uri, $nid) {
  */
 function file_og_browser($node, $vid) {
   drupal_set_title(check_plain($node->title));
-  if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if (isset($vid) && isset($vocabs[$vid])) {
+  if (isset($node->og_vocabularies) && is_array($node->og_vocabularies) && count($vids = array_intersect(array_keys($node->og_vocabularies), array_keys(taxonomy_get_vocabularies('file')))) > 0) {
+    if (isset($vid) && in_array($vid, $vids)) {
       return file_browser_page($vid);
     }
     else {
-      foreach ($vocabs as $vid => $v) {
-        $vids[] = $vid;
-      }
-      $script = (count($vids) == 1) ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-bpage > div.file-cells").click(); });</script>' : '';
+      $script = (count($vids) == 1) ? '<script type=\'text/javascript\'>$(document).ready(function() { $("#file-folder-v'. reset($vids) .'-g'. $node->nid .'-bpage > div.file-cells").click(); });</script>' : '';
       return file_browser_page($vids, NULL, $script);
     }
   }
@@ -210,14 +207,11 @@ function file_og_browser($node, $vid) {
  */
 function file_og_gallery($node, $vid, $tid, $filter) {
   drupal_set_title(check_plain($node->title));
-  if (isset($node->og_vocabularies) && is_array($vocabs = $node->og_vocabularies) && !empty($vocabs)) {
-    if (isset($vid) && isset($vocabs[$vid])) {
+  if (isset($node->og_vocabularies) && is_array($node->og_vocabularies) && count($vids = array_intersect(array_keys($node->og_vocabularies), array_keys(taxonomy_get_vocabularies('file')))) > 0) {
+    if (isset($vid) && in_array($vid, $vids)) {
       return file_gallery_page($vid, $tid, $filter, 'file');
     }
     else {
-      foreach ($vocabs as $vid => $v) {
-        $vids[] = $vid;
-      }
       return (count($vids) == 1) ? file_gallery_page(reset($vids), NULL, NULL, 'file') : file_gallery_page($vids, NULL, NULL, 'file');
     }
   }

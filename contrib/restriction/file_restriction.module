@@ -121,7 +121,7 @@ function _file_restriction_get_restrictions() {
   global $user;
 
   if (!$restrictions) {
-    $extensions_allowed = explode(' ', FILE_RESTRICTION_EXTENSIONS_ALLOWED);
+    $extensions_allowed = trim(FILE_RESTRICTION_EXTENSIONS_ALLOWED) != '' ? explode(' ', FILE_RESTRICTION_EXTENSIONS_ALLOWED) : array();
     $size = FILE_RESTRICTION_SIZE * 1024*1024;
     $quota = FILE_RESTRICTION_QUOTA * 1024*1024;
     $quota_generated = FILE_RESTRICTION_QUOTA_GENERATED;
@@ -133,7 +133,7 @@ function _file_restriction_get_restrictions() {
 
     foreach ($user->roles as $rid => $name) {
       if (isset($roles_extensions_allowed[$rid]))
-        $extensions_allowed = array_merge($extensions_allowed, explode(' ', $roles_extensions_allowed[$rid]));
+        $extensions_allowed = array_merge($extensions_allowed, trim($roles_extensions_allowed[$rid]) != '' ? explode(' ', $roles_extensions_allowed[$rid]) : array());
       if (isset($roles_size[$rid]))
         $size = max($size, $roles_size[$rid] * 1024*1024);
       if (isset($roles_quota[$rid]))
