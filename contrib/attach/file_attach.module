@@ -119,7 +119,11 @@ function file_attach_block($op = 'list', $delta = 0, $edit = array()) {
  * Implementation of hook_init().
  */
 function file_attach_init() {
-  if (isset($_POST['form_id']) && $_POST['form_id'] == 'comment_form' && isset($_POST['op'])) {
+  global $user;
+
+  // Comment attachments for anonymous users are not implemented. The form is not cached
+  // for anonymous users, therefore this part would need to be refactored if we need it.
+  if ($user->uid > 0 && isset($_POST['form_id']) && $_POST['form_id'] == 'comment_form' && isset($_POST['op'])) {
     // AHAH sets #cache to TRUE and then hook_form_alter()
     // is not executed.
     // This is the only place to save the upload and alter the saved
