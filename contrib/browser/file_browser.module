@@ -543,7 +543,8 @@ function file_browser_newterm_form_submit($form, &$form_state) {
   }
   $term = _file_browser_term_nodes($term, $term, NULL);
   $output = _file_browser_term('page', $term, FALSE, in_array($term->tid, array()), TRUE);
-  // make sure the output is sent back to the server so the data can be updated for the user
+
+  // Make sure the output is sent back to the server so the data can be updated for the user.
   print "<script type='text/javascript'>";
   print "parent.Drupal.file_browserDisplayTerm('page', '". $term->tid ."', '". (is_array($form_state['values']['parent']) ? 0 : $form_state['values']['parent']) ."','". $term->vid ."','". $gid ."','". $output ."','". $msg ."','". $form_state['values']['name'] ."');";
   print "</script>";
@@ -566,6 +567,15 @@ function file_browser_upload_form_submit($form, &$form_state) {
   $term = taxonomy_get_term($tid);
   $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
 
+  // Taxonomy integration.
+  $vocab = taxonomy_vocabulary_load($term->vid);
+  if ($vocab->tags)
+    $taxonomy['tags'][$term->vid] = $term->name;
+  elseif ($vocab->multiple)
+    $taxonomy[$term->vid] = array($tid);
+  else
+    $taxonomy[$term->vid] = $tid;
+
   // Organic groups (og.module) integration: explicit audience selection.
   $og_groups = !empty($form_state['values']['og_groups']) ? $form_state['values']['og_groups'] : array();
 
@@ -581,7 +591,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
   print "<script type='text/javascript'>";
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
-      $file_node = file_node_create(array('file' => $upload, 'taxonomy' => array($tid), 'og_groups' => $og_groups, 'og_public' => $og_public));
+      $file_node = file_node_create(array('file' => $upload, 'taxonomy' => $taxonomy, 'og_groups' => $og_groups, 'og_public' => $og_public));
       $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $ifile_node->title)) .'</div>';
       print _file_browser_display_file($file_node, $term, $msg);
     }
