@@ -27,6 +27,9 @@ function file_views_views_handlers() {
       'file_views_handler_field_file_nodes_type' => array(
         'parent' => 'views_handler_field',
       ),
+      'file_views_handler_field_file_nodes_uri' => array(
+        'parent' => 'views_handler_field',
+      ),
       'file_views_handler_field_file_nodes_download' => array(
         'parent' => 'views_handler_field_node_link',
       ),
@@ -132,6 +135,14 @@ function file_views_views_data() {
     ),
   );
 
+  $data['file_nodes']['uri'] = array(
+    'field' => array(
+      'title' => t('URI'),
+      'help' => t('Provide a file URI.'),
+      'handler' => 'file_views_handler_field_file_nodes_uri',
+    ),
+  );
+
   $data['file_nodes']['download'] = array(
     'field' => array(
       'title' => t('Download link'),
@@ -154,7 +165,6 @@ function file_views_views_data() {
       'help' => t('Provide a file.'),
       'handler' => 'file_views_handler_field_file_nodes_file',
     ),
-
   );
 
   // ----------------------------------------------------------------------

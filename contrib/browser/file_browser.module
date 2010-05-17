@@ -592,7 +592,7 @@ function file_browser_upload_form_submit($form, &$form_state) {
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
       $file_node = file_node_create(array('file' => $upload, 'taxonomy' => $taxonomy, 'og_groups' => $og_groups, 'og_public' => $og_public));
-      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $ifile_node->title)) .'</div>';
+      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file_node->title)) .'</div>';
       print _file_browser_display_file($file_node, $term, $msg);
     }
     $i++;

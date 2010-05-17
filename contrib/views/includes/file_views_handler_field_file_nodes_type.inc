@@ -22,6 +22,7 @@ class file_views_handler_field_file_nodes_type extends views_handler_field {
       '#title' => t('Use type name'),
       '#type' => 'checkbox',
       '#default_value' => !empty($this->options['show_name']),
+      '#description' => t('If checked, the type name will be displayed instead of the MIME type.'),
     );
   }
 
