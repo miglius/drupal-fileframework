@@ -10,7 +10,8 @@ Drupal.file_browserVars = {
   'pageY':0, // where the mouseY pointer is
   'ftDropDownTimeout':0, // timeout for hiding action div
   'filecount':1,
-  'FTMSGCLEARTIMEOUT':5000
+  'FTMSGCLEARTIMEOUT':5000,
+  'progressTimeout':0
 };
 
 /**
@@ -37,15 +38,15 @@ Drupal.behaviors.file_browser = function(context) {
 Drupal.file_browserInit = function(block) {
   var ratio = block == 'page' ? 0.75 : 0.3;
   $('div.file-system').height('' + (Drupal.file_browserGetWindowHeight() * ratio) + 'px');
-  var translate = Drupal.settings.file_browser;
-  $('#file-preview').show().html(translate.no_file_selected)
+  var settings = Drupal.settings.file_browser;
+  $('#file-preview').show().html(settings.no_file_selected);
 };
 
 /**
- * Set the vocabulary and term IDs on the folder folder.
+ * Set the vocabulary and term IDs on the folder.
  */
 Drupal.file_browserUploadCheck = function(id) {
-  var translate = Drupal.settings.file_browser;
+  var settings = Drupal.settings.file_browser;
   if (matches = id.match(/-([vt])([\d]+)/)) {
 
     // setting the term id that the file will be uploaded too
@@ -75,7 +76,7 @@ Drupal.file_browserUploadCheck = function(id) {
     }
   }
   $('#block-file_browser-preview').show();
-  $('#file-preview').show().html(translate.no_file_selected)
+  $('#file-preview').show().html(settings.no_file_selected)
   // show a new term block if the browser is within a page
   var block = id.match(/-b([^-]+)/)[1];
   if (block == 'page') 
@@ -169,7 +170,7 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
  * @param node {String} html representation of the node
  * @param title {String} message to display on screen to the user
  */
-Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, nodename) {
+Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, nodename, last) {
   var folder = 'file-folder-t' + ptid + '-g' + gid + '-b' + block;
   var file = 'file-node-t' + ptid + '-n' + nid + '-b' + block;
   var check = 0;
@@ -194,19 +195,23 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
   if (!$('#' + folder).is('.expanded')) {
     $('#' + file).remove();
     // now expand the parent shelf
-    $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, file) });
+    if (last) {
+      $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, file) });
+    }
   }
-  // select the newly created folder
-  $('#' + file + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
+  if (last) {
+    // select the newly created file
+    $('#' + file + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
+    // resetting the form for file upload back to its original state
+    if ($('#file_browser').find('input:file').size() > 1) {
+      $('#file_browser').find('input:file').each(function() {
+        if (this.id != 'edit-upload') {
+          $(this).parent().remove(); // remove it from the DOM we do not need it, parent is the <p>
+        }
+      });
+    }
+  }
   Drupal.file_browserSetMsg(msg);
-  // resetting the form for file upload back to its original state
-  if ($('#file_browser').find('input:file').size() > 1) {
-    $('#file_browser').find('input:file').each(function() {
-      if (this.id != 'edit-upload') {
-        $(this).parent().remove(); // remove it from the DOM we do not need it, parent is the <p>
-      }
-    });
-  }
 };
 
 /**
@@ -232,8 +237,19 @@ Drupal.file_browserErrorMsg = function(msg) {
 };
 
 /**
+ * Display any status messages on the screen since we do not do full page refreshes for actions
+ * @param msg {String} status message to be displayed to the user
+ */
+Drupal.file_browserStatusMsg = function(msg) {
+  if (!$('#file-upload-statuses').size())
+    $('<div id="file-upload-statuses" class="messages status"></div>').insertBefore('.file-system');
+  $('#file-upload-statuses').append(msg);
+  setTimeout(function() { $('#file-upload-statuses').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
+};
+
+/**
  * Display any notice messages on the screen since we do not do full page refreshes for actions
- * @param msg {String} error message to be displayed to the user
+ * @param msg {String} status message to be displayed to the user
  */
 Drupal.file_browserNoticeMsg = function(msg) {
   if (!$('#file-upload-notices').size())
@@ -266,6 +282,7 @@ Drupal.file_browserSelectRow = function(obj, id, folder, link) {
  * @param elm {String} The id of the element to click on the folder expand
  */
 Drupal.file_browserFolderClick = function(obj, elm) {
+  var settings = Drupal.settings.file_browser;
   var parent = obj.parentNode;
   var id = parent.id;
   var block = id.match(/-b([^-]+)/)[1];
@@ -293,7 +310,7 @@ Drupal.file_browserFolderClick = function(obj, elm) {
     if (!$(parent).hasClass('empty')) {
       $('#' + id + '-spinner').show();
     }
-    $.get($('#file-ajax-url').val() + '/' + tid + '/' + block, function(result) {
+    $.get(settings.ajax_url + '/' + tid + '/' + block, function(result) {
       $(obj).parent().addClass('expanded');
       // to stop duplicate info from double clicks
       if (parent.childNodes.length == 1) {
@@ -341,15 +358,17 @@ Drupal.file_browserFileClick = function(obj) {
   Drupal.file_browserToggleNewterm(id);
   Drupal.file_browserToggleUpload();
   // show preview
-  $('#file-preview').hide();
-  $('#file-preview-spinner').show();
-  $.get($('#file-preview-url').val() + '/' + nid + '/' + tid, function(result) {
-    $('#file-preview-spinner').hide();
-    $('#file-preview').html(result).show();
-    if (typeof collapseAutoAttach != 'undefined') {
-      collapseAutoAttach();
-    };
-  });
+  if (block == 'page') {
+    $('#file-preview').hide();
+    $('#file-preview-spinner').show();
+    $.get($('#file-preview-url').val() + '/' + nid + '/' + tid, function(result) {
+      $('#file-preview-spinner').hide();
+      $('#file-preview').html(result).show();
+      if (typeof collapseAutoAttach != 'undefined') {
+        collapseAutoAttach();
+      };
+    });
+  }
   return false;
 };
 
@@ -394,7 +413,14 @@ Drupal.file_browserDelFileWidget = function() {
   Drupal.file_browserVars.filecount = 1;
   $('#file-browser-upload-form input#edit-upload-0').val(''); // resetting the value in the text field
   $('.file-restriction').hide();
-  $('#file-upload-spinner').hide();
+  $('#file-upload-progress').hide();
+  var settings = Drupal.settings.file_browser;
+  if (settings.apc) {
+    $('#edit-progress-key').val(settings.progress_id); // reset the APC id
+    $('div.filled').css('width', '0%');
+    $('div.percentage').html('');
+    clearTimeout(Drupal.file_browserVars.progressTimeout);
+  }
 };
 
 /**
@@ -414,6 +440,36 @@ Drupal.file_browserUpdateTerm = function(id, size, files) {
  * @param obj {Object} File Upload Object <a> tag
  */
 Drupal.file_browserFileUploadClick = function(obj) {
-  $('#file-upload-spinner').show();
+  setTimeout(function() { $('input#edit-upload-submit').attr('disabled', 'disabled'); }, 100);
+  var settings = Drupal.settings.file_browser;
+  $('#file-upload-progress').show();
+  if (settings.apc) {
+    Drupal.file_browserVars.progressTimeout = setTimeout('Drupal.file_browserGetProgress(' + settings.progress_timeout + ')', settings.progress_interval);
+  }
+  return true;
+};
+
+/**
+ * Get the progress bar
+ * @param timeout {Integer} If the APC is installed but not configured,
+ *   the script will make timout times connections untill it times out.
+ */
+Drupal.file_browserGetProgress = function(timeout) {
+  var settings = Drupal.settings.file_browser;
+  $.getJSON(settings.progress_url, function(progress) {
+    if (progress.percentage >= 0 && progress.percentage <= 100) {
+      $('div.filled').css('width', progress.percentage +'%');
+      $('div.percentage').html(progress.percentage +'%');
+    }
+    $('div.message').html(progress.message);
+    if (progress.percentage < 100) {
+      if (progress.percentage >= 0 || (progress.percentage == -1 && timeout > 1)) {
+        Drupal.file_browserVars.progressTimeout = setTimeout('Drupal.file_browserGetProgress(' + (timeout-1) + ')', settings.progress_interval);
+      }
+    }
+    else {
+      $('input#edit-upload-submit').removeAttr('disabled');
+    }
+  });
 };
 

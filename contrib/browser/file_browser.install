@@ -32,6 +32,7 @@ function file_browser_uninstall() {
   variable_del('file_browser_embed_previews');
   variable_del('file_browser_folder_properties');
   variable_del('file_browser_folder_links');
+  variable_del('file_browser_delete_option');
   variable_del('file_browser_og_vocabularies');
   variable_del('file_browser_og_upload');
   variable_del('file_browser_og_preview');

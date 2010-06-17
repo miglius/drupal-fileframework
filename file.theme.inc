@@ -58,51 +58,55 @@ function theme_file_admin_handler_settings($form) {
  * Theme for showing a file with a links.
  */
 function theme_file_render($file, $links_add = array(), $iframe = FALSE) {
-  static $initialized = FALSE;
   $is_node = isset($file->nid) && !isset($file->derived);
   // If the same file is displayed several times, the js bindes incorrectly.
   // Have to ensure unique IDs.
-  $id = '';
-  for ($i = 0; $i < 8; $i++)
-    $id .= mt_rand(0, 9);
+  $id = _file_unique_id();
 
-  if (!$initialized) {
-    $initialized = TRUE;
-    drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
-    drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
-
-    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
-
-    // Cluetip for metadata.
-    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
-    drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); }); });', 'inline');
-
-    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
-  }
+  // Load all include files.
+  _file_theme_init();
 
   // We don't need open link on the node view page.
   if ($is_node && !(arg(0) == 'node' && arg(1) == $file->nid))
-    $links['open'] = array('title' => t('Open'), 'href' => 'node/'. $file->nid, 'attributes' => array('title' => t('Open file.')));
+    $links['open'] = array(
+      'title' => t('Open'),
+      'attributes' => array('title' => t('Open file.')),
+      'href' => 'node/'. $file->nid,
+    );
 
   // Find a first enabled handler for the file.
   if ($is_node && ($preview = file_first_preview($file)))
-    $links['show'] = array('title' => t('Preview'), 'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'], 'query' => array('width' => $preview['width'], 'height' => $preview['height']), 'attributes' => array('title' => t('Preview'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id));
-  if (FILE_VIEW_LINK && preg_match('/^image\//', $file->type)) {
-    $links['view'] = array('title' => t('View'), 'attributes' => array('title' => t('View file inline in the browser.')));
-    $links['view']['href'] = $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
-    $links['view']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'inline', 'op' => 'view');
-  }
-  $links['download'] = array('title' => t('Download'), 'attributes' => array('title' => t('Download file.')));
-  $links['download']['href'] = $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE));
-  $links['download']['query'] = $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'attachment', 'op' => 'download');
+    $links['show'] = array(
+      'title' => t('Preview'),
+      'attributes' => array('title' => t('Preview'), 'class' => 'file-thickbox', 'id' => 'file-'. $file->nid .'-'. $id),
+      'href' => 'node/'. $file->nid .'/embed/'. $preview['handler'],
+      'query' => array('width' => $preview['width'], 'height' => $preview['height']),
+    );
+  if (FILE_VIEW_LINK && preg_match('/^image\//', $file->type))
+    $links['view'] = array(
+      'title' => t('View'),
+      'attributes' => array('title' => t('View file inline in the browser.')),
+      'href' => $is_node ? 'file/'. $file->nid .'/view/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE)),
+      'query' => $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'inline', 'op' => 'view'),
+    );
+  $links['download'] = array(
+    'title' => t('Download'),
+    'attributes' => array('title' => t('Download file.')),
+    'href' => $is_node ? 'file/'. $file->nid .'/download/'. $file->vid : bitcache_resolve_uri($file->uri, array('absolute' => TRUE)),
+    'query' => $is_node ? '' : array('vid' => $file->vid, 'disposition' => 'attachment', 'op' => 'download'),
+  );
   if (FILE_INFO_LINK && $is_node)
-    $links['info'] = array('title' => t('Info'), 'href' => '', 'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'));
+    $links['info'] = array(
+      'title' => t('Info'),
+      'attributes' => array('title' => t('File\'s information.'), 'class' => 'file-tip', 'rel' => base_path() .'node/'. $file->nid .'/info', 'onclick' => 'return false;'),
+      'href' => '',
+    );
   if (FILE_PROPERTIES_LINK)
-    $links['metadata'] = array('title' => t('Properties'), 'href' => '', 'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'));
+    $links['metadata'] = array(
+      'title' => t('Properties'),
+      'attributes' => array('title' => t('File\'s properties.'), 'class' => 'file-tip', 'rel' => base_path() .'file_metadata/'. file_get_hash($file) .'/'. $file->nid, 'onclick' => 'return false;'),
+      'href' => '',
+    );
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
   $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. file_mime_description_for($file->type) .' - '. format_size($file->size) . (isset($file->desc) ? ' - '. $file->desc : '') .'" class="name">'. file_mime_icon_for($file->type) .' <span class="title">'. (isset($file->name) ? check_plain($file->name) : '') . (isset($file->name) && isset($file->desc) ? ' - ' : '') . (isset($file->desc) ? $file->desc : '') .'</span></span>'. $links .'</span></span>';
   if ($is_node && (!isset($links_add['show']) || !empty($links_add['show'])))

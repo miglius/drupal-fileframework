@@ -135,9 +135,7 @@ function theme_file_video_flash_flv_render($options = array()) {
       $output .= '<script src="'. $player_path .'/example/flowplayer-'. FILE_VIDEO_FLOWPLAYER_VERSION .'.min.js"></script>';
     }
 
-    $id = '';
-    for ($i = 0; $i < 8; $i++)
-      $id .= mt_rand(0, 9);
+    $id = _file_unique_id();
 
     $output .= '<div id="file-player-'. $nid .'-'. $id .'" style="width: '. ($width > $width_min ? $width : $width_min) .'px; height: '. $height .'px;"></div>';
     $output .= '<script language="JavaScript">';

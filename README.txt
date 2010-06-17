@@ -43,6 +43,13 @@ FILE UTILITY MODULES
   * file_views:
     Integrates file operations with the Views module.
 
+  * file_mailsave:
+    Integrates file operations with the Mailsave module and implements creation
+    of attachments form the email messsages.
+
+  * file_messaging:
+    Integrates file operations with the Messaging.
+
 
 FILE FORMAT MODULES
 -------------------

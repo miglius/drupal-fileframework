@@ -10,6 +10,7 @@
 
 define('FILE_ATTACH_REUSE',            variable_get('file_attach_reuse', 1));
 define('FILE_ATTACH_REUSE_NODES',      variable_get('file_attach_reuse_nodes', '0'));
+define('FILE_ATTACH_DELETE',           variable_get('file_attach_delete', '0'));
 define('FILE_ATTACH_SHOW_ATTACHMENTS', variable_get('file_attach_show_attachments', 1));
 define('FILE_ATTACH_SHOW_PREVIEWS',    variable_get('file_attach_show_previews', 1));
 define('FILE_ATTACH_VOCABULARIES_ALL', variable_get('file_attach_vocabularies_all', 1));
@@ -359,6 +360,15 @@ function _file_attach_form($object) {
     if (module_exists('file_restriction'))
       file_restriction_js('#edit-upload');
 
+    if (FILE_APC) {
+      $apc_id = _file_unique_id();
+      $form[FILE_APC_NAME] = array(
+        '#type' => 'hidden',
+        '#value' => $apc_id,
+        '#id' => 'edit-progress-key',
+      );
+    }
+
     $form['file_attach_more']['#weight'] = 10;
     $form['file_attach_more']['upload'] = array(
       '#type' => 'file',
@@ -373,7 +383,7 @@ function _file_attach_form($object) {
       '#ahah' => array(
         'path' => 'file_attach/js',
         'wrapper' => 'file-attach-wrapper',
-        'progress' => array('type' => 'bar', 'message' => t('Please wait...')),
+        'progress' => array_merge(array('type' => 'bar', 'message' => t('Please wait...')), FILE_APC ? array('url' => url('file_progress/'. $apc_id), 'interval' => FILE_PROGRESS_INTERVAL) : array()),
       ),
       '#submit' => array('node_form_submit_build_node'),
       '#prefix' => '<div id="file-attach-update-attachments">',
@@ -602,6 +612,10 @@ function file_attach_js() {
   if (module_exists('file_restriction'))
     $output .= file_restriction_js('#edit-upload', array(), TRUE);
 
+  if (FILE_APC) {
+    $output .= "<script type='text/javascript'>Drupal.settings.ahah['edit-attach'].progress.url = '". url('file_progress/'. $form[FILE_APC_NAME]['#value']) ."';</script>";
+  }
+
   // We send the updated file attachments form.
   // Don't call drupal_json(). ahah.js uses an iframe and
   // the header output by drupal_json() causes problems in some browsers.
@@ -704,6 +718,14 @@ function file_attach_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
     case 'delete':
       if ($node->type == 'file' && is_object($node->file)) {
         db_query('DELETE FROM {file_attachments} WHERE fnid = %d', $node->file->nid);
+      }
+      if (FILE_ATTACH_DELETE) {
+        $result = db_query('SELECT DISTINCT(fnid) FROM {file_attachments} WHERE nid = %d', $node->nid);
+        while ($row = db_fetch_object($result)) {
+          if (db_result(db_query('SELECT COUNT(DISTINCT(nid)) FROM {file_attachments} WHERE fnid = %d', $row->fnid)) == 1) {
+            node_delete($row->fnid);
+          }
+        }
       }
       // Deletes all attachment relationships for this node and its comments.
       db_query('DELETE FROM {file_attachments} WHERE nid = %d', $node->nid);

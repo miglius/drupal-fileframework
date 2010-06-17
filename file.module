@@ -9,8 +9,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_RDF_REPOSITORY',      'file');
-
+define('FILE_RDF_REPOSITORY',               'file');
 define('FILE_BITCACHE_REPOSITORY',           variable_get('file_bitcache_repository', 'file'));
 define('FILE_SHOW_PREVIEWS',                 variable_get('file_show_previews', 1));
 define('FILE_HANDLER_AUTOLOAD',              variable_get('file_handler_autoload', 1));
@@ -29,6 +28,12 @@ define('FILE_MIME_AUTODETECTION',            variable_get('file_mime_autodetecti
 define('FILE_MIME_AUTODETECTION_CONDITIONS', variable_get('file_mime_autodetection_conditions', 'application/octet-stream'));
 define('FILE_OG_BROWSER_TAB',                variable_get('file_og_browser_tab', 1));
 define('FILE_OG_GALLERY_TAB',                variable_get('file_og_gallery_tab', 1));
+
+define('FILE_APC',               function_exists('apc_fetch'));
+define('FILE_APC_PREFIX',        'upload_');
+define('FILE_APC_NAME',          'APC_UPLOAD_PROGRESS');
+define('FILE_PROGRESS_INTERVAL', 1000);
+define('FILE_PROGRESS_TIMEOUT',  10);
 
 define('FILE_TMP_KEEP',  86400); // 24x60x60s
 
@@ -211,6 +216,14 @@ function file_menu() {
       'type' => MENU_CALLBACK,
       'page callback' => 'file_metadata',
       'page arguments' => array(1, 2),
+      'access callback' => TRUE,
+      'file' => 'file.pages.inc',
+    ),
+    'file_progress' => array(
+      'title' => 'AJAX file progress',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'file_progress',
+      'page arguments' => array(1),
       'access callback' => TRUE,
       'file' => 'file.pages.inc',
     ),

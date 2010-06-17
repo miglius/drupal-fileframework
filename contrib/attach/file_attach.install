@@ -32,6 +32,7 @@ function file_attach_uninstall() {
   drupal_uninstall_schema('file_attach');
   variable_del('file_attach_reuse');
   variable_del('file_attach_reuse_nodes');
+  variable_del('file_attach_delete');
   variable_del('file_attach_show_attachments');
   variable_del('file_attach_show_previews');
   variable_del('file_attach_vocabularies_all');

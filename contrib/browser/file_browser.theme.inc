@@ -22,7 +22,7 @@ function theme_file_browser_page($data) {
   $output .= $terms;
   $output .= '</div>';
   $output .= '<script type="text/javascript">$(document).ready(function() { Drupal.file_browserInit(\'page\'); });</script>';
-  $output .= '<form id="file_browser-ajax-urlholder-form"><input id="file-ajax-url" type="hidden" value="'. url('file_browser/ajax') .'" /></form>';
+  $output .= '<iframe src="javascript:;" id="file_browser-submission-frame" name="file_browser-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   return $output;
 }
 
@@ -65,14 +65,14 @@ function theme_file_browser_file($data) {
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
   $output .= '<div class="file-icon"></div>';
 
-  $output .= '<div class="file-title">'. theme('file_render', $file, array('info' => array()), $iframe) .'</div>';
+  $output .= '<div class="file-title">'. theme('file_render', $file, array_merge(array('info' => array()), isset($links) ? $links : array()), $iframe) .'</div>';
   if ($columns) {
     $output .= '<div class="file-date">'. $date .'</div>';
     $output .= '<div class="file-size">'. $size .'</div>';
   }
   $output .= '</div>';
   $output .= '</div>';
-  $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); });</script>';
+  $output .= '<script type=\'text/javascript\'>$(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); });'. (isset($script) ? ' '. $script : '') .'</script>';
   return $output;
 }
 
@@ -137,7 +137,6 @@ function theme_file_browser_preview($data) {
     $output .= '<div id="file-move">';
     $output .= $form;
     $output .= '</div>';
-    $output .= '<iframe src="javascript:;" id="file_browser-move-submission-frame" name="file_browser-move-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   }
 
   $output .= '</div>'; // id=file-preview
@@ -150,14 +149,13 @@ function theme_file_browser_preview($data) {
  */
 function theme_file_browser_block($data) {
   extract($data, EXTR_SKIP);
+  _file_theme_init();
 
   $output = '<div class="file-system" id="file-system-'. $vid .'">';
   $output .= $terms;
   $output .= '</div>';
   $output .= '<div class="more-link">'. l(t('more'), 'file_browser/'. $vid, array('title' => t('View file browser'))) .'</div>';
   $output .= '<script type="text/javascript">Drupal.file_browserInit(\''. $vid .'\');</script>';
-  $output .= '<form id="file-node-url-form"><input id="file-node-url" type="hidden" value="'. url('node/') .'" /></form>';
-  $output .= '<form id="file_browser-ajax-urlholder-form"><input id="file-ajax-url" type="hidden" value="'. url('file_browser/ajax') .'" /></form>';
   return $output;
 }
 
@@ -170,7 +168,6 @@ function theme_file_browser_newterm($form) {
   $output .= $form;
   $output .= '</div>';
   $output .= '<script type="text/javascript">$(document).ready(function() { $(\'#edit-newterm-submit\').attr(\'disabled\', \'disabled\'); });</script>';
-  $output .= '<iframe src="javascript:;" id="file_browser-newterm-submission-frame" name="file_browser-newterm-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   return $output;
 }
 
@@ -178,12 +175,10 @@ function theme_file_browser_newterm($form) {
  * Renders a file upload block
  */
 function theme_file_browser_upload($form) {
-  $output = '<div id="file-upload-spinner" style="display: none;"></div>';
   $output .= '<div id="file-upload">';
   $output .= t('Select a folder to upload files to.');
   $output .= $form;
   $output .= '</div>';
-  $output .= '<iframe src="javascript:;" id="file_browser-upload-submission-frame" name="file_browser-upload-submission-frame" border="0" frameborder="0" width="0" height="0"></iframe>';
   return $output;
 }
 
@@ -195,6 +190,34 @@ function theme_file_browser_term_render($term, $path, $links_add = array()) {
   $links = theme('links', array_merge($links, $links_add), array('class' => 'file-links'));
   $output = '<span class="file with-menu"><span class="label"><span class="highlight"></span><span title="'. $term->name .'" class="name">'. theme('image', drupal_get_path('module', 'file_browser') .'/icons/folder.png') .' <span class="title" style="vertical-align: top;">'. check_plain($term->name) .'</span></span>'. $links .'</span></span>';
   $output = preg_replace("/\n/", '', $output);
+  return $output;
+}
+
+/*
+ * Theme for the delete page.
+ */
+function theme_file_browser_delete_page($content, $options = array()) {
+  extract($options, EXTR_SKIP);
+
+  $output = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n";
+  $output .= '<html xmlns="http://www.w3.org/1999/xhtml">';
+  $output .= '<head>';
+  $output .= ' <title>'. (drupal_get_title() ? strip_tags(drupal_get_title()) : variable_get('site_name', 'drupal')) .'</title>';
+  $output .= drupal_get_html_head();
+  $output .= drupal_get_css();
+  //$output .= drupal_get_js();
+  $output .= '</head>';
+  $output .= '<body style="min-width: 0; background-color: #fff; color: #000; margin: 10px;">';
+  if (isset($breadcrumb) && $breadcrumb) {
+    $output .= '<div id="wrapper" class="browser"><div id="container"><div class="breadcrumb browser">'. implode(' > ', drupal_get_breadcrumb()) .'</div></div></div>';
+  }
+  $output .= "\n<!-- begin content -->\n";
+  $output .= '<h2>'. drupal_get_title() .'</h2>';
+  $output .= $content;
+  if (isset($script))
+    $output .= '<script type="text/javascript">$(document).ready(function() { '. $script .' });</script>';
+  $output .= "\n<!-- end content -->\n";
+  $output .= "</body>\n</html>";
   return $output;
 }
 

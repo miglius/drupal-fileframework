@@ -71,15 +71,21 @@ function file_browser_admin_settings() {
   );
   $form['display']['file_browser_folder_properties'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Show folder\'s files count and size'),
+    '#title'         => t("Show folder's files count and size"),
     '#default_value' => FILE_BROWSER_FOLDER_PROPERTIES,
     '#description'   => t('Whether the number and the total count of the size of all files below the term should be displayed along with the term name in the browser.'),
   );
   $form['display']['file_browser_folder_links'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Show folder\'s contextual menu'),
+    '#title'         => t("Show folder's contextual menu"),
     '#default_value' => FILE_BROWSER_FOLDER_LINKS,
     '#description'   => t('Show a contextual menu for a folder.'),
+  );
+  $form['display']['file_browser_delete_option'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Show file delete option'),
+    '#default_value' => FILE_BROWSER_DELETE_OPTION,
+    '#description'   => t("Show a file delete option in the file's contextual menu."),
   );
 
   // Organic groups integration
@@ -172,6 +178,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_set('file_browser_embed_previews', $values['file_browser_embed_previews']);
       variable_set('file_browser_folder_properties', $values['file_browser_folder_properties']);
       variable_set('file_browser_folder_links', $values['file_browser_folder_links']);
+      variable_set('file_browser_delete_option', $values['file_browser_delete_option']);
       if (module_exists('og')) {
         variable_set('file_browser_og_vocabularies', $values['file_browser_og_vocabularies']);
         variable_set('file_browser_og_upload', $values['file_browser_og_upload']);
@@ -193,6 +200,7 @@ function file_browser_admin_settings_submit($form, &$form_state) {
       variable_del('file_browser_embed_previews');
       variable_del('file_browser_folder_properties');
       variable_del('file_browser_folder_links');
+      variable_del('file_browser_delete_option');
       variable_del('file_browser_og_vocabularies');
       variable_del('file_browser_og_upload');
       variable_del('file_browser_og_preview');

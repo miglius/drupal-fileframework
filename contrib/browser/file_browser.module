@@ -13,6 +13,7 @@ define('FILE_BROWSER_HIDE_EMPTY',        variable_get('file_browser_hide_empty',
 define('FILE_BROWSER_EMBED_PREVIEWS',    variable_get('file_browser_embed_previews', 1));
 define('FILE_BROWSER_FOLDER_PROPERTIES', variable_get('file_browser_folder_properties', 1));
 define('FILE_BROWSER_FOLDER_LINKS',      variable_get('file_browser_folder_links', 1));
+define('FILE_BROWSER_DELETE_OPTION',     variable_get('file_browser_delete_option', 1));
 define('FILE_BROWSER_VOCABULARIES_ALL',  variable_get('file_browser_vocabularies_all', 1));
 define('FILE_BROWSER_VOCABULARIES',      serialize(variable_get('file_browser_vocabularies', array())));
 define('FILE_BROWSER_OG_VOCABULARIES',   variable_get('file_browser_og_vocabularies', 0));
@@ -66,6 +67,10 @@ function file_browser_theme() {
       'arguments' => array('term' => NULL, 'path' => NULL, 'links_add' => NULL),
       'file' => 'file_browser.theme.inc'
     ),
+    'file_browser_delete_page' => array(
+      'arguments' => array('content' => NULL, 'options' => NULL),
+      'file' => 'file_browser.theme.inc'
+    ),
   );
 }
 
@@ -110,6 +115,14 @@ function file_browser_menu() {
     'file_browser/ajax/voc' => array(
       'page callback' => 'file_browser_ajax_voc',
       'access arguments' => array('browse files'),
+      'type' => MENU_CALLBACK,
+    ),
+    'file_browser/%node/delete' => array(
+      'title' => 'Delete file',
+      'page callback' => 'file_browser_delete',
+      'page arguments' => array(1),
+      'access callback' => 'node_access',
+      'access arguments' => array('delete', 1),
       'type' => MENU_CALLBACK,
     ),
   );
@@ -268,6 +281,10 @@ function file_browser_page($vid, $tid = NULL, $script = NULL) {
     return '';
   }
 
+  drupal_add_js(array('file_browser' => array(
+    'ajax_url' => url('file_browser/ajax'),
+  )), 'setting');
+
   $tids = empty($tid) ? array() : array((integer)$tid);
   print theme('page', _file_browser_page($vid, $tids) . $script);
   exit;
@@ -305,6 +322,19 @@ function file_browser_ajax_term($tid, $block = 'page') {
   exit;
 }
 
+/**
+ * Menu callback for delete confirmation.
+ *
+ * @param $node
+ *   A node object.
+ */
+function file_browser_delete($node) {
+  $script = '$("#file-browser-delete-form a").click(function() { window.parent.tb_remove(); return false; });';
+  $script .= ' $("#file-browser-delete-form #edit-submit").click(function() { window.parent.tb_remove(); return true; });';
+
+  print theme('file_browser_delete_page', drupal_get_form('file_browser_delete_form', $node), compact('script'));
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Form API
 
@@ -337,7 +367,7 @@ function file_browser_newterm_form($form_state) {
     '#value' => t('Create'),
     '#name' => 'newterm-submit',
   );
-  $form['#attributes']['target'] = 'file_browser-newterm-submission-frame';
+  $form['#attributes']['target'] = 'file_browser-submission-frame';
 
   return $form;
 }
@@ -353,6 +383,20 @@ function file_browser_upload_form($form_state, $gid) {
     '#value' => '0',
     '#id' => 'file-upload-tid',
   );
+  if (FILE_APC) {
+    $apc_id = _file_unique_id();
+    $form['APC_UPLOAD_PROGRESS'] = array(
+      '#type' => 'hidden',
+      '#value' => $apc_id,
+      '#id' => 'edit-progress-key',
+    );
+    drupal_add_js(array('file_browser' => array(
+      'apc' => FILE_APC,
+      'progress_url' => url('file_progress/'. $apc_id),
+      'progress_interval' => FILE_PROGRESS_INTERVAL,
+      'progress_timeout' => FILE_PROGRESS_TIMEOUT,
+    )), 'setting');
+  }
   $form['upload_0'] = array(
     '#type' => 'file',
     '#size' => 10,
@@ -422,14 +466,20 @@ function file_browser_upload_form($form_state, $gid) {
       }
     }
   }
+  $bar = '<div id="file-upload-progress" class="progress ahah-progress ahah-progress-bar" style="display: none;">';
+  $bar .= '<div class="bar"><div class="filled" style="width: 0%;"></div></div>';
+  $bar .= '<div class="percentage"></div>';
+  $bar .= '<div class="message">'. t('Please wait...') .'</div>';
+  $bar .= '</div>';
   $form['upload_submit'] = array(
     '#type' => 'submit',
     '#value' => t('Upload'),
     '#name' => 'file-upload-submit',
     '#attributes' => array('disabled' => 'disabled', 'onClick' => 'return Drupal.file_browserFileUploadClick(this);'),
+    '#suffix' => $bar,
   );
   $form['#attributes']['enctype'] = 'multipart/form-data';
-  $form['#attributes']['target'] = 'file_browser-upload-submission-frame';
+  $form['#attributes']['target'] = 'file_browser-submission-frame';
 
   return $form;
 }
@@ -453,11 +503,39 @@ function file_browser_move_form($form_state, $nid, $tid) {
     '#value' => t('Move'),
     '#name' => 'file-move-submit',
   );
-  $form['#attributes']['target'] = 'file_browser-move-submission-frame';
+  $form['#attributes']['target'] = 'file_browser-submission-frame';
 
   return $form;
 }
 
+/**
+ * Menu Delete confirmation form.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   A form array.
+ */
+function file_browser_delete_form($form_state, $node) {
+  $form['nid'] = array(
+    '#type' => 'value',
+    '#value' => $node->nid,
+  );
+
+  $form = confirm_form($form,
+    t('Are you sure you want to delete %title?', array('%title' => $node->title)),
+    isset($_GET['destination']) ? $_GET['destination'] : 'node/'. $node->nid,
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+
+  $form['#action'] = url('file_browser/'. $node->nid .'/delete');
+  $form['#attributes']['target'] = 'file_browser-submission-frame';
+
+  return $form;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // Submit handlers
@@ -588,34 +666,40 @@ function file_browser_upload_form_submit($form, &$form_state) {
   $og_public = module_exists('og_access') && !$form_state['values']['og_public'] ? FALSE : TRUE;
 
   $i = 0;
+  $files = array();
   print "<script type='text/javascript'>";
   do {
     if (($user->uid == 1 || user_access('upload files')) && ($upload = file_save_upload('upload_'. $i, file_get_validators()))) {
       $file_node = file_node_create(array('file' => $upload, 'taxonomy' => $taxonomy, 'og_groups' => $og_groups, 'og_public' => $og_public));
-      $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file_node->title)) .'</div>';
-      print _file_browser_display_file($file_node, $term, $msg);
+      $files[] = array('file_node' => $file_node, 'term' => $term);
     }
     $i++;
   } while (array_key_exists('upload_'. $i, $_FILES['files']['name']));
 
-  // sending the notice message back if any occurred
-  $notmsg = drupal_get_messages('notice');
-  if (!empty($notmsg['notice'])) {
-    print "parent.Drupal.file_browserNoticeMsg('".'<div>'. implode('</div><div>', $notmsg['notice']) .'</div>'."');";
+  // We need to mark the last file.
+  $last = count($files) - 1;
+  foreach ($files as $i => $file) {
+    $msg = '<div>'. t('File %file has been uploaded successfully.', array('%file' => $file['file_node']->title)) .'</div>';
+    print _file_browser_display_file($file['file_node'], $file['term'], $msg, $i == $last);
   }
 
-  // sending the error message back if any occurred
-  $errmsg = drupal_get_messages('error');
-  if (!empty($errmsg['error'])) {
-    print "parent.Drupal.file_browserErrorMsg('".'<div>'. implode('</div><div>', $errmsg['error']) .'</div>'."');";
-  }
+  // Sending the messages back if any occurred.
+  print _file_browser_get_messages();
 
   if (FILE_BROWSER_FOLDER_PROPERTIES) {
     print _file_browser_update_term($term);
   }
 
+  if (FILE_APC) {
+    $apc_id = _file_unique_id();
+    print "parent.Drupal.settings.file_browser.progress_id = '". $apc_id ."';";
+    print "parent.Drupal.settings.file_browser.progress_url = '". url('file_progress/'. $apc_id) ."';";
+  }
+
   // Clean up the file upload widget.
   print "parent.Drupal.file_browserDelFileWidget();";
+  if (count($files) == 0)
+    print "parent.$('input#edit-upload-submit').removeAttr('disabled');";
   print "</script>";
   exit;
 }
@@ -634,15 +718,7 @@ function file_browser_move_form_submit($form, &$form_state) {
   $node->taxonomy[$values['tid_new']] = $term;
   taxonomy_node_save($node, $node->taxonomy);
   print "<script type='text/javascript'>";
-  print "
-    var id = '#file-node-t". $values['tid'] ."-n". $values['nid'] ."-bpage';
-    var i = 0;
-    parent.$(id).siblings().each(function() { i++; });
-    if (i == 1) {
-      parent.$(id).parent().toggleClass('expanded').toggleClass('empty');
-    }
-    parent.$(id).remove();
-  ";
+  print _file_browser_remove_file_js($values['tid'], $values['nid']);
   $msg = t('File %file has been moved to %term.', array('%file' => $node->title, '%term' => $term->name));
   print _file_browser_display_file($node, $term, $msg);
   if (FILE_BROWSER_FOLDER_PROPERTIES) {
@@ -650,6 +726,29 @@ function file_browser_move_form_submit($form, &$form_state) {
     print _file_browser_update_term($term);
   }
   print "</script>";
+  exit;
+}
+
+/**
+ * Submit hook for the file delete page.
+ */
+function file_browser_delete_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  if ($values['confirm']) {
+    $node = node_load($values['nid']);
+    $terms = taxonomy_node_get_terms($node);
+    node_delete($values['nid']);
+    print "<script type='text/javascript'>";
+    foreach ($terms as $term) {
+      print _file_browser_remove_file_js($term->tid, $values['nid']);
+      print _file_browser_update_term($term);
+    }
+    print "var settings = parent.Drupal.settings.file_browser; parent.$('#file-preview').show().html(settings.no_file_selected);";
+
+    // Sending the messages back if any occurred.
+    print _file_browser_get_messages();
+    print "</script>";
+  }
   exit;
 }
 
@@ -697,6 +796,11 @@ function _file_browser_block($vid, $expanded_tids = array()) {
     return '';
 
   _file_browser_add_headers();
+
+  drupal_add_js(array('file_browser' => array(
+    'ajax_url' => url('file_browser/ajax'),
+  )), 'setting');
+
   $terms = _file_browser_build_terms($vid, $vid, $expanded_tids, FALSE);
   return theme('file_browser_block', compact('vid', 'terms'));
 }
@@ -908,7 +1012,18 @@ function _file_browser_node($block, $tid, $node, $visible = TRUE, $columns = TRU
   $date = format_date($node->changed, 'small');
   $size = format_size($file->size);
 
-  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'date', 'size', 'visibile', 'columns', 'iframe'));
+  if (FILE_BROWSER_DELETE_OPTION && $block == 'page' && node_access('delete', $node)) {
+    $id_delete = _file_unique_id();
+    $links['delete'] = array(
+      'title' => t('Delete'),
+      'attributes' => array('title' => t('Delete'), 'class' => 'file-thickbox', 'id' => 'file-delete-'. $file->nid .'-'. $id_delete),
+      'href' => 'file_browser/'. $node->nid .'/delete',
+      'query' => array('width' => 400, 'height' => 200),
+    );
+    $script = 'parent.tb_init(\'#file-delete-'. $node->nid .'-'. $id_delete .'\');';
+  }
+
+  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'date', 'size', 'visibile', 'columns', 'iframe', 'links', 'script'));
 }
 
 /**
@@ -1054,7 +1169,7 @@ function _file_browser_add_headers() {
 
     // Cluetip for metadata.
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    //drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
 
     // Thickbox.
@@ -1148,11 +1263,13 @@ function _file_browser_update_term($term) {
  *   A term object.
  * @param $msg
  *   A message to be displayed.
+ * @param $last
+ *   TRUE if the file is the last uploaded file.
  *
  * @return
  *   A js code.
  */
-function _file_browser_display_file($node, $term, $msg) {
+function _file_browser_display_file($node, $term, $msg, $last = TRUE) {
   $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
 
   // Theme the node so we can display it on the screen.
@@ -1160,10 +1277,59 @@ function _file_browser_display_file($node, $term, $msg) {
   preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $tmp, $matches);
   $tmp = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $tmp);
 
-  $output = "parent.Drupal.file_browserDisplayNode('page', '". $node->nid ."','". $term->tid ."','". $gid ."','". $tmp ."','". $msg ."', '". check_plain($node->title) ."');";
+  $output = "parent.Drupal.file_browserDisplayNode('page', '". $node->nid ."','". $term->tid ."','". $gid ."','". $tmp ."','". $msg ."', '". check_plain($node->title) ."', ". ($last ? 'true' : 'false') .");";
   $output .= 'parent.$(\'span.file.with-menu\').unbind(\'click\').click(function(event) { parent.$(this).toggleClass(\'active\'); parent.$(this).find(\'ul\').toggle(); });';
   $output .= implode('', array_map(create_function('$a', 'return preg_replace(\'|\$|\', \'parent.$\', $a);'), $matches[1]));
 
   return $output;
+}
+
+/**
+ * Builds a js to remove a file in the browser.
+ *
+ * @param $tid
+ *   A term ID.
+ * @param $nid
+ *   A file node ID.
+ *
+ * @return
+ *   A js code.
+ */
+function _file_browser_remove_file_js($tid, $nid) {
+  return "
+    var id = '#file-node-t". $tid ."-n". $nid ."-bpage';
+    var i = 0;
+    parent.$(id).siblings().each(function() { i++; });
+    if (i == 1) {
+      parent.$(id).parent().toggleClass('expanded').toggleClass('empty');
+    }
+    parent.$(id).remove();
+  ";
+}
+
+/**
+ * Builds a js to print drupal messages.
+ *
+ * @return
+ *   A js code.
+ */
+function _file_browser_get_messages() {
+  $js = '';
+  // Sending the status message back if any occurred.
+  $notmsg = drupal_get_messages('status');
+  if (!empty($notmsg['status'])) {
+    $js .= "parent.Drupal.file_browserStatusMsg('".'<div>'. implode('</div><div>', $notmsg['status']) .'</div>'."');";
+  }
+  // Sending the notice message back if any occurred.
+  $notmsg = drupal_get_messages('notice');
+  if (!empty($notmsg['notice'])) {
+    $js .= "parent.Drupal.file_browserNoticeMsg('".'<div>'. implode('</div><div>', $notmsg['notice']) .'</div>'."');";
+  }
+  // Sending the error message back if any occurred.
+  $errmsg = drupal_get_messages('error');
+  if (!empty($errmsg['error'])) {
+    $js .= "parent.Drupal.file_browserErrorMsg('".'<div>'. implode('</div><div>', $errmsg['error']) .'</div>'."');";
+  }
+  return $js;
 }
 

@@ -1504,3 +1504,46 @@ function _file_command_exists($command) {
   return $commands[$command];
 }
 
+/**
+ * Generate unique ID.
+ *
+ * @param $length
+ *   A length of the ID.
+ *
+ * @return
+ *   An ID.
+ */
+function _file_unique_id($length = 8) {
+  $id = '';
+  for ($i = 0; $i < $length; $i++)
+    $id .= mt_rand(0, 9);
+
+  return $id;
+}
+
+/**
+ * Add javascript and css includes.
+ *
+ * @return
+ */
+function _file_theme_init() {
+  static $initialized = FALSE;
+  if (!$initialized) {
+    $initialized = TRUE;
+    drupal_add_css(drupal_get_path('module', 'file') .'/file.css');
+    drupal_add_js(drupal_get_path('module', 'file') .'/file.js');
+
+    // Add stylesheets and javascript. Thickbox must come before the module's stylesheet:
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/thickbox/thickbox.js', 'module');
+
+    // Cluetip for metadata.
+    drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions-1.2.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
+    drupal_add_js('$(document).ready(function() { $(\'a.file-tip\').cluetip(); $(\'a.file-thickbox\').click(function () { $(\'.file-links\').hide(); }); });', 'inline');
+
+    drupal_add_js('tb_pathToImage='. drupal_to_js('/'. drupal_get_path('module', 'file') .'/jquery/thickbox/loadingAnimation.gif') .';', 'inline');
+  }
+}
+

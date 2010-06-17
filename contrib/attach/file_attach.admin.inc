@@ -38,6 +38,12 @@ function file_attach_admin_settings() {
     '#prefix' => '<div class="file-attach-attachments-file-attach-reuse-nodes-setting'. (FILE_ATTACH_REUSE ? '' : ' js-hide') .'">',
     '#suffix' => '</div>',
   );
+  $form['attachments']['file_attach_delete'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => t('Delete attachments when the node is deleted.'),
+    '#description'   => t('The attached file will not be deleted if it is attached to other node as well.'),
+    '#default_value' => FILE_ATTACH_DELETE,
+  );
 
   // Visibility settings.
   $form['visibility'] = array('#type' => 'fieldset', '#title' => t('Visibility settings'), '#collapsible' => TRUE, '#collapsed' => FALSE);
@@ -173,6 +179,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
     case t('Save configuration'):
       variable_set('file_attach_reuse', $values['file_attach_reuse']);
       variable_set('file_attach_reuse_nodes', $values['file_attach_reuse_nodes']);
+      variable_set('file_attach_delete', $values['file_attach_delete']);
       variable_set('file_attach_show_attachments', $values['file_attach_show_attachments']);
       variable_set('file_attach_show_previews', $values['file_attach_show_previews']);
       variable_set('file_attach_vocabularies_all', $values['file_attach_vocabularies_all']);
@@ -193,6 +200,7 @@ function file_attach_admin_settings_submit($form, &$form_state) {
     case t('Reset to defaults'):
       variable_del('file_attach_reuse');
       variable_del('file_attach_reuse_nodes');
+      variable_del('file_attach_delete');
       variable_del('file_attach_show_attachments');
       variable_del('file_attach_show_previews');
       variable_del('file_attach_vocabularies_all');
