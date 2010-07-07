@@ -34,7 +34,7 @@ function theme_file_browser_term($data) {
 
   $count = $count_terms + $count_files;
   $path = ($gid > 0) ? 'node/'. $gid .'/gallery/' : 'file_gallery/';
-  $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: block;">';
+  $output = '<div class="'. $xhtml_class . ($hierarchy ? ' hierarchy' : '') . (!$count ? ' empty' : '') .'" id="'. $xhtml_id .'" style="display: '. ($visible ? 'block' : 'none') .';">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFolderClick(this);">';
   $output .= '<div class="file-toggle"></div>';
   $output .= FILE_BROWSER_FOLDER_LINKS ? '' : '<div class="file-icon"></div>';
@@ -61,7 +61,7 @@ function theme_file_browser_file($data) {
   $title = drupal_strlen($title) > $title_length ? drupal_substr($title, 0, $title_length - 3) .'...' : $title;
   $file->name = $title;
 
-  $output = '<div class="file-node" id="file-node-'. $id .'" style="display: block;">';
+  $output = '<div class="file-node" id="file-node-'. $id .'" style="display: '. ($visible ? 'block' : 'none') .';">';
   $output .= '<div class="file-cells" onClick="Drupal.file_browserFileClick(this);">';
   $output .= '<div class="file-icon"></div>';
 

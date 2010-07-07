@@ -232,7 +232,7 @@ function file_progress($id) {
   if (FILE_APC && $id) {
     $status = apc_fetch(FILE_APC_PREFIX . $id);
     $percentage = (is_array($status) && isset($status['total']) && $status['total'] != 0) ? ceil($status['current']/$status['total']*100) : -1;
-    drupal_json(array('status' => TRUE, 'percentage' => $percentage, 'message' => t('Please wait...')));
+    drupal_json(array('status' => TRUE, 'percentage' => $percentage, 'message' => $percentage < 100 ? t('Uploading...') : t('Processing...')));
   }
   exit;
 }

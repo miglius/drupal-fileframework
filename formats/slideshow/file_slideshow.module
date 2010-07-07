@@ -80,6 +80,10 @@ function file_slideshow_mime_types() {
       'name' => t('PowerPoint presentation'),
       'icon' => 'powerpoint.gif',
     ),
+    'application/vnd.ms-powerpoint.presentation.macroEnabled.12' => array(
+      'name' => t('PowerPoint presentation'),
+      'icon' => 'powerpoint.gif',
+    ),
   );
 }
 
@@ -137,6 +141,21 @@ function file_slideshow_mime_converters() {
       ),
     ),
     'application/vnd.openxmlformats-officedocument.presentationml.presentation' => array(
+      'application/pdf' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
+        'handlers' => array('file_slideshow_pdf'),
+      ),
+      'application/vnd.oasis.opendocument.presentation' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f odp "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].odp" "[out_file]"',
+      ),
+      'application/vnd.ms-powerpoint' => array(
+        'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f ppt "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].ppt" "[out_file]"',
+      ),
+      'application/zip' => array(
+        'pipeline' => 'pwd="`{pwd}`"; {mkdir} "[in_file].tmp"; {mv} "[in_file]" "[in_file].tmp/[filename]"; cd "[in_file].tmp"; {gzip} -c "[filename]" > "file.zip"; cd "$pwd"; mv "[in_file].tmp/file.zip" "[out_file]"; {touch} "[in_file]"; {rm} -rf "[in_file].tmp"',
+      ),
+    ),
+    'application/vnd.ms-powerpoint.presentation.macroEnabled.12' => array(
       'application/pdf' => array(
         'pipeline' => '{localhost:8100}{mv} "[in_file]" "[in_file].pptx"; {java} -jar {{/opt/jodconverter/lib/jodconverter-cli.jar}} -f pdf "[in_file].pptx"; {mv} "[in_file].pptx" "[in_file]"; {mv} "[in_file].pdf" "[out_file]"',
         'handlers' => array('file_slideshow_pdf'),

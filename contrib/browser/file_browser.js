@@ -4,14 +4,14 @@
  * Setting initial variables.
  */
 Drupal.file_browserVars = {
-  'selected':null, // selected object
-  'currentItem':'v', // might be vocabulary 'v', term 't' or file 'f'
+  'selectedID':null, // selected object id
   'pageX':0, // where the mouseX pointer is
   'pageY':0, // where the mouseY pointer is
-  'ftDropDownTimeout':0, // timeout for hiding action div
-  'filecount':1,
-  'FTMSGCLEARTIMEOUT':5000,
-  'progressTimeout':0
+  'dropDownTimeoutId':0, // timeout id for hiding action div
+  'filecount':1, // current number of file inputs
+  'messageTimeout':5000, // timeout to show drupal mesages
+  'progressTimeoutId':0, // id of the progress bar timeout
+  'animationTimeout':2000 // fadeIn, fadeOut time
 };
 
 /**
@@ -19,9 +19,9 @@ Drupal.file_browserVars = {
  */
 Drupal.behaviors.file_browser = function(context) {  
   $('.file-dropdown').mouseout(function() {
-    Drupal.file_browserVars.ftDropDownTimeout = setTimeout(function() { $('.file-dropdown').hide(); }, 1000); // hide action div
+    Drupal.file_browserVars.dropDownTimeoutId = setTimeout(function() { $('.file-dropdown').hide(); }, 1000); // hide action div
   }).mouseover(function() {
-    clearTimeout(Drupal.file_browserVars.ftDropDownTimeout); // remove timeout for hiding the action div
+    clearTimeout(Drupal.file_browserVars.dropDownTimeoutId); // remove timeout for hiding the action div
   });
 
   $(document).mousemove(function(e) {
@@ -29,6 +29,10 @@ Drupal.behaviors.file_browser = function(context) {
     Drupal.file_browserVars.pageX = e.pageX ? e.pageX : e.clientX;
     Drupal.file_browserVars.pageY = e.pageY ? e.pageY : e.clientY;
     if ($.browser['msie'] == true && $.browser.version < 7.0) { Drupal.file_browserVars.pageY += 10; };
+  });
+
+  $('#edit-upload-0').change(function() {
+    Drupal.file_browserCheckAddFileWidget();
   });
 };
  
@@ -40,63 +44,6 @@ Drupal.file_browserInit = function(block) {
   $('div.file-system').height('' + (Drupal.file_browserGetWindowHeight() * ratio) + 'px');
   var settings = Drupal.settings.file_browser;
   $('#file-preview').show().html(settings.no_file_selected);
-};
-
-/**
- * Set the vocabulary and term IDs on the folder.
- */
-Drupal.file_browserUploadCheck = function(id) {
-  var settings = Drupal.settings.file_browser;
-  if (matches = id.match(/-([vt])([\d]+)/)) {
-
-    // setting the term id that the file will be uploaded too
-    $('#file-upload-tid').val(matches[2]);
-
-    // retrieve vid from the file system for use in the create term form
-    var filesysvid = $('#' + id).parents().find('.file-system').attr('id');
-    var vid = filesysvid.match(/file-system-([\d]+)/);
-    // if vid not in the file system folder get it from the file folder
-    if (!vid) {
-      while (!id.match(/-v([\d]+)/))
-        id = $('#' + id).parent().attr('id');
-      vid = id.match(/-v([\d]+)/)[1];
-    }
-    // if vocabulary then set term parent to 0 otherwise set to the currently selected term
-    Drupal.file_browserVars.currentItem != 'v' ? $('#newterm-parent').val(matches[2]) : $('#newterm-parent').val('0');
-    // setting the vocabulary id that the term will be created under
-    $('#newterm-vid').val(vid);
-
-    Drupal.file_browserToggleUpload();
-    $('#block-file_browser-upload').show();
-    // select and disable current group checkbox
-    $('#file-browser-upload-form').find('.form-checkbox').each(function() { this.checked = false; }).removeAttr('disabled');
-    if (id.match(/-g([\d]+)/)) {
-      var gid = id.match(/-g([\d]+)/)[1];
-      $('#edit-og-groups-' + gid).each(function() { this.checked = true; }).attr('disabled', 'disabled');
-    }
-  }
-  $('#block-file_browser-preview').show();
-  $('#file-preview').show().html(settings.no_file_selected)
-  // show a new term block if the browser is within a page
-  var block = id.match(/-b([^-]+)/)[1];
-  if (block == 'page') 
-    $('#block-file_browser-newterm').show();
-};
-
-/**
- * Toggle upload button.
- */
-Drupal.file_browserToggleUpload = function() {
-  var button = $('input#edit-upload-submit');
-  Drupal.file_browserVars.currentItem == 't' ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
-};
-
-/**
- * Toggle newterm  button.
- */
-Drupal.file_browserToggleNewterm = function(id) {
-  var button = $('input#edit-newterm-submit');
-  Drupal.file_browserVars.currentItem != 'f' && $('#' + id).hasClass('hierarchy') ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
 };
 
 /**
@@ -113,6 +60,46 @@ Drupal.file_browserGetWindowHeight = function() {
 };
 
 /**
+ * Set the vocabulary and term IDs on the folder.
+ */
+Drupal.file_browserSetContext = function(id, parentId) {
+  var settings = Drupal.settings.file_browser;
+  var folderId = id.match(/file-folder/) ? id : parentId;
+  var isTerm = id.match(/-([vt])[\d]+/)[1] == 't' ? true : false;
+  var tid = isTerm ? id.match(/-[vt]([\d]+)/)[1] : 0;
+
+  // setting the term id that the file will be uploaded too
+  $('#file-upload-tid').val(tid);
+  // retrieve vid from the file system for use in the create term form
+  var filesysvid = $('#' + folderId).parents().find('.file-system').attr('id');
+  var vid = filesysvid.match(/file-system-([\d]+)/);
+  // if vid not in the file system folder get it from the file folder
+  if (!vid) {
+    while (!id.match(/-v([\d]+)/))
+      id = $('#' + id).parent().attr('id');
+    vid = id.match(/-v([\d]+)/)[1];
+  }
+  // setting the vocabulary id that the term will be created under
+  $('#newterm-vid').val(vid);
+  // setting the term id the file will be created under
+  $('#newterm-parent').val(tid);
+  // toggle the file upload button
+  var button = $('input#edit-upload-submit');
+  isTerm ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
+  // toggle the new term creation button
+  button = $('input#edit-newterm-submit');
+  $('#' + folderId).hasClass('hierarchy') ? button.removeAttr('disabled') : button.attr('disabled', 'disabled');
+  // select and disable current group checkbox
+  $('#file-browser-upload-form').find('.form-checkbox').each(function() { this.checked = false; }).removeAttr('disabled');
+  if (folderId.match(/-g([\d]+)/)) {
+    var gid = id.match(/-g([\d]+)/)[1];
+    $('#edit-og-groups-' + gid).each(function() { this.checked = true; }).attr('disabled', 'disabled');
+  }
+  $('#file-preview-spinner').hide();
+  $('#file-preview').show().html(settings.no_file_selected)
+};
+
+/**
  * Dynamically add the new Term to the DOM in the correct location
  * @param block {String} browser id
  * @param tid {Integer} term which we add
@@ -120,7 +107,7 @@ Drupal.file_browserGetWindowHeight = function() {
  * @param vid {Integer} if parent term is 0 then insert node under the correct vocabulary
  * @param gid {Integer} a og_vocab group id or 0
  * @param node {String} html representation of the node
- * @param title {String} message to display on screen to the user
+ * @param msg {String} message to display on screen to the user
  * @param nodename {String} name of the new node being created
  */
 Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg, nodename) {
@@ -130,7 +117,7 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
   var child = 0;
   $('#' + folder).children().each(function() {
     if (this.id.match(/file-folder-/)) {
-      var name = $(this).find('.file-title').text();
+      var name = $(this).find('.title').text();
       if (name.toLowerCase() > nodename.toLowerCase() && check == 0) {
         check = 1;
         $(node).insertBefore($(this));
@@ -156,6 +143,9 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
     // now expand the parent shelf
     $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, term) });
   }
+  // display the term
+  $('#' + term).fadeIn(Drupal.file_browserVars.animationTimeout);
+  setTimeout('$(\'#' + term + '\').css(\'display\', \'block\')', Drupal.file_browserVars.animationTimeout);
   // select the newly created folder
   $('#' + term + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
   Drupal.file_browserSetMsg(msg);
@@ -168,7 +158,9 @@ Drupal.file_browserDisplayTerm = function(block, tid, ptid, vid, gid, node, msg,
  * @param nid {Integer} term which we add
  * @param tid {Integer} parent term where the new node is being inserted into
  * @param node {String} html representation of the node
- * @param title {String} message to display on screen to the user
+ * @param msg {String} message to display on screen to the user
+ * @param nodename {String} name of the new node being created
+ * @param last {Boolean} true if several nodes are added in bulk and this node is the last one
  */
 Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, nodename, last) {
   var folder = 'file-folder-t' + ptid + '-g' + gid + '-b' + block;
@@ -178,7 +170,7 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
     if (this.id.match(/file-node-/)) {
       var name = $(this).find('.title').text();
       if (name.toLowerCase() > nodename.toLowerCase() && check == 0) {
-	check = 1;
+        check = 1;
         $(node).insertBefore($(this));
       };
     };
@@ -198,6 +190,11 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
     if (last) {
       $('#' + folder + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this, file) });
     }
+  }
+  else {
+    // display the term
+    $('#' + file).fadeIn(Drupal.file_browserVars.animationTimeout);
+    setTimeout('$(\'#' + file + '\').css(\'display\', \'block\')', Drupal.file_browserVars.animationTimeout);
   }
   if (last) {
     // select the newly created file
@@ -222,7 +219,7 @@ Drupal.file_browserSetMsg = function(msg) {
   if (!$('#file-upload-messages').size())
     $('<div id="file-upload-messages" class="messages status"></div>').insertBefore('.file-system');
   $('#file-upload-messages').append(msg);
-  setTimeout(function() { $('#file-upload-messages').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-messages').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -233,7 +230,7 @@ Drupal.file_browserErrorMsg = function(msg) {
   if (!$('#file-upload-errors').size())
     $('<div id="file-upload-errors" class="messages error"></div>').insertBefore('.file-system');
   $('#file-upload-errors').append(msg);
-  setTimeout(function() { $('#file-upload-errors').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-errors').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -244,7 +241,7 @@ Drupal.file_browserStatusMsg = function(msg) {
   if (!$('#file-upload-statuses').size())
     $('<div id="file-upload-statuses" class="messages status"></div>').insertBefore('.file-system');
   $('#file-upload-statuses').append(msg);
-  setTimeout(function() { $('#file-upload-statuses').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-statuses').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -255,25 +252,24 @@ Drupal.file_browserNoticeMsg = function(msg) {
   if (!$('#file-upload-notices').size())
     $('<div id="file-upload-notices" class="messages notice"></div>').insertBefore('.file-system');
   $('#file-upload-notices').append(msg);
-  setTimeout(function() { $('#file-upload-notices').remove(); }, Drupal.file_browserVars.FTMSGCLEARTIMEOUT); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-notices').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
  * Highlights the selected row and adds necessary css classes to the pertinent rows
- * @param obj {Object} DOM object that was clicked on
  * @param id {String} Parent id of the selected DOM object
  * @param folder {Boolean} Is it a folder {true = folder, false = not a folder}
- * @param link {Boolean} Is it a link {true = link, false = not a link}
+ * @param toggle {Boolean} If true, 'expanded' class will be toggled
  */
-Drupal.file_browserSelectRow = function(obj, id, folder, link) {
-  if (id != Drupal.file_browserVars.selected)
-    if (Drupal.file_browserVars.selected && ($('#' + Drupal.file_browserVars.selected)))
-      $('#' + Drupal.file_browserVars.selected).children('.file-cells').removeClass('selected');
-  Drupal.file_browserVars.selected = id;
-  !link ? $(obj).addClass('selected') : $(obj.parentNode.parentNode).addClass('selected');
+Drupal.file_browserSelectRow = function(id, folder, toggle) {
+  if (id != Drupal.file_browserVars.selectedId)
+    if (Drupal.file_browserVars.selectedId && ($('#' + Drupal.file_browserVars.selectedId)))
+      $('#' + Drupal.file_browserVars.selectedId).children('.file-cells').removeClass('selected');
+  Drupal.file_browserVars.selectedId = id;
+  $('#' + id).children('.file-cells').addClass('selected');
 
-  if (folder)
-    $(obj).parent().toggleClass('expanded');
+  if (folder && toggle)
+    $('#' + id).toggleClass('expanded');
 };
 
 /*
@@ -286,23 +282,21 @@ Drupal.file_browserFolderClick = function(obj, elm) {
   var parent = obj.parentNode;
   var id = parent.id;
   var block = id.match(/-b([^-]+)/)[1];
+  var parentId = null;
   if (id.match(/-t([\d]+)/)) {
     tid = 'term/' + id.match(/-t([\d]+)/)[1];
-    Drupal.file_browserVars.currentItem = 't';
+    parentId = obj.parentNode.parentNode.id;
   }
   else {
     tid = 'voc/' + id.match(/-v([\d]+)/)[1];
-    Drupal.file_browserVars.currentItem = 'v';
   }
-  // hiding the block
-  $('#block-file_browser-preview').hide();
   // highlighting the row that was selected
-  Drupal.file_browserSelectRow(obj, id, true, false);
+  Drupal.file_browserSelectRow(id, true, true);
+  // hiding the block
   $('#file-preview').hide();
   // upload and newterm are only on the main page
   if (block == 'page') {
-    Drupal.file_browserUploadCheck(id);
-    Drupal.file_browserToggleNewterm(id);
+    Drupal.file_browserSetContext(id, parentId);
   }
   // if the shelf currently is closed then open the shelf
   // the class 'expanded' is already toggled in SelectRow.
@@ -319,15 +313,15 @@ Drupal.file_browserFolderClick = function(obj, elm) {
           $(this).toggleClass('active');
           $(this).find('ul').toggle();
         });
-	$('a.file-metadata').cluetip({arrows: true});
+        $('a.file-metadata').cluetip({arrows: true});
       }
       $('#' + id + '-spinner').hide();
       if (typeof(elm) != 'undefined') {
         // click the element
         if (elm.match(/file-folder/))
-	  $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
+          $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFolderClick(this) });
         else
-	  $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
+          $('#' + elm + ' div.file-cells:first').each(function() { Drupal.file_browserFileClick(this) });
       }
     });
   } else {
@@ -347,18 +341,16 @@ Drupal.file_browserFolderClick = function(obj, elm) {
  * @param obj {Object} File Object that holds a file which was clicked
  */
 Drupal.file_browserFileClick = function(obj) {
-  Drupal.file_browserVars.currentItem = 'f';
   var id = obj.parentNode.id;
   var nid = id.match(/-n([\d]+)/)[1]; // node id
   var block = id.match(/-b([^-]+)/)[1];
   var tid = id.match(/-t([\d]+)/)[1]; // term id
+  var parentId = obj.parentNode.parentNode.id;
   // highlighting the row that was selected
-  Drupal.file_browserSelectRow(obj, id, false, false);
-  // hide the create term block since they have clicked on a file
-  Drupal.file_browserToggleNewterm(id);
-  Drupal.file_browserToggleUpload();
+  Drupal.file_browserSelectRow(id, false, true);
   // show preview
   if (block == 'page') {
+    Drupal.file_browserSetContext(id, parentId);
     $('#file-preview').hide();
     $('#file-preview-spinner').show();
     $.get($('#file-preview-url').val() + '/' + nid + '/' + tid, function(result) {
@@ -396,12 +388,31 @@ Drupal.file_browserAddFileWidget = function() {
       $(div).insertAfter($(this).parent().parent());
     }
   });
+  // binding on change function
+  $('#edit-upload-' + Drupal.file_browserVars.filecount).change(function() {
+    Drupal.file_browserCheckAddFileWidget();
+  });
   // integration with file restriction module
   if (typeof(Drupal.file_restrictionExtensions) == 'function') {
     Drupal.file_restrictionExtensions('#edit-upload-' + Drupal.file_browserVars.filecount);
   }
   Drupal.file_browserVars.filecount++;
 };
+
+/**
+ * Checks if add upload widget is needed.
+ */
+Drupal.file_browserCheckAddFileWidget = function() {
+  var empty = false;
+  for (var i=0;i<Drupal.file_browserVars.filecount;i++) {
+    if ($('#edit-upload-' + i).val() == '') {
+      empty = true;
+    }
+  }
+  if (!empty) {
+    Drupal.file_browserAddFileWidget();
+  }
+}
 
 /**
  * Removes upload widgets.
@@ -419,7 +430,7 @@ Drupal.file_browserDelFileWidget = function() {
     $('#edit-progress-key').val(settings.progress_id); // reset the APC id
     $('div.filled').css('width', '0%');
     $('div.percentage').html('');
-    clearTimeout(Drupal.file_browserVars.progressTimeout);
+    clearTimeout(Drupal.file_browserVars.progressTimeoutId);
   }
 };
 
@@ -444,7 +455,7 @@ Drupal.file_browserFileUploadClick = function(obj) {
   var settings = Drupal.settings.file_browser;
   $('#file-upload-progress').show();
   if (settings.apc) {
-    Drupal.file_browserVars.progressTimeout = setTimeout('Drupal.file_browserGetProgress(' + settings.progress_timeout + ')', settings.progress_interval);
+    Drupal.file_browserVars.progressTimeoutId = setTimeout('Drupal.file_browserGetProgress(' + settings.progress_timeout + ')', settings.progress_interval);
   }
   return true;
 };
@@ -464,11 +475,8 @@ Drupal.file_browserGetProgress = function(timeout) {
     $('div.message').html(progress.message);
     if (progress.percentage < 100) {
       if (progress.percentage >= 0 || (progress.percentage == -1 && timeout > 1)) {
-        Drupal.file_browserVars.progressTimeout = setTimeout('Drupal.file_browserGetProgress(' + (timeout-1) + ')', settings.progress_interval);
+        Drupal.file_browserVars.progressTimeoutId = setTimeout('Drupal.file_browserGetProgress(' + (timeout-1) + ')', settings.progress_interval);
       }
-    }
-    else {
-      $('input#edit-upload-submit').removeAttr('disabled');
     }
   });
 };

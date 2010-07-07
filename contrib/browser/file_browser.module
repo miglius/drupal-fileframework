@@ -405,7 +405,7 @@ function file_browser_upload_form($form_state, $gid) {
   );
   $form['link'] = array(
     '#type' => 'markup',
-    '#value' => '<a href="javascript:Drupal.file_browserAddFileWidget();">'. t('Add File') .'</a>',
+    '#value' => '<a href="javascript:Drupal.file_browserAddFileWidget();" class="file-add">'. t('Add File') .'</a>',
   );
 
   if (module_exists('file_restriction'))
@@ -469,14 +469,14 @@ function file_browser_upload_form($form_state, $gid) {
   $bar = '<div id="file-upload-progress" class="progress ahah-progress ahah-progress-bar" style="display: none;">';
   $bar .= '<div class="bar"><div class="filled" style="width: 0%;"></div></div>';
   $bar .= '<div class="percentage"></div>';
-  $bar .= '<div class="message">'. t('Please wait...') .'</div>';
+  $bar .= '<div class="message">'. t('Uploading...') .'</div>';
   $bar .= '</div>';
   $form['upload_submit'] = array(
     '#type' => 'submit',
     '#value' => t('Upload'),
     '#name' => 'file-upload-submit',
     '#attributes' => array('disabled' => 'disabled', 'onClick' => 'return Drupal.file_browserFileUploadClick(this);'),
-    '#suffix' => $bar,
+    '#prefix' => $bar,
   );
   $form['#attributes']['enctype'] = 'multipart/form-data';
   $form['#attributes']['target'] = 'file_browser-submission-frame';
@@ -740,7 +740,7 @@ function file_browser_delete_form_submit($form, &$form_state) {
     node_delete($values['nid']);
     print "<script type='text/javascript'>";
     foreach ($terms as $term) {
-      print _file_browser_remove_file_js($term->tid, $values['nid']);
+      print _file_browser_remove_file_js($term->tid, $values['nid'], TRUE);
       print _file_browser_update_term($term);
     }
     print "var settings = parent.Drupal.settings.file_browser; parent.$('#file-preview').show().html(settings.no_file_selected);";
@@ -905,7 +905,7 @@ function _file_browser_ajax_voc($block, $vid, $columns) {
           }
         }
         $term = _file_browser_term_nodes($term, $term, NULL);
-        $output .= _file_browser_term($block, $term, FALSE, in_array($term->tid, array()), $columns);
+        $output .= _file_browser_term($block, $term, TRUE, in_array($term->tid, array()), $columns);
       }
     }
   }
@@ -938,13 +938,13 @@ function _file_browser_ajax_term($block, $t, $columns) {
         }
       }
       $term = _file_browser_term_nodes($term, $term, NULL);
-      $output .= _file_browser_term($block, $term, FALSE, in_array($term->tid, array()), $columns);
+      $output .= _file_browser_term($block, $term, TRUE, in_array($term->tid, array()), $columns);
     }
   }
 
   foreach (_file_browser_term_nodes($t, $t, 0) as $node) {
     if (is_object($node))
-      $output .= _file_browser_node($block, $t->tid, $node, FALSE, $columns);
+      $output .= _file_browser_node($block, $t->tid, $node, TRUE, $columns);
   }
 
   return $output;
@@ -985,7 +985,7 @@ function _file_browser_term($block, $term, $visible = TRUE, $expanded = FALSE, $
   $xhtml_class = 'file-folder'. (!empty($term->module) ? ' '. $term->module : '');
   $hierarchy = _file_browser_allow_hierarchy($term->vid, isset($term->tid) ? $term->tid : 0, $gid) ? FALSE : TRUE;
 
-  return theme('file_browser_term', compact('term', 'size', 'count_files', 'count_terms', 'is_vocab', 'gid', 'xhtml_id', 'xhtml_class', 'hierarchy', 'visibile', 'expanded', 'columns'));
+  return theme('file_browser_term', compact('term', 'size', 'count_files', 'count_terms', 'is_vocab', 'gid', 'xhtml_id', 'xhtml_class', 'hierarchy', 'visible', 'expanded', 'columns'));
 }
 
 /**
@@ -1023,7 +1023,7 @@ function _file_browser_node($block, $tid, $node, $visible = TRUE, $columns = TRU
     $script = 'parent.tb_init(\'#file-delete-'. $node->nid .'-'. $id_delete .'\');';
   }
 
-  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'date', 'size', 'visibile', 'columns', 'iframe', 'links', 'script'));
+  return theme('file_browser_file', compact('file', 'id', 'icon', 'title', 'date', 'size', 'visible', 'columns', 'iframe', 'links', 'script'));
 }
 
 /**
@@ -1086,7 +1086,7 @@ function _file_browser_build_terms($block, $vid, $expanded_tids = array(), $colu
         }
       }
       $term = _file_browser_term_nodes($term, $term, NULL);
-      $output .= _file_browser_term($block, $term, FALSE, isset($term->tid) && in_array($term->tid, $expanded_tids), $columns);
+      $output .= _file_browser_term($block, $term, TRUE, isset($term->tid) && in_array($term->tid, $expanded_tids), $columns);
     }
   }
   return $output;
@@ -1147,7 +1147,7 @@ function _file_browser_select_nodes($tids = array(), $depth = 0, $order = 'n.sti
 
     $str_tids = implode(',', call_user_func_array('array_merge', $descendant_tids));
     if (!empty($str_tids)) {
-      $sql = 'SELECT DISTINCT(n.nid), n.vid, n.sticky, n.title, n.created, n.changed, fn.size, fn.type, fn.uri FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.vid = fn.vid AND n.vid = tn.vid AND tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
+      $sql = 'SELECT DISTINCT(n.nid), n.vid, n.status, n.sticky, n.title, n.created, n.changed, fn.size, fn.type, fn.uri FROM {node} n INNER JOIN {file_nodes} fn ON n.nid = fn.nid INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.vid = fn.vid AND n.vid = tn.vid AND tn.tid IN ('. $str_tids .') AND n.status = 1 AND n.moderate = 0 ORDER BY '. $order;
       $sql = db_rewrite_sql($sql);
       return db_query($sql);
     }
@@ -1169,7 +1169,7 @@ function _file_browser_add_headers() {
 
     // Cluetip for metadata.
     drupal_add_css(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.css', 'module');
-    //drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
+    drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.dimensions.js', 'module');
     drupal_add_js(drupal_get_path('module', 'file') .'/jquery/cluetip/jquery.cluetip.js', 'module');
 
     // Thickbox.
@@ -1273,7 +1273,7 @@ function _file_browser_display_file($node, $term, $msg, $last = TRUE) {
   $gid = module_exists('og_vocab') && ($gid = db_result(db_query('SELECT nid FROM {og_vocab} WHERE vid = %d', $term->vid))) ? $gid : '0';
 
   // Theme the node so we can display it on the screen.
-  $tmp = _file_browser_node('page', $term->tid, $node, TRUE, TRUE, TRUE);
+  $tmp = _file_browser_node('page', $term->tid, $node, FALSE, TRUE, TRUE);
   preg_match_all('|<script type=\'text/javascript\'>([^<]+)</script>|', $tmp, $matches);
   $tmp = preg_replace(array_map(create_function('$a', 'return "|". preg_quote($a) ."|";'), $matches[0]), '', $tmp);
 
@@ -1291,19 +1291,35 @@ function _file_browser_display_file($node, $term, $msg, $last = TRUE) {
  *   A term ID.
  * @param $nid
  *   A file node ID.
+ * @param $delete
+ *   TRUE if file is deleted and parent folder should be selected..
  *
  * @return
  *   A js code.
  */
-function _file_browser_remove_file_js($tid, $nid) {
+function _file_browser_remove_file_js($tid, $nid, $delete = FALSE) {
+  if ($delete) {
+    $script = "
+      var parentId = parent.$(id).parent().attr('id');
+      if (parentId) {
+        parent.Drupal.file_browserSelectRow(parentId, true, false);
+        parent.Drupal.file_browserSetContext(parentId, null);
+      }
+    ";
+  }
+
   return "
     var id = '#file-node-t". $tid ."-n". $nid ."-bpage';
+    ". (isset($script) ? $script : '') ."
     var i = 0;
     parent.$(id).siblings().each(function() { i++; });
     if (i == 1) {
-      parent.$(id).parent().toggleClass('expanded').toggleClass('empty');
+      parent.$(id).parent().removeClass('expanded').addClass('empty');
     }
-    parent.$(id).remove();
+    if (parent.$(id).hasClass('file-node')) {
+      parent.$(id).fadeOut(parent.Drupal.file_browserVars.animationTimeout);
+      setTimeout('parent.$(\'' + id + '\').remove()', parent.Drupal.file_browserVars.animationTimeout);
+    }
   ";
 }
 
