@@ -492,7 +492,7 @@ function file_node_form(&$node, $form_state) {
   $form = array();
   $type = node_get_types('type', $node);
 
-  $form['file'] = array('#type' => 'file', '#title' => t('File'), '#size' => 50, '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))), '#weight' => -10);
+  $form['file'] = array('#type' => 'file', '#title' => t('File'), '#size' => 50, '#description' => module_exists('file_restriction') ? implode(' ', file_restriction_description()) : t('The maximum upload size is %filesize.', array('%filesize' => format_size(file_upload_max_size()))), '#weight' => module_exists('content') ? content_extra_field_weight($node->type, 'file') : -10);
 
   // The uploaded file is saved to the system and session is set on the file preview rendering.
   $file = isset($_SESSION['file_preview_file']) ? $_SESSION['file_preview_file'] : NULL;
@@ -779,6 +779,24 @@ function _file_block_formats() {
       return theme('file_block_formats', array('formats' => $formats, 'nid' => $file_node->nid, 'vid' => $file_node->vid));
     }
   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// CCK API hooks
+
+/**
+ * Implementation of hook_content_extra_fields().
+ */
+function file_content_extra_fields($type_name) {
+  $extra = array();
+  if ($type_name == 'file') {
+    $extra['file'] = array(
+      'label' => t('File'),
+      'description' => t('File upload input.'),
+      'weight' => -5,
+    );
+  }
+  return $extra;
 }
 
 //////////////////////////////////////////////////////////////////////////////
