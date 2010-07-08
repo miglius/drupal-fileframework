@@ -53,12 +53,13 @@ function theme_file_video_render_player($options, $output, $url, $link_text, $ti
  * Theme for QuickTime video rendering.
  */
 function theme_file_video_quicktime_render($options = array()) {
+  global $base_url;
   extract($options, EXTR_SKIP);
 
   $height += 16; // Accommodate video controls
 
   $output = '<!--[if !IE]> <--><object type="video/quicktime" width="'. $width .'" height="'. $height .'" data="'. $src .'"><!--> <![endif]-->'."\n";
-  $output .= '<!--[if IE]><object classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" codebase="http://www.apple.com/qtactivex/qtplugin.cab" width="'. $width .'" height="'. $height .'" scale="tofit"><![endif]-->'."\n";
+  $output .= '<!--[if IE]><object classid="clsid:02BF25D5-8C17-4B23-BC80-D3488ABDDC6B" codebase="'. (preg_match('/^https/', $base_url) ? 'https' : 'http') .'://www.apple.com/qtactivex/qtplugin.cab" width="'. $width .'" height="'. $height .'" scale="tofit"><![endif]-->'."\n";
   $output .= '<param name="src" value="'. $src .'" /><param name="autoplay" value="false" /><param name="kioskmode" value="false" />';
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
@@ -152,10 +153,11 @@ function theme_file_video_flash_flv_render($options = array()) {
  * Theme for Adobe Flash .swf video rendering.
  */
 function theme_file_video_flash_swf_render($options = array()) {
+  global $base_url;
   extract($options, EXTR_SKIP);
 
   $output = '<!--[if !IE]> <--><object type="application/x-shockwave-flash" width="'. $width .'" height="'. $height .'" data="'. $src .'"><!--> <![endif]-->'."\n";
-  $output .= '<!--[if IE]><object type="application/x-shockwave-flash" width="'. $width .'" height="'. $height .'" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,40,0"><![endif]-->'."\n";
+  $output .= '<!--[if IE]><object type="application/x-shockwave-flash" width="'. $width .'" height="'. $height .'" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="'. (preg_match('/^https/', $base_url) ? 'https' : 'http') .'://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,40,0"><![endif]-->'."\n";
   $output .= '<param name="movie" value="'. $src .'" />';
   $output .= "\n".'<p>'. t('Your browser is unable to display this multimedia content.') .'</p>';
   $output .= '</object>';
