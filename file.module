@@ -793,7 +793,7 @@ function file_content_extra_fields($type_name) {
     $extra['file'] = array(
       'label' => t('File'),
       'description' => t('File upload input.'),
-      'weight' => -5,
+      'weight' => -10,
     );
   }
   return $extra;
