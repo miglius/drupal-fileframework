@@ -1345,6 +1345,8 @@ function _file_browser_get_messages() {
   $errmsg = drupal_get_messages('error');
   if (!empty($errmsg['error'])) {
     $js .= "parent.Drupal.file_browserErrorMsg('".'<div>'. implode('</div><div>', $errmsg['error']) .'</div>'."');";
+    $js .= "parent.tb_show(null, '#TB_inline?height=300&width=400&inlineId=file-upload-errors-container&modal=true', false);";
+    $js .= "parent.$('#TB_ajaxContent').append('<div id=\"tb-remove-div\"><input id=\"tb-remove-button\" type=\"submit\" onClick=\"parent.$(\'#tb-remove-div\').remove(); tb_remove();\" value=\"". t('Close') ."\"></div>');";
   }
   return $js;
 }

@@ -11,7 +11,7 @@ Drupal.file_browserVars = {
   'filecount':1, // current number of file inputs
   'messageTimeout':5000, // timeout to show drupal mesages
   'progressTimeoutId':0, // id of the progress bar timeout
-  'animationTimeout':2000 // fadeIn, fadeOut time
+  'animationTimeout':1000 // fadeIn, fadeOut time
 };
 
 /**
@@ -216,10 +216,10 @@ Drupal.file_browserDisplayNode = function(block, nid, ptid, gid, node, msg, node
  * @param msg {String} message to be displayed on the screen to the user
  */
 Drupal.file_browserSetMsg = function(msg) {
-  if (!$('#file-upload-messages').size())
-    $('<div id="file-upload-messages" class="messages status"></div>').insertBefore('.file-system');
+  if (!$('#file-upload-messages-container').size())
+    $('<div id="file-upload-messages-container"><div id="file-upload-messages" class="messages status"></div></div>').insertBefore('.file-system');
   $('#file-upload-messages').append(msg);
-  setTimeout(function() { $('#file-upload-messages').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-messages-container').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -227,10 +227,10 @@ Drupal.file_browserSetMsg = function(msg) {
  * @param msg {String} error message to be displayed to the user
  */
 Drupal.file_browserErrorMsg = function(msg) {
-  if (!$('#file-upload-errors').size())
-    $('<div id="file-upload-errors" class="messages error"></div>').insertBefore('.file-system');
+  if (!$('#file-upload-errors-container').size())
+    $('<div id="file-upload-errors-container"><div id="file-upload-errors" class="messages error"></div></div>').insertBefore('.file-system');
   $('#file-upload-errors').append(msg);
-  setTimeout(function() { $('#file-upload-errors').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-errors-container').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -238,10 +238,10 @@ Drupal.file_browserErrorMsg = function(msg) {
  * @param msg {String} status message to be displayed to the user
  */
 Drupal.file_browserStatusMsg = function(msg) {
-  if (!$('#file-upload-statuses').size())
-    $('<div id="file-upload-statuses" class="messages status"></div>').insertBefore('.file-system');
+  if (!$('#file-upload-statuses-container').size())
+    $('<div id="file-upload-statuses-container"><div id="file-upload-statuses" class="messages status"></div></div>').insertBefore('.file-system');
   $('#file-upload-statuses').append(msg);
-  setTimeout(function() { $('#file-upload-statuses').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-statuses-container').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
@@ -249,10 +249,10 @@ Drupal.file_browserStatusMsg = function(msg) {
  * @param msg {String} status message to be displayed to the user
  */
 Drupal.file_browserNoticeMsg = function(msg) {
-  if (!$('#file-upload-notices').size())
-    $('<div id="file-upload-notices" class="messages notice"></div>').insertBefore('.file-system');
+  if (!$('#file-upload-notices-container').size())
+    $('<div id="file-upload-notices-container"><div id="file-upload-notices" class="messages notice"></div></div>').insertBefore('.file-system');
   $('#file-upload-notices').append(msg);
-  setTimeout(function() { $('#file-upload-notices').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
+  setTimeout(function() { $('#file-upload-notices-container').remove(); }, Drupal.file_browserVars.messageTimeout); // clear the messages after period of time
 };
 
 /**
