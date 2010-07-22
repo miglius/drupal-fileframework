@@ -1116,6 +1116,9 @@ function file_bitcache($op, $id, $stream = NULL) {
       $ext = !empty($extensions) && !isset($extension_correct) ? '.'. reset($extensions) : '';
       $title = isset($node->title) ? $node->title : 'file';
       $mime = rdf_value(bitcache_uri($id), rdf_qname_to_uri('dc:format'), NULL, array('repository' => FILE_RDF_REPOSITORY));
+      // http://stackoverflow.com/questions/1560075/zip-files-get-corrupted-by-ie
+      if (preg_match('/\/(zip|x-gzip|rar|x-rar-compressed|x-gtar|x-compress|bzip2|x-bz2)/', $mime))
+        apache_setenv('no-gzip', '1');
       // http://www.adobe.com/devnet/flashplayer/articles/fplayer10_security_changes_02.html#head32
       $headers = ($mime == 'application/x-shockwave-flash') ? array() : array('Content-Disposition' => $disposition .'; filename="'. $title . $ext .'"');
       return array_merge($headers, array(

@@ -179,3 +179,11 @@ div.file-block-scroll {
   overflow: auto;
 }
 
+div#edit-og-public-wrapper {
+  margin-bottom: 0em;
+}
+
+input#edit-upload-submit, div#file-upload-progress {
+  margin-top: 1em;
+}
+
