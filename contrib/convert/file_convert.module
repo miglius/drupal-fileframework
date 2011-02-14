@@ -8,8 +8,10 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-define('FILE_CONVERT_LIMIT_SIZE', (int)variable_get('file_convert_limit_size', 10));
-define('FILE_CONVERT_DEBUG',      variable_get('file_convert_debug', 0));
+define('FILE_CONVERT_LIMIT_SIZE',            (int)variable_get('file_convert_limit_size', 10));
+define('FILE_CONVERT_DEBUG',                 variable_get('file_convert_debug', 0));
+define('FILE_CONVERT_RESTRICTIONS_ENABLED',   variable_get('file_convert_restrictions_enabled', 0));
+define('FILE_CONVERT_PROCESSES_COMMANDLINE', variable_get('file_convert_processes_commandline', '/bin/ps -ef | grep -v "grep" | grep "sh -c" | grep "!prog" | wc -l | tr -d " "'));
 
 define('FILE_CONVERT_TIER_LIMIT', 2);
 define('FILE_CONVERT_DEBUG_LINES', 5);
@@ -149,28 +151,30 @@ function file_get_mime_converters() {
  *
  * @param $file
  *   A file object. If $file->converted defined, we already have a temporal file.
- * @param $handlers
- *   An array of the handlers to be used with the converted file.
- * @param $pipeline
- *   An array with a pipelines.
- * @param $options
- *   Additional options used in file conversion.
+ * @param $tier
+ *   A tier level.
  *
  * @return
  *   A converted file's filename or NULL.
  */
-function file_convert($file, $pipeline, $tier, $handlers = array(), $options = array()) {
+function file_convert($file, $tier) {
+  $mime = $file->mimes[$tier];
+  $handlers = isset($file->handlers[$tier]) ? array($file->handlers[$tier]) : array('no_handler');
+
   $status = TRUE;
   foreach ($handlers as $handler) {
-    $status = $status && !_file_convert_isnot_needed($file, $handler);
+    $status = $status && !_file_convert_isnot_needed($file, $mime, $handler);
   }
   if (!$status)
     return NULL;
 
-  $status = _file_convert($file, $pipeline, $tier, $options);
+  if (!_file_convert_check_restrictions($file, $tier))
+    return NULL;
+
+  $status = _file_convert($file, $tier);
   if (!isset($status) || $status === FALSE) {
     foreach ($handlers as $handler) {
-      _file_convert_failure_log($file, $handler);
+      _file_convert_failure_log($file, $mime, $handler);
     }
   }
 
@@ -182,18 +186,22 @@ function file_convert($file, $pipeline, $tier, $handlers = array(), $options = a
  *
  * @param $file
  *   A file object. If $file->converted defined, we already have a temporal file.
- * @param $pipeline
- *   An array with a pipelines.
- * @param $options
- *   Additional options used in file conversion.
+ * @param $tier
+ *   A tier level.
  *
  * @return
  *   A converted file's filename or NULL. Calling function
  *   should delete the temporal file.
  */
-function _file_convert($file, $pipeline, $tier, $options) {
-  $options['filename'] = preg_replace('/"/', '\"', $file->filename);
-  $options['tmpdir'] = file_directory_temp();
+function _file_convert($file, $tier) {
+  $pipeline = $file->converters[$tier]['pipeline'];
+  $options = array_merge(
+    isset($file->converters[$tier]['options']) ? $file->converters[$tier]['options'] : array(),
+    array(
+      'filename' => preg_replace('/"/', '\"', $file->filename),
+      'tmpdir' => file_directory_temp(),
+    )
+  );
   $file_convert = ($tier > 0) ? $file->converted[$tier - 1] : $file;
   if (isset($file_convert->filepath)) {
     $in_file = $file_convert->filepath;
@@ -365,7 +373,7 @@ function _file_convert_execute_pipeline($file, $from, $to, $pipeline, $options) 
   }
   else {
     // shell command.
-    $exitcode = _file_command_run($pipeline, $pipes) ;
+    $exitcode = _file_command_run($pipeline, $pipes);
     if ($exitcode === FALSE) {
       watchdog('file_convert', 'Execution of pipeline %pipeline failed.', array('%pipeline' => $pipeline), WATCHDOG_ERROR);
       $result = FALSE;
@@ -407,15 +415,18 @@ function _file_convert_execute_pipeline($file, $from, $to, $pipeline, $options) 
  *
  * @param $file
  *   A file object.
+ * @param $mime
+ *   A MIME type.
  * @param $handler
  *   A handler name.
  *
  * @return
  *   TRUE if save was successfull.
  */
-function _file_convert_failure_log($file, $handler) {
-  if (!rdf_exists($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY)))
-    return rdf_insert($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY));
+function _file_convert_failure_log($file, $mime, $handler) {
+  $error = $mime .':'. $handler;
+  if (!rdf_exists($file->uri, 'wordnet:failed', $error, array('repository' => FILE_RDF_REPOSITORY)))
+    return rdf_insert($file->uri, 'wordnet:failed', $error, array('repository' => FILE_RDF_REPOSITORY));
 
   return TRUE;
 }
@@ -425,24 +436,47 @@ function _file_convert_failure_log($file, $handler) {
  *
  * @param $file
  *   A file object.
+ * @param $mime
+ *   A MIME type.
  * @param $handler
  *   A handler name.
  *
  * @return
  *   TRUE if failure is logged.
  */
-function _file_convert_isnot_needed($file, $handler) {
-  if (rdf_exists($file->uri, 'wordnet:failed', $handler, array('repository' => FILE_RDF_REPOSITORY)))
+function _file_convert_isnot_needed($file, $mime, $handler) {
+  $error = $mime .':'. $handler;
+  if (rdf_exists($file->uri, 'wordnet:failed', $error, array('repository' => FILE_RDF_REPOSITORY)))
     return TRUE;
 
-  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
-    foreach ($generated as $uri => $data) {
-      $preview = rdf_normalize(rdf_query($uri, rdf_qname_to_uri('dc:creator'), $handler, array('repository' => FILE_RDF_REPOSITORY)));
-      if (!empty($preview))
-        return TRUE;
-    }
-  }
+  if (isset($file->previews[$mime]) && in_array($handler, $file->previews[$mime]))
+    return TRUE;
 
   return FALSE;
+}
+
+/**
+ * Checks if there are restrictions enabled and if the converssion should be run.
+ *
+ * @param $file
+ *   A file object.
+ * @param $tier
+ *   A tier level.
+ *
+ * @return
+ *   TRUE if the conversion should be run.
+ */
+function _file_convert_check_restrictions($file, $tier) {
+  if (!FILE_CONVERT_RESTRICTIONS_ENABLED)
+    return TRUE;
+
+  foreach (variable_get('file_convert_restrictions', array()) as $prog => $number) {
+    if (preg_match("/$prog/", $file->converters[$tier]['pipeline'])) {
+      $exitcode = _file_command_run(preg_replace('/!prog/', $prog, FILE_CONVERT_PROCESSES_COMMANDLINE), $pipes);
+      if ($pipes['stdout'] + 1 > $number)
+        return FALSE;
+    }
+  }
+  return TRUE;
 }
 

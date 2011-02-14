@@ -600,7 +600,7 @@ function file_metadata_extract($filename, $mimetype) {
     }
   }
   if (!$parsed)
-    $result = array_merge($result, array('wordnet:failed' => array('metadata')));
+    $result = array_merge($result, array('wordnet:metadata' => array('failed')));
 
   return $result;
 }
@@ -631,7 +631,6 @@ function file_get_metadata($file) {
  */
 function file_generate_previews($file, $cron = FALSE) {
   $result = TRUE;
-  $previews = array();
 
   // Check if file exists in the bitcache.
   if (!bitcache_exists(file_get_hash($file->uri))) {
@@ -640,7 +639,7 @@ function file_generate_previews($file, $cron = FALSE) {
   }
 
   //Extract metadata if it is missing and save to RDF.
-  if (!rdf_exists($file->uri, 'wordnet:failed', 'metadata', array('repository' => FILE_RDF_REPOSITORY)) && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed', array('repository' => FILE_RDF_REPOSITORY)) || isset($file->delete_rdf)) {
+  if (!rdf_exists($file->uri, 'wordnet:metadata', 'failed', array('repository' => FILE_RDF_REPOSITORY)) && !rdf_exists($file->uri, 'wordnet:metadata', 'parsed', array('repository' => FILE_RDF_REPOSITORY)) || isset($file->delete_rdf)) {
     if (!rdf_delete($file->uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)))
       watchdog('file', 'The RDF data was not deleted for the %name, uri=%uri.', array('%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_ERROR, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
     if (!rdf_insert_all(rdf_denormalize(file_get_metadata($file)), array('repository' => FILE_RDF_REPOSITORY))) {
@@ -674,7 +673,6 @@ function file_generate_previews($file, $cron = FALSE) {
   $file->handlers_enabled = array_keys(array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'enabled\'];')));
 
   // Find all preview generation handlers for the MIME type and generate previews if they are not already generated.
-  $mime_types = file_get_mime_types();
   if (($mime_types = file_get_mime_types()) && isset($mime_types[$file->filemime]) && is_array($mime_types[$file->filemime]['handlers'])) {
     foreach (array_diff($mime_types[$file->filemime]['handlers'], isset($file->previews[$file->filemime]) ? $file->previews[$file->filemime] : array()) as $handler) {
       if (in_array($handler, $file->handlers_enabled) && function_exists($full_handler = $handler .'_generate'))
@@ -748,6 +746,10 @@ function file_generate_secondary_previews($file, $tier) {
   if ($tier < 1 || $tier >= FILE_CONVERT_TIER_LIMIT)
     return FALSE;
 
+  // If handler is disabled we silently skip it.
+  if (!in_array($file->handlers[$tier], $file->handlers_enabled))
+    return TRUE;
+
   $result = FALSE;
   if (($handler_generate = $file->handlers[$tier] .'_generate') && function_exists($handler_generate) && ($converter = $file->converters_enabled[$file->mimes[$tier - 1]][$file->mimes[$tier]])) {
     $file->converters[$tier] = $converter;
@@ -792,7 +794,7 @@ function file_get_converted($file, $tier) {
     return FALSE;
 
   // We have to convert the file.
-  if ($converted = file_convert($file, $file->converters[$tier]['pipeline'], $tier, isset($file->handlers[$tier]) ? array($file->handlers[$tier]) : array(), isset($file->converters[$tier]['options']) ? $file->converters[$tier]['options'] : array())) {
+  if ($converted = file_convert($file, $tier)) {
     $file->converted[$tier] = (object)array('filepath' => $converted);
     $file->converted[$tier]->metadata = array_merge(file_metadata_extract($converted, $file->mimes[$tier]), isset($file->handlers[$tier]) ? array('dc:creator' => array($file->handlers[$tier])) : array());
     $file->converts++;
@@ -1344,6 +1346,141 @@ function file_get_image($file, $handler, $dimensions = array(0, 0)) {
       $image = file_get_hash($file->uri);
   }
   return isset($image) ? '<img width="'. $width .'" height="'. $height .'" src="'. bitcache_resolve_id($image, array('absolute' => FALSE, 'query' => array('vid' => $file->vid, 'disposition' => 'inline'))) .'">' : NULL;
+}
+
+/**
+ * Finds possible previews for the MIME type.
+ *
+ * @param $mime
+ *   A MIME type.
+ *
+ * @return
+ *   An array of the MIME types pointing to the handlers array.
+ */
+function file_possible_previews($mime) {
+  $previews = array();
+  $handlers_enabled = array_keys(array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'enabled\'];')));
+  $mime_types = file_get_mime_types();
+  if (isset($mime_types[$mime])) {
+    foreach ($mime_types[$mime]['handlers'] as $handler) {
+      if (in_array($handler, $handlers_enabled) && function_exists($handler .'_generate')) {
+        $previews[$mime] = array_unique(array_merge(isset($previews[$mime]) ? $previews[$mime] : array(), array($handler)));
+      }
+    }
+  }
+
+  // We are done if the convert module is disabled.
+  if (!module_exists('file_convert'))
+    return $previews;
+
+  $converters_enabled = array();
+  foreach (file_get_mime_converters() as $from => $data) {
+    $data = array_filter($data, create_function('$a', 'return $a[\'enabled\'];'));
+    if (!empty($data))
+      $converters_enabled[$from] = $data;
+  }
+  if (isset($converters_enabled[$mime])) {
+    foreach ($converters_enabled[$mime] as $to => $data) {
+      if (empty($data['handlers']))
+        $previews[$to] = array_unique(array_merge(isset($previews[$to]) ? $previews[$to] : array(), array('no_handler')));
+      foreach ($data['handlers'] as $handler) {
+        if (in_array($handler, $handlers_enabled) && function_exists($handler .'_generate')) {
+          $previews[$to] = array_unique(array_merge(isset($previews[$to]) ? $previews[$to] : array(), array($handler)));
+          if (function_exists($secondary = $handler .'_secondary')) {
+            foreach ($secondary() as $hs => $ts) {
+              if (in_array($hs, $handlers_enabled) && function_exists($hs .'_generate')) {
+                $previews[$ts] = array_unique(array_merge(isset($previews[$ts]) ? $previews[$ts] : array(), array($hs)));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return $previews;
+}
+
+/**
+ * Finds generated previews for the file.
+ *
+ * @param $file
+ *   A file object.
+ *
+ * @return
+ *   An array of the MIME types pointing to the handlers array.
+ */
+function file_generated_previews($file) {
+  $previews = array();
+  if ($generated = rdf_normalize(rdf_query(NULL, rdf_qname_to_uri('dc:source'), $file->uri, array('repository' => FILE_RDF_REPOSITORY)))) {
+    foreach ($generated as $uri => $data) {
+      $item = rdf_normalize(rdf_query($uri, NULL, NULL, array('repository' => FILE_RDF_REPOSITORY)));
+      if ($mime = $item[$uri][rdf_qname_to_uri('dc:format')][0])
+        $previews[$mime][] = ($handler = $item[$uri][rdf_qname_to_uri('dc:creator')][0]) ? $handler : 'no_handler';
+    }
+  }
+  return $previews;
+}
+
+/**
+ * Finds pending previews for the file.
+ *
+ * @param $file
+ *   A file object.
+ *
+ * @return
+ *   An array of the pending previews.
+ */
+function file_pending_previews($file) {
+  $pending = array();
+  $failed = array();
+  foreach (file_failed_previews($file) as $item) {
+    list($mime, $handler) = explode(':', $item);
+    $failed[$mime][] = $handler;
+  }
+  $previews = file_generated_previews($file);
+  foreach (file_possible_previews($file->type) as $mime => $handlers) {
+    foreach ($handlers as $handler) {
+      if ((!isset($previews[$mime]) || !in_array($handler, $previews[$mime])) && (!isset($failed[$mime]) || !in_array($handler, $failed[$mime])))
+        $pending[] = $mime .':'. $handler;
+    }
+  }
+  return $pending;
+}
+
+/**
+ * Finds failed previews for the file.
+ *
+ * @param $file
+ *   A file object.
+ *
+ * @return
+ *   An array of the failed previews.
+ */
+function file_failed_previews($file) {
+  $failed = ($items = rdf_normalize(rdf_query($file->uri, rdf_qname_to_uri('wordnet:failed'), NULL, array('repository' => FILE_RDF_REPOSITORY)))) ? $items[$file->uri][rdf_qname_to_uri('wordnet:failed')] : array();
+  return $failed;
+}
+
+/**
+ * Marks in RDF that conversion failed.
+ *
+ * @param $file
+ *   A file object.
+ * @param $mime
+ *   A MIME type.
+ * @param $handler
+ *   A handler.
+ *
+ * @return
+ */
+function file_mark_failed($file, $mime, $handler) {
+  if (!module_exists('file_convert'))
+    return;
+
+  $previews = file_generated_previews($file);
+  if (!isset($previews[$mime]) || !in_array($handler, $previews[$mime]))
+    _file_convert_failure_log($file, $mime, $handler);
 }
 
 /**

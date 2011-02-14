@@ -346,22 +346,8 @@ function file_image_image_generate($file, $tier = NULL) {
     watchdog('file_image', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
   }
 
-  $handlers = array();
-  foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
-    $line = trim(preg_replace('/\s+/', ' ', $line));
-    if (!empty($line) && !preg_match('/^#/', $line)) {
-      list($resolution, $handler, $name) = explode(' ', $line, 3);
-      $handlers['file_image_'. $handler]['resolution'] = $resolution;
-    }
-  }
-  $handlers = array_merge($handlers, array(
-    'file_image_preview' => array('resolution' => FILE_IMAGE_PREVIEW_RESOLUTION),
-    'file_image_medium' => array('resolution' => FILE_IMAGE_MEDIUM_RESOLUTION),
-    'file_image_thumbnail' => array('resolution' => FILE_IMAGE_THUMBNAIL_RESOLUTION),
-  ));
-
   $previews = array();
-  foreach ($handlers as $handler => $data) {
+  foreach (_file_image_get_handlers() as $handler => $data) {
     list($max_width, $max_height) = explode('x', $data['resolution']);
     $ratio = min($max_width / $width, $max_height / $height);
     if ($ratio > 0.0 && $ratio < 1.0)
@@ -382,9 +368,7 @@ function file_image_image_generate($file, $tier = NULL) {
     $file->handlers[$tier] = $data['handler'];
     $file->mimes[$tier] = $mime;
     if (!in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-      if (!file_get_converted($file, $tier))
-        return FALSE;
-      if (!file_data_save($file, $tier))
+      if (!file_get_converted($file, $tier) || !file_data_save($file, $tier))
         return FALSE;
       watchdog('file_image', 'The %mime preview %handler was generated for the file %name, uri=%uri.', array('%mime' => $file->filemime, '%handler' => $data['handler'], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
       file_delete($file->converted[$tier]->filepath);
@@ -500,6 +484,26 @@ function _file_image_render_options($uri, $options = array()) {
 
   $options = array_merge(array('class' => 'file-image', 'alt' => $title, 'style' => $style, 'border' => '0'), $options);
   return array_merge($options, compact('width', 'height', 'max_width', 'max_height', 'src', 'title'));
+}
+
+/**
+ * Retrieve all image handlers.
+ */
+function _file_image_get_handlers() {
+  $handlers = array();
+  foreach (explode("\n", variable_get('file_image_custom_previews', '')) as $line) {
+    $line = trim(preg_replace('/\s+/', ' ', $line));
+    if (!empty($line) && !preg_match('/^#/', $line)) {
+      list($resolution, $handler, $name) = explode(' ', $line, 3);
+      $handlers['file_image_'. $handler]['resolution'] = $resolution;
+    }
+  }
+  $handlers = array_merge($handlers, array(
+    'file_image_preview' => array('resolution' => FILE_IMAGE_PREVIEW_RESOLUTION),
+    'file_image_medium' => array('resolution' => FILE_IMAGE_MEDIUM_RESOLUTION),
+    'file_image_thumbnail' => array('resolution' => FILE_IMAGE_THUMBNAIL_RESOLUTION),
+  ));
+  return $handlers;
 }
 
 //////////////////////////////////////////////////////////////////////////////

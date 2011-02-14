@@ -311,10 +311,13 @@ function drush_file_change_type() {
  * A callback function.
  */
 function drush_file_failed_clear() {
-  if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY)))
-    drush_set_error('The RDF data about failed conversions and metadata extraction was not deleted.');
-  else
-    drush_print(dt('The data about failed conversions and metadata extraction have been cleared.'));
+  if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY))) {
+    drush_set_error(dt('The RDF data about failed conversions was not deleted.'));
+  }
+  if (!rdf_delete(NULL, 'wordnet:metadata', 'failed', array('repository' => FILE_RDF_REPOSITORY))) {
+    drush_set_error(dt('The RDF data about failed metadata extraction was not deleted.'));
+  }
+  drush_print(dt('The data about failed conversions and metadata extraction have been cleared.'));
 }
 
 /**

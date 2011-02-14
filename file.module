@@ -684,6 +684,20 @@ function file_node_view($node, $teaser = FALSE, $page = FALSE) {
       'generated' => FILE_SHOW_GENERATED ? file_render_generated($file) : '',
       'file' => FILE_SHOW_FILE ? theme('file_render', $file) : '',
     );
+    if (count($pending = file_pending_previews($file)) > 0) {
+      global $user;
+      if (user_access('administer nodes')) {
+        foreach ($pending as $preview)
+          drupal_set_message(t("File preview %preview is pending.", array('%preview' => $preview)), 'status');
+      }
+      elseif ($user->uid == $node->uid) {
+        drupal_set_message(t("File preview will be created shortly."), 'status');
+      }
+    }
+    if (user_access('administer nodes') && count($failed = file_failed_previews($file)) > 0) {
+      foreach ($failed as $preview)
+        drupal_set_message(t("File preview %preview has failed to generate.", array('%preview' => $preview)), 'error');
+    }
   }
   $output = theme('file_show', $data);
 

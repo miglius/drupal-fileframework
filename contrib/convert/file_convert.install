@@ -27,5 +27,8 @@ function file_convert_install() {}
 function file_convert_uninstall() {
   variable_del('file_convert_limit_size');
   variable_del('file_convert_debug');
+  variable_del('file_convert_restrictions_enabled');
+  variable_del('file_convert_processes_commandline');
+  variable_del('file_convert_restrictions');
 }
 

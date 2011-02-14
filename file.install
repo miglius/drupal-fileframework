@@ -236,3 +236,9 @@ function file_update_6003() {
   return file_update_6002();
 }
 
+function file_update_6004() {
+  $ret = array();
+  rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY));
+  return $ret;
+}
+

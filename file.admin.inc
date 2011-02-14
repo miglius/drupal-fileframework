@@ -240,7 +240,10 @@ function file_admin_settings_submit($form, &$form_state) {
       break;
     case t('Clear'):
       if (!rdf_delete(NULL, 'wordnet:failed', NULL, array('repository' => FILE_RDF_REPOSITORY))) {
-        watchdog('file', 'The RDF data about failed conversions and metadata extraction was not deleted.', WATCHDOG_ERROR);
+        watchdog('file', 'The RDF data about failed conversions was not deleted.', WATCHDOG_ERROR);
+      }
+      if (!rdf_delete(NULL, 'wordnet:metadata', 'failed', array('repository' => FILE_RDF_REPOSITORY))) {
+        watchdog('file', 'The RDF data about failed metadata extraction was not deleted.', WATCHDOG_ERROR);
       }
       drupal_set_message(t('The data about failed conversions and metadata extraction have been cleared.'));
       break;

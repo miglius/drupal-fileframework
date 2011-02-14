@@ -237,29 +237,39 @@ function file_slideshow_metadata_parse($filename, $mimetype) {
  * Generates a slideshow_pdf preview.
  */
 function file_slideshow_pdf_generate($file, $tier = NULL) {
+  $source = TRUE;
   if (isset($tier) && !in_array($file->handlers[$tier], isset($file->previews[$file->mimes[$tier]]) ? $file->previews[$file->mimes[$tier]] : array())) {
-    if (!file_get_converted($file, $tier))
-      return FALSE;
-    if (!file_data_save($file, $tier))
-      return FALSE;
-    watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
+    if (!file_get_converted($file, $tier) || !file_data_save($file, $tier))
+      $source = FALSE;
+    else
+      watchdog('file_slideshow', 'The %mime preview was generated for the file %name, uri=%uri.', array('%mime' => $file->mimes[$tier], '%name' => $file->filename, '%uri' => $file->uri), WATCHDOG_NOTICE, isset($file->nid) ? l(t('view'), 'node/'. $file->nid) : NULL);
   }
 
   // Create a plain text, image and swf previews.
-  $previews = array(
+  $result = TRUE;
+  $tier = isset($tier) ? $tier + 1 : 0;
+  foreach (file_slideshow_pdf_secondary() as $handler => $to) {
+    if ($source) {
+      $file->handlers[$tier] = $handler;
+      $file->mimes[$tier] = $to;
+      $result = file_generate_secondary_previews($file, $tier) && $result;
+    }
+    else {
+      file_mark_failed($file, $to, $handler);
+    }
+  }
+  return $result;
+}
+
+/**
+ * slideshow_pdf secondary previews.
+ */
+function file_slideshow_pdf_secondary() {
+  return array(
     'file_text_text' => 'text/plain',
     'file_image_image' => 'image/jpeg',
     'file_video_flash_swf' => 'application/x-shockwave-flash',
   );
-
-  $result = TRUE;
-  $tier = isset($tier) ? $tier + 1 : 0;
-  foreach ($previews as $handler => $to) {
-    $file->handlers[$tier] = $handler;
-    $file->mimes[$tier] = $to;
-    $result = file_generate_secondary_previews($file, $tier) && $result;
-  }
-  return $result;
 }
 
 //////////////////////////////////////////////////////////////////////////////
