@@ -1361,6 +1361,10 @@ function file_possible_previews($mime) {
   $previews = array();
   $handlers_enabled = array_keys(array_filter(file_get_mime_handlers(), create_function('$a', 'return $a[\'enabled\'];')));
   $mime_types = file_get_mime_types();
+
+  // We don't need to check zero tier handlers as the handler is not saved in the RDF with the original file.
+  // Secondary handlers invoked from the handler_generate() should be reflected in the hook_mime_converters().
+  /*
   if (isset($mime_types[$mime])) {
     foreach ($mime_types[$mime]['handlers'] as $handler) {
       if (in_array($handler, $handlers_enabled) && function_exists($handler .'_generate')) {
@@ -1368,6 +1372,7 @@ function file_possible_previews($mime) {
       }
     }
   }
+  */
 
   // We are done if the convert module is disabled.
   if (!module_exists('file_convert'))
